@@ -1,0 +1,37 @@
+<% content_for :title, "Membresías — Advance Fitness" %>
+
+<div class="mx-auto max-w-6xl px-4 py-8">
+  <div class="mb-6 flex items-center justify-between">
+    <h1 class="font-display text-2xl font-bold">Membresías</h1>
+    <%= link_to "Nueva membresía", new_admin_membresia_path, class: "btn btn-primary btn-sm" %>
+  </div>
+
+  <div class="card border border-base-300 bg-base-100 shadow-sm">
+    <div class="card-body">
+      <table class="table">
+        <thead>
+          <tr><th>Miembro</th><th>Estado</th><th>Vence</th><th>Días</th><th>Horario</th><th></th></tr>
+        </thead>
+        <tbody>
+          <% @membresias.each do |membresia| %>
+            <tr>
+              <td><%= membresia.user.nombre.presence || membresia.user.email_address %></td>
+              <td><%= badge_estado(membresia.estado) %></td>
+              <td><%= l membresia.fecha_vencimiento %></td>
+              <td class="<%= membresia.dias_restantes.negative? ? "text-pulse" : "" %>"><%= membresia.dias_restantes %></td>
+              <td class="text-xs text-steel-3">
+                <%= membresia.hora_apertura ? "#{membresia.hora_apertura}–#{membresia.hora_cierre}" : "libre" %>
+              </td>
+              <td class="text-right">
+                <%= link_to "Gestionar", edit_admin_membresia_path(membresia), class: "btn btn-ghost btn-xs" %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+      <% if @membresias.empty? %>
+        <p class="text-sm text-steel-3">Aún no hay membresías.</p>
+      <% end %>
+    </div>
+  </div>
+</div>

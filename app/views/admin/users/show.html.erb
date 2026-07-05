@@ -1,0 +1,50 @@
+<% content_for :title, "#{@user.nombre.presence || @user.email_address} — Advance Fitness" %>
+
+<div class="mx-auto max-w-4xl px-4 py-8">
+  <h1 class="mb-1 font-display text-2xl font-bold"><%= @user.nombre.presence || @user.email_address %></h1>
+  <p class="mb-6 text-sm text-steel-3">
+    <span class="badge badge-sm badge-ghost"><%= @user.rol %></span>
+    · miembro desde <%= l @user.fecha_ingreso, format: :long %>
+  </p>
+
+  <div class="grid gap-6 md:grid-cols-2">
+    <div class="card border border-base-300 bg-base-100 shadow-sm">
+      <div class="card-body">
+        <h2 class="card-title text-base">Membresía</h2>
+        <% if @user.membresia %>
+          <p><%= badge_estado(@user.membresia.estado) %></p>
+          <p class="text-sm">Vence el <%= l @user.membresia.fecha_vencimiento, format: :long %> (<%= @user.membresia.dias_restantes %> días)</p>
+          <div class="card-actions">
+            <%= link_to "Gestionar", edit_admin_membresia_path(@user.membresia), class: "btn btn-primary btn-sm" %>
+          </div>
+        <% else %>
+          <p class="text-sm text-steel-3">Sin membresía.</p>
+          <div class="card-actions">
+            <%= link_to "Crear membresía", new_admin_membresia_path, class: "btn btn-primary btn-sm" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="card border border-base-300 bg-base-100 shadow-sm">
+      <div class="card-body">
+        <h2 class="card-title text-base">Últimos accesos</h2>
+        <% if @accesos.any? %>
+          <ul class="flex flex-col gap-1 text-sm">
+            <% @accesos.each do |acceso| %>
+              <li class="flex items-center gap-2">
+                <%= badge_estado(acceso.tipo) %>
+                <%= l acceso.fecha_hora, format: :short %>
+                <% unless acceso.dentro_de_horario? %>
+                  <span class="badge badge-sm badge-error">fuera de horario</span>
+                <% end %>
+              </li>
+            <% end %>
+          </ul>
+        <% else %>
+          <p class="text-sm text-steel-3">Sin accesos registrados.</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

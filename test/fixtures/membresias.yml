@@ -1,0 +1,19 @@
+activa_one:
+  user: one
+  fecha_inicio: <%= Date.current - 10 %>
+  fecha_vencimiento: <%= Date.current + 20 %>
+  estado: activa
+  horario_acceso:
+    dom: [ "06:00", "22:00" ]
+    lun: [ "06:00", "22:00" ]
+    mar: [ "06:00", "22:00" ]
+    mie: [ "06:00", "22:00" ]
+    jue: [ "06:00", "22:00" ]
+    vie: [ "06:00", "22:00" ]
+    sab: [ "06:00", "22:00" ]
+
+vencida_two:
+  user: two
+  fecha_inicio: <%= Date.current - 40 %>
+  fecha_vencimiento: <%= Date.current - 10 %>
+  estado: vencida

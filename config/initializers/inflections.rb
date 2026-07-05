@@ -1,16 +1,18 @@
 # Be sure to restart your server when you modify this file.
 
-# Add new inflection rules using the following format. Inflections
-# are locale specific, and you may define rules for as many different
-# locales as you wish. All of these examples are active by default:
-# ActiveSupport::Inflector.inflections(:en) do |inflect|
-#   inflect.plural /^(ox)$/i, "\\1en"
-#   inflect.singular /^(ox)en/i, "\\1"
-#   inflect.irregular "person", "people"
-#   inflect.uncountable %w( fish sheep )
-# end
-
-# These inflection rules are supported but not enabled by default:
-# ActiveSupport::Inflector.inflections(:en) do |inflect|
-#   inflect.acronym "RESTful"
-# end
+# Plurales del dominio en español (SDD §12). Sin esto, el inflector
+# inglés rompe palabras como "membresia" (la regla latina -ia la trata
+# como plural invariable) o "plan" (→ "plans").
+ActiveSupport::Inflector.inflections(:en) do |inflect|
+  inflect.irregular "membresia", "membresias"
+  inflect.irregular "pago", "pagos"
+  inflect.irregular "acceso", "accesos"
+  inflect.irregular "medicion", "mediciones"
+  inflect.irregular "objetivo_nutricional", "objetivos_nutricionales"
+  inflect.irregular "registro_caloria", "registros_calorias"
+  inflect.irregular "plan", "planes"
+  inflect.irregular "suscripcion", "suscripciones"
+  inflect.irregular "plan_personalizado", "planes_personalizados"
+  inflect.irregular "novedad", "novedades"
+  inflect.irregular "renovacion", "renovaciones"
+end

@@ -1,0 +1,88 @@
+<% content_for :title, "Gestionar membresía — Advance Fitness" %>
+
+<div class="mx-auto max-w-2xl px-4 py-8">
+  <h1 class="mb-1 font-display text-2xl font-bold">Membresía de <%= @membresia.user.nombre %></h1>
+  <p class="mb-6 text-sm text-steel-3">
+    <%= badge_estado(@membresia.estado) %>
+    vence el <%= l @membresia.fecha_vencimiento, format: :long %> (<%= @membresia.dias_restantes %> días)
+  </p>
+
+  <div class="flex flex-col gap-6">
+    <div class="card border border-base-300 bg-base-100 shadow-sm">
+      <div class="card-body">
+        <h2 class="card-title text-base">Renovar (registra el pago)</h2>
+        <%= form_with url: admin_membresia_renovacion_path(@membresia), method: :post, class: "flex flex-wrap items-end gap-3" do %>
+          <label class="form-control">
+            <span class="label-text mb-1 font-medium">Monto (COP)</span>
+            <%= number_field_tag :monto, nil, min: 1, step: 1000, required: true, class: "input input-bordered" %>
+          </label>
+          <label class="form-control">
+            <span class="label-text mb-1 font-medium">Método</span>
+            <%= select_tag :metodo, options_for_select(Pago::METODOS), class: "select select-bordered" %>
+          </label>
+          <%= submit_tag "Renovar 1 mes", class: "btn btn-primary" %>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="card border border-base-300 bg-base-100 shadow-sm">
+      <div class="card-body">
+        <h2 class="card-title text-base">Editar</h2>
+        <% if @membresia.errors.any? %>
+          <div role="alert" class="alert alert-error text-sm">
+            <span><%= @membresia.errors.full_messages.to_sentence %></span>
+          </div>
+        <% end %>
+
+        <%= form_with model: @membresia, url: admin_membresia_path(@membresia), method: :patch, class: "flex flex-col gap-4" do |form| %>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="form-control">
+              <span class="label-text mb-1 font-medium">Estado</span>
+              <%= form.select :estado, options_for_select(Membresia::ESTADOS, @membresia.estado), {}, { class: "select select-bordered w-full" } %>
+            </label>
+            <label class="form-control">
+              <span class="label-text mb-1 font-medium">Fecha de inicio</span>
+              <%= form.date_field :fecha_inicio, class: "input input-bordered w-full" %>
+            </label>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="form-control">
+              <span class="label-text mb-1 font-medium">Horario — apertura</span>
+              <%= time_field_tag "membresia[hora_apertura]", @membresia.hora_apertura, class: "input input-bordered w-full" %>
+            </label>
+            <label class="form-control">
+              <span class="label-text mb-1 font-medium">Horario — cierre</span>
+              <%= time_field_tag "membresia[hora_cierre]", @membresia.hora_cierre, class: "input input-bordered w-full" %>
+            </label>
+          </div>
+
+          <div class="flex gap-2">
+            <%= form.submit "Guardar cambios", class: "btn btn-primary" %>
+            <%= link_to "Volver", admin_membresias_path, class: "btn btn-ghost" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="card border border-base-300 bg-base-100 shadow-sm">
+      <div class="card-body">
+        <h2 class="card-title text-base">Pagos</h2>
+        <table class="table table-sm">
+          <thead><tr><th>Fecha</th><th>Período</th><th>Monto</th><th>Método</th><th>Registró</th></tr></thead>
+          <tbody>
+            <% @membresia.pagos.order(fecha_pago: :desc).each do |pago| %>
+              <tr>
+                <td><%= l pago.fecha_pago %></td>
+                <td class="text-xs"><%= l pago.periodo_inicio %> — <%= l pago.periodo_fin %></td>
+                <td><%= cop pago.monto %></td>
+                <td><%= pago.metodo %></td>
+                <td class="text-xs text-steel-3"><%= pago.registrado_por.nombre %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

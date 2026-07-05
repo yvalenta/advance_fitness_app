@@ -1,0 +1,61 @@
+<% content_for :title, "Nueva membresía — Advance Fitness" %>
+
+<div class="mx-auto max-w-2xl px-4 py-8">
+  <h1 class="mb-6 font-display text-2xl font-bold">Nueva membresía</h1>
+
+  <div class="card border border-base-300 bg-base-100 shadow-sm">
+    <div class="card-body">
+      <% if @membresia.errors.any? %>
+        <div role="alert" class="alert alert-error text-sm">
+          <span><%= @membresia.errors.full_messages.to_sentence %></span>
+        </div>
+      <% end %>
+
+      <%= form_with model: @membresia, url: admin_membresias_path, class: "flex flex-col gap-4" do |form| %>
+        <label class="form-control">
+          <span class="label-text mb-1 font-medium">Miembro</span>
+          <%= form.collection_select :user_id, User.where.missing(:membresia).order(:nombre), :id, :nombre,
+                { prompt: "Selecciona un miembro" }, { class: "select select-bordered w-full", required: true } %>
+        </label>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="form-control">
+            <span class="label-text mb-1 font-medium">Fecha de inicio</span>
+            <%= form.date_field :fecha_inicio, class: "input input-bordered w-full", required: true %>
+          </label>
+          <div class="text-sm text-steel-3 sm:self-end sm:pb-3">
+            Vence automáticamente 1 mes después.
+          </div>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="form-control">
+            <span class="label-text mb-1 font-medium">Monto del primer pago (COP)</span>
+            <%= number_field_tag "membresia[monto]", nil, min: 1, step: 1000, required: true, class: "input input-bordered w-full" %>
+          </label>
+          <label class="form-control">
+            <span class="label-text mb-1 font-medium">Método de pago</span>
+            <%= select_tag "membresia[metodo]", options_for_select(Pago::METODOS), class: "select select-bordered w-full" %>
+          </label>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="form-control">
+            <span class="label-text mb-1 font-medium">Horario — apertura</span>
+            <%= time_field_tag "membresia[hora_apertura]", @membresia.hora_apertura, class: "input input-bordered w-full" %>
+          </label>
+          <label class="form-control">
+            <span class="label-text mb-1 font-medium">Horario — cierre</span>
+            <%= time_field_tag "membresia[hora_cierre]", @membresia.hora_cierre, class: "input input-bordered w-full" %>
+          </label>
+        </div>
+        <p class="text-xs text-steel-3">Sin horario = acceso libre en el horario del gimnasio.</p>
+
+        <div class="flex gap-2">
+          <%= form.submit "Crear membresía", class: "btn btn-primary" %>
+          <%= link_to "Cancelar", admin_membresias_path, class: "btn btn-ghost" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

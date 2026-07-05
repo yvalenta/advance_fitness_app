@@ -62,8 +62,8 @@ app/
 
 | Fase | Nombre | Estado |
 |---|---|---|
-| 1 | Base Rails & Auth | 🔨 En curso |
-| 2 | Membresías & Accesos | Pendiente |
+| 1 | Base Rails & Auth | ✅ Completa |
+| 2 | Membresías & Accesos | ✅ Completa |
 | 3 | Biometría & Progreso | Pendiente |
 | 4 | Nutrición & Objetivos | Pendiente |
 | 5 | Planes & IA | Pendiente |

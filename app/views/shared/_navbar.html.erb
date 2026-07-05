@@ -1,9 +1,17 @@
 <div class="navbar bg-secondary text-secondary-content shadow-md">
   <div class="mx-auto flex w-full max-w-6xl items-center px-4">
-    <div class="flex-1 items-center">
+    <div class="flex flex-1 items-center gap-4">
       <%= link_to root_path, class: "flex items-center gap-2" do %>
         <%= render "shared/logo" %>
         <span class="font-display text-sm font-bold tracking-widest">ADVANCE FITNESS</span>
+      <% end %>
+      <% if Current.user.staff? %>
+        <nav class="hidden items-center gap-1 text-sm md:flex">
+          <%= link_to "Check-in", admin_checkins_path, class: "btn btn-ghost btn-sm" %>
+          <%= link_to "Miembros", admin_users_path, class: "btn btn-ghost btn-sm" %>
+          <%= link_to "Membresías", admin_membresias_path, class: "btn btn-ghost btn-sm" %>
+          <%= link_to "Pagos", admin_pagos_path, class: "btn btn-ghost btn-sm" %>
+        </nav>
       <% end %>
     </div>
     <div class="flex items-center gap-3">

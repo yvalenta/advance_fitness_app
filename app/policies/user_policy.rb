@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 class UserPolicy < ApplicationPolicy
+  def index?
+    user.staff?
+  end
+
   def show?
     propio? || user.staff?
   end

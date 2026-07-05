@@ -1,0 +1,5 @@
+reciente_one:
+  user: one
+  fecha_hora: <%= 1.day.ago %>
+  tipo: checkin
+  dentro_de_horario: true

@@ -9,11 +9,19 @@
   </div>
 
   <div class="grid gap-4 sm:grid-cols-3">
-    <%= render "shared/metric_card",
-          titulo: "Membresía",
-          valor: "—",
-          descripcion: "Estado, vencimiento y tiempo activo",
-          badge: "Disponible en Fase 2" %>
+    <% if @membresia %>
+      <%= render "shared/metric_card",
+            titulo: "Membresía",
+            valor: "#{@membresia.dias_restantes} días",
+            descripcion: "Vence el #{l @membresia.fecha_vencimiento, format: :long}",
+            badge: @membresia.estado %>
+    <% else %>
+      <%= render "shared/metric_card",
+            titulo: "Membresía",
+            valor: "—",
+            descripcion: "Acércate a recepción para activar tu membresía",
+            badge: "sin membresía" %>
+    <% end %>
     <%= render "shared/metric_card",
           titulo: "Biometría",
           valor: "—",

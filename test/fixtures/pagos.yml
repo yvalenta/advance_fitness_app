@@ -1,0 +1,8 @@
+inicial_one:
+  membresia: activa_one
+  monto: 80000
+  fecha_pago: <%= Date.current - 10 %>
+  periodo_inicio: <%= Date.current - 10 %>
+  periodo_fin: <%= Date.current + 20 %>
+  metodo: efectivo
+  registrado_por: admin

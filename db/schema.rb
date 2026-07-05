@@ -10,9 +10,46 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_05_210311) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_05_221005) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "accesos", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.boolean "dentro_de_horario", default: true, null: false
+    t.datetime "fecha_hora", null: false
+    t.string "tipo", default: "checkin", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["user_id", "fecha_hora"], name: "index_accesos_on_user_id_and_fecha_hora"
+    t.index ["user_id"], name: "index_accesos_on_user_id"
+  end
+
+  create_table "membresias", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "estado", default: "activa", null: false
+    t.date "fecha_inicio", null: false
+    t.date "fecha_vencimiento", null: false
+    t.jsonb "horario_acceso"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["estado"], name: "index_membresias_on_estado"
+    t.index ["user_id"], name: "index_membresias_on_user_id", unique: true
+  end
+
+  create_table "pagos", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.date "fecha_pago", null: false
+    t.bigint "membresia_id", null: false
+    t.string "metodo", null: false
+    t.decimal "monto", precision: 10, null: false
+    t.date "periodo_fin", null: false
+    t.date "periodo_inicio", null: false
+    t.bigint "registrado_por_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["membresia_id"], name: "index_pagos_on_membresia_id"
+    t.index ["registrado_por_id"], name: "index_pagos_on_registrado_por_id"
+  end
 
   create_table "sessions", force: :cascade do |t|
     t.datetime "created_at", null: false
@@ -40,5 +77,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_05_210311) do
     t.index ["rol"], name: "index_users_on_rol"
   end
 
+  add_foreign_key "accesos", "users"
+  add_foreign_key "membresias", "users"
+  add_foreign_key "pagos", "membresias"
+  add_foreign_key "pagos", "users", column: "registrado_por_id"
   add_foreign_key "sessions", "users"
 end

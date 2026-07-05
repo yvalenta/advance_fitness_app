@@ -9,6 +9,16 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   root "dashboard#show"
+
+  # Panel de administración (SDD §09) — protegido por Pundit, no solo por el namespace
+  namespace :admin do
+    resources :users, only: %i[ index show ]
+    resources :membresias, only: %i[ index new create edit update ] do
+      resource :renovacion, only: :create, controller: "renovaciones"
+    end
+    resources :pagos, only: :index
+    resources :checkins, only: %i[ index create ]
+  end
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

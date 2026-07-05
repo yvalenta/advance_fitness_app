@@ -1,0 +1,30 @@
+<% content_for :title, "Pagos — Advance Fitness" %>
+
+<div class="mx-auto max-w-6xl px-4 py-8">
+  <h1 class="mb-6 font-display text-2xl font-bold">Pagos</h1>
+
+  <div class="card border border-base-300 bg-base-100 shadow-sm">
+    <div class="card-body">
+      <table class="table">
+        <thead>
+          <tr><th>Fecha</th><th>Miembro</th><th>Período</th><th>Monto</th><th>Método</th><th>Registró</th></tr>
+        </thead>
+        <tbody>
+          <% @pagos.each do |pago| %>
+            <tr>
+              <td><%= l pago.fecha_pago %></td>
+              <td><%= pago.membresia.user.nombre.presence || pago.membresia.user.email_address %></td>
+              <td class="text-xs"><%= l pago.periodo_inicio %> — <%= l pago.periodo_fin %></td>
+              <td class="font-medium"><%= cop pago.monto %></td>
+              <td><%= pago.metodo %></td>
+              <td class="text-xs text-steel-3"><%= pago.registrado_por.nombre %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+      <% if @pagos.empty? %>
+        <p class="text-sm text-steel-3">Aún no hay pagos registrados.</p>
+      <% end %>
+    </div>
+  </div>
+</div>
