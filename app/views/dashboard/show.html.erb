@@ -1,0 +1,22 @@
+<div class="mx-auto max-w-6xl px-4 py-8">
+  <h1 class="text-2xl font-bold">Hola 👋</h1>
+  <p class="text-sm text-gray-500"><%= Current.user.email_address %></p>
+
+  <div class="mt-6 grid gap-4 sm:grid-cols-3">
+    <div class="rounded-xl border bg-white p-6 shadow-sm">
+      <h2 class="font-semibold">Membresía</h2>
+      <p class="text-sm text-gray-500">Estado, vencimiento y tiempo activo — Fase 2</p>
+    </div>
+    <div class="rounded-xl border bg-white p-6 shadow-sm">
+      <h2 class="font-semibold">Biometría</h2>
+      <p class="text-sm text-gray-500">Peso, IMC y progreso mensual — Fase 3</p>
+    </div>
+    <div class="rounded-xl border bg-white p-6 shadow-sm">
+      <h2 class="font-semibold">Calorías</h2>
+      <p class="text-sm text-gray-500">Objetivo diario y consumo — Fase 4</p>
+    </div>
+  </div>
+
+  <%= button_to "Cerrar sesión", session_path, method: :delete,
+        class: "mt-8 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white" %>
+</div>
