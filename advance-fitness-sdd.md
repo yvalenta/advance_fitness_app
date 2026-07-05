@@ -1,17 +1,19 @@
-# Advance Fitness — Software Design Document · v1.1
+# Advance Fitness — Software Design Document · v2.0
 
-> **Open Spec v1.1** · Aplicación web integral de gestión de gimnasio: membresías y accesos, biometría, nutrición, planes personalizados con IA y comunidad.
-> Stack: React 19.2.7 + Vite + TypeScript + Tailwind CSS v4 + shadcn/ui + Supabase (Postgres · Auth · RLS · Edge Functions). Empaquetador: **pnpm**.
+> **Open Spec v2.0** · Aplicación web integral de gestión de gimnasio: membresías y accesos, biometría, nutrición, planes personalizados con IA y comunidad.
+> Stack: Ruby on Rails 8.1 (monolito) · PostgreSQL · Hotwire (Turbo + Stimulus) · Tailwind CSS · Solid Queue/Cache/Cable · Pundit. Entorno local: **dip + Docker Compose**.
 
 | Metadato | Valor |
 |---|---|
-| Versión | 1.1 — Open Spec (stack revisado: Alpine single-file → React 19.2.7) |
+| Versión | 2.0 — Open Spec (transición de stack: SPA React + Supabase → monolito Rails 8.1) |
 | Estado | Definición inicial |
 | Repositorio | `git@github.com:yvalenta/advance_fitness_app.git` — nuevo, construido de cero |
-| Stack | React 19.2.7 · Vite 8 · Tailwind v4 · shadcn/ui · Supabase |
-| Empaquetador | pnpm (siempre) |
+| Stack | Rails 8.1.3 · Ruby 3.4.5 · PostgreSQL 17 · Hotwire · Tailwind · Pundit · Solid stack |
+| Entorno local | dip 8 + Docker Compose (`dip provision`, `dip rails s`, `dip test`) |
 | Actualizado | Julio 2026 |
-| Documento de referencia | Restaurante Resplandor POS — SDD v1.0 · Landing Advance Fitness (repo padre) |
+| Documento de referencia | Restaurante Resplandor POS — SDD v1.0 · `rails8_analysis.md` |
+
+> **Nota de transición (v2.0):** las versiones 1.x diseñaban una SPA React 19 + Supabase (Auth, RLS, Edge Functions). El proyecto pivotó a un monolito Rails 8.1: un solo lenguaje y framework para todo el dominio, autenticación y jobs nativos (sin BaaS), server-rendered con Hotwire. El modelo de dominio (§03, §07) y los flujos (§10) se conservan; cambia el plano de ejecución.
 
 ---
 
@@ -21,9 +23,9 @@
 
 **Advance Fitness** es una aplicación web para gestionar el ciclo completo de un gimnasio: alta y renovación de membresías, control de accesos y horarios, seguimiento biométrico con estadísticas de progreso, calculadora nutricional (déficit / superávit calórico), monetización por planes (Free vs. Personalizado) y una capa de comunidad (blog + novedades).
 
-El sistema se construye como una **SPA React 19.2.7 + Vite** que compila a un bundle estático (sin servidor propio), desplegable en cualquier hosting estático — el mismo stack ya validado por la landing del proyecto (repo padre `advance_fitness`). Los estilos son Tailwind CSS v4 con componentes shadcn/ui; la persistencia, autenticación y seguridad viven en **Supabase** (Postgres + Auth + Row Level Security). Los flujos de IA (generación de rutinas y planes nutricionales) se ejecutan en **Supabase Edge Functions** que llaman a la API de Claude — nunca desde el cliente. El gestor de paquetes es **pnpm**, sin excepción.
+El sistema es un **monolito Rails 8.1 server-rendered**: HTML generado en el servidor con ERB, interactividad con Hotwire (Turbo + Stimulus, sin build de JavaScript gracias a importmap), estilos con Tailwind CSS y PostgreSQL como única base de datos. La autenticación es la **nativa de Rails 8** (`has_secure_password` + sesiones), la autorización por rol la resuelve **Pundit**, y los trabajos en segundo plano (generación de planes con IA vía API de Claude) corren en **Solid Queue** sobre el mismo Postgres — sin Redis, sin servicios externos. El despliegue es autocontenido con **Kamal + Thruster** (Docker).
 
-> **Principio rector:** todo lo que se puede resolver en el cliente, se resuelve en el cliente; todo lo que requiere confianza (identidad, permisos, pagos, IA con API keys) se resuelve en Supabase. No existe — ni existirá en el MVP — un servidor propio que mantener.
+> **Principio rector:** un solo framework, un solo lenguaje, una sola base de datos. Todo lo que requiere confianza (identidad, permisos, pagos, IA con API keys) vive en el servidor Rails; el navegador solo recibe HTML y pequeñas dosis de Stimulus.
 
 ---
 
@@ -33,7 +35,7 @@ El sistema se construye como una **SPA React 19.2.7 + Vite** que compila a un bu
 
 | En scope (MVP) | Out of scope (MVP) |
 |---|---|
-| Registro y login obligatorio (Supabase Auth, email + password) | App nativa iOS / Android |
+| Registro y login obligatorio (auth nativa Rails 8; Google OAuth como segundo método) | App nativa iOS / Android |
 | Perfil del miembro: datos básicos, fecha de ingreso, tiempo activo | Pasarela de pago online (Stripe / Wompi) — el pago se registra manualmente |
 | Membresías: fechas de pago, vencimiento mensual, renovación | Facturación electrónica (DIAN) |
 | Historial de reingresos y check-ins al gimnasio | Torniquete / hardware de control de acceso físico |
@@ -57,24 +59,24 @@ Los requerimientos en bruto se organizan en cinco módulos. Cada requerimiento q
 
 | Requerimiento | Solución | Entidad |
 |---|---|---|
-| Fecha de ingreso del usuario | `perfiles.fecha_ingreso`, se fija en el registro | `perfiles` |
+| Fecha de ingreso del usuario | `users.fecha_ingreso`, se fija en el registro | `users` |
 | Fechas de pago | Historial en tabla de pagos, uno por período | `pagos` |
 | Vencimiento mensual y renovación | `membresias.fecha_vencimiento`; renovar crea un pago y extiende la fecha | `membresias`, `pagos` |
 | Historial de reingresos | Cada check-in se registra; un reingreso es un check-in tras membresía vencida y renovada | `accesos` |
-| Control de tiempo activo ("hace cuánto entrena") | Calculado: `now() - perfiles.fecha_ingreso`, descontando períodos inactivos según `accesos` | `perfiles`, `accesos` |
+| Control de tiempo activo ("hace cuánto entrena") | Calculado: `Date.current - user.fecha_ingreso`, descontando períodos inactivos según `accesos` | `users`, `accesos` |
 | Horarios de acceso | `membresias.horario_acceso` (JSONB por día de semana); se valida en el check-in | `membresias` |
 
 ### Módulo B — Salud y Biometría
 
 | Requerimiento | Solución | Entidad |
 |---|---|---|
-| Inputs básicos: peso, edad, talla | Formulario de medición; edad derivada de `perfiles.fecha_nacimiento` | `mediciones_biometricas` |
-| Estado de peso actual (IMC / BMI) | Columna generada: `imc = peso_kg / (talla_cm/100)^2`, clasificada según rangos OMS | `mediciones_biometricas` |
-| Indicador de propensión a sobrepeso | Regla en cliente: tendencia del IMC en las últimas 3 mediciones + somatotipo | Derivado |
-| Identificación del somatotipo | Cuestionario guiado en onboarding → `ectomorfo` · `mesomorfo` · `endomorfo` | `perfiles.somatotipo` |
-| Gráficas de progreso mensual | Serie temporal de `mediciones_biometricas` renderizada como SVG inline (sin librería de charts) | `mediciones_biometricas` |
+| Inputs básicos: peso, edad, talla | Formulario de medición; edad derivada de `users.fecha_nacimiento` | `mediciones` |
+| Estado de peso actual (IMC / BMI) | Columna generada en Postgres: `imc = peso_kg / (talla_cm/100)^2`, clasificada según rangos OMS | `mediciones` |
+| Indicador de propensión a sobrepeso | Servicio: tendencia del IMC en las últimas 3 mediciones + somatotipo | Derivado |
+| Identificación del somatotipo | Cuestionario guiado en onboarding → `ectomorfo` · `mesomorfo` · `endomorfo` | `users.somatotipo` |
+| Gráficas de progreso mensual | Serie temporal de `mediciones` renderizada como SVG inline en un partial (sin librería de charts) | `mediciones` |
 
-Fórmulas estándar utilizadas (implementadas como funciones JS puras en la capa Services):
+Fórmulas estándar utilizadas (implementadas como POROs en `app/services`, puros y testeables):
 
 | Fórmula | Expresión | Uso |
 |---|---|---|
@@ -96,92 +98,94 @@ Fórmulas estándar utilizadas (implementadas como funciones JS puras en la capa
 | Requerimiento | Solución | Entidad |
 |---|---|---|
 | Plan Free | Acceso a rutinas y guías básicas (contenido estático por objetivo: subir / bajar de peso) | `planes`, `suscripciones` |
-| Upgrade a Plan Personalizado | Compra registrada por admin → Edge Function genera con IA una rutina + plan nutricional a partir de la biometría y el objetivo; el entrenador revisa y aprueba antes de publicarse al miembro | `planes_personalizados` |
+| Upgrade a Plan Personalizado | Compra registrada por admin → `GenerarPlanJob` (Solid Queue) genera con IA una rutina + plan nutricional a partir de la biometría y el objetivo; el entrenador revisa y aprueba antes de publicarse al miembro | `planes_personalizados` |
 
 ### Módulo E — Comunidad y Retención
 
 | Requerimiento | Solución | Entidad |
 |---|---|---|
-| Sección de Blog | Posts en Markdown creados por admin/entrenador, lectura para todo miembro autenticado | `posts_blog` |
+| Sección de Blog | Posts en Markdown creados por admin/entrenador, lectura para todo miembro autenticado | `posts` |
 | Panel de novedades | Anuncios cortos con fecha de evento (clases, horarios especiales, retos) | `novedades` |
 
 ---
 
 ## 04 — Stack tecnológico
 
-El stack compila a un **bundle estático sin servidor propio**. Todo el control vive en el cliente y en la base de datos. Es exactamente el stack ya probado en la landing del proyecto (repo padre): mismas versiones resueltas en su `pnpm-lock.yaml`.
+Monolito Rails con **cero dependencias de Node** (importmap + binario standalone de Tailwind) y **cero servicios externos en runtime** (el stack Solid corre sobre Postgres; no hay Redis).
 
 | Tecnología | Versión | Rol | Notas |
 |---|---|---|---|
-| React | 19.2.7 | UI declarativa | Misma versión ya validada en la landing |
-| Vite | ^8.1 | Build y dev server | `@vitejs/plugin-react`, build estático a `dist/` |
-| TypeScript | ~6.0 | Tipado | `tsc -b` en el build; tipos generados desde Supabase |
-| Tailwind CSS | ^4.3 | Estilos | Plugin `@tailwindcss/vite`, tokens en `@theme` (CSS-first) |
-| shadcn/ui + Radix | — | Componentes base | Button, Card, Tabs, Select, Dialog… copiados al repo |
-| react-router-dom | ^7 | Routing | Rutas protegidas por sesión y rol |
-| lucide-react | — | Iconografía | Ya usada en la landing |
-| pnpm | — | **Empaquetador (obligatorio)** | `pnpm install` / `pnpm add` / `pnpm dlx`; nunca npm ni yarn |
-| @supabase/supabase-js | ^2 | Cliente de datos | Sin peer dependencies — agnóstico al framework, compatible con React 19 |
-| Supabase Postgres | — | Base de datos | Fuente de verdad única, snake_case |
-| Supabase Auth | — | Autenticación | Email + password, login obligatorio, sesión JWT |
-| Supabase RLS | — | Autorización | Policies por fila: cada miembro solo ve lo suyo |
-| Supabase Edge Functions | — | Cómputo confiable | Flujos de IA (Claude API) y validaciones server-side |
-| Claude API (`claude-sonnet-5`) | — | IA generativa | Rutinas y planes nutricionales estructurados (JSON) |
-| SVG inline (componente React) | — | Gráficas de progreso | Sin librería de charts en el MVP |
-| localStorage | — | Caché de arranque | Última copia de sesión; Supabase manda |
+| Ruby | 3.4.5 | Lenguaje | `.ruby-version`; YJIT + jemalloc en contenedores |
+| Rails | 8.1.3 | Framework full-stack | `rails new … --database=postgresql --css=tailwind --asset-pipeline=propshaft --javascript=importmap` |
+| PostgreSQL | 17 | Base de datos única | Docker Compose en desarrollo/test; datos anidados en JSONB |
+| Propshaft | — | Asset pipeline | Sin transpilación; assets con digest |
+| importmap-rails | — | JavaScript sin build | Los módulos JS se sirven tal cual; **no hay `package.json`** |
+| Turbo + Stimulus (Hotwire) | — | Interactividad | Navegación SPA-like, frames/streams; JS mínimo y declarativo |
+| tailwindcss-rails | v4 | Estilos | Binario standalone; tokens en `@theme` (`app/assets/tailwind/application.css`) |
+| Auth nativa Rails 8 | — | Autenticación | `bin/rails generate authentication`: `has_secure_password`, sesiones firmadas, reset por email |
+| Pundit | ~2.5 | Autorización por rol | Una policy por modelo; `authorize` en cada controller |
+| Solid Queue | — | Jobs en background | `GenerarPlanJob` (IA), vencimiento diario de membresías; corre sobre Postgres |
+| Solid Cache / Solid Cable | — | Cache y WebSockets | Sobre Postgres; sin Redis |
+| Claude API (`claude-sonnet-5`) | — | IA generativa | Llamada HTTP desde el job; salida JSON estructurada; API key en credentials/ENV |
+| Minitest + Capybara | — | Tests | Unit, integration y system tests en cada fase |
+| RuboCop (omakase) + Brakeman + bundler-audit | — | Calidad y seguridad | `dip rubocop` · `dip brakeman`; corren también en CI (`.github/workflows`) |
+| dip + Docker Compose | 8.x | Entorno local | `dip provision` levanta todo; ver §13 |
+| Kamal 2 + Thruster | — | Despliegue | `Dockerfile` de producción autocontenido |
+| dotenv-rails | ~3.2 | Variables de entorno | Solo development/test; `.env` fuera de git |
 
-### ¿Por qué React y no el single-file de la landing?
+### ¿Por qué Rails y no la SPA React + Supabase?
 
-La v1.0 de este documento proponía el enfoque single-file HTML + Alpine (estilo Resplandor POS). Se revisó por tres razones. Primera: la app tiene ~12 vistas, 3 roles con rutas protegidas, paneles de admin y entrenador, y formularios complejos — en un solo archivo eso supera las 4.000 líneas y se vuelve inmantenible; la landing sí puede ser simple, la app no. Segunda: la landing ya validó React 19.2.7 + Vite 8 + Tailwind v4 + shadcn en este mismo workspace, con lockfile resuelto y build funcionando — no hay riesgo de compatibilidad y se reutilizan componentes y convenciones. Tercera: `supabase-js` no tiene peer dependencies, así que la capa Supabase del diseño (Auth, RLS, Edge Functions) no cambia en absoluto con este reemplazo.
+Las versiones 1.x delegaban identidad, permisos (RLS) y cómputo (Edge Functions) a Supabase, con una SPA React consumiendo la Data API. La revisión 2.0 lo reemplaza por un monolito Rails por tres razones. Primera: el dominio es **fuertemente server-side** — roles, pagos, membresías, aprobaciones de entrenador — y en Rails eso son modelos, policies y jobs en un solo lugar, testeables con minitest, sin repartir la lógica entre cliente TS, policies SQL y funciones Deno. Segunda: **sin vendor lock-in ni límites de plan free**: auth, jobs, cache y websockets son parte del framework (Rails 8 + Solid stack) y corren en cualquier VPS con Docker vía Kamal. Tercera: **menos JavaScript** — Hotwire cubre la interactividad requerida (formularios, tabs, gráficas server-rendered) sin build step ni Node, lo que reduce superficie de mantenimiento.
 
-**Regla de oro:** el estado de servidor vive en Supabase y se lee vía hooks; el estado de UI vive en el componente. Si algo requiere secretos o confianza (API key de Claude, validación de compra), va a una Edge Function — nunca al cliente.
+**Regla de oro:** el navegador recibe HTML. Si una interacción se puede resolver con Turbo (frames/streams) se resuelve ahí; Stimulus solo para comportamiento puntual (tabs, contadores). Si algo requiere secretos o confianza (API key de Claude, validación de compra), vive en el servidor — controller, service o job.
 
 ### ¿Por qué LangChain no?
 
-El único flujo de IA del MVP es una llamada única y estructurada a Claude (biometría + objetivo → JSON de rutina y dieta). No hay cadenas multi-paso, ni RAG, ni memoria conversacional que justifiquen orquestación. Una Edge Function con `fetch` directo a la API de Claude es más simple, más barata y más fácil de depurar. Si en fases futuras aparece un coach conversacional, se reevalúa.
+El único flujo de IA del MVP es una llamada única y estructurada a Claude (biometría + objetivo → JSON de rutina y dieta) desde `GenerarPlanJob`. No hay cadenas multi-paso, ni RAG, ni memoria conversacional que justifiquen orquestación. Una clase Ruby con `Net::HTTP`/`faraday` y un prompt versionado en el repo es más simple, más barata y más fácil de depurar. Si en fases futuras aparece un coach conversacional, se reevalúa.
 
 ---
 
 ## 05 — Arquitectura
 
-La aplicación es una **SPA por features**: cada módulo funcional (§03) es una carpeta bajo `src/features/` con sus páginas, componentes y hooks, más Supabase como plano de datos y seguridad.
+Monolito Rails clásico (MVC) con dos capas de apoyo: **services** (cálculo puro) y **jobs** (trabajo asíncrono). La separación es de responsabilidad, no de despliegue.
 
 | Capa | Responsabilidad | Implementación | Prohibido |
 |---|---|---|---|
-| Config | Design tokens, constantes (rangos IMC, factores de actividad) | `@theme` en `src/index.css` + `src/config/constants.ts` | Lógica de UI |
-| UI | Componentes base reutilizables (Button, Card, Dialog, Tabs…) | `src/components/ui/` (shadcn/ui) | Llamadas a Supabase |
-| Features | Páginas y componentes por módulo, estado de UI local | `src/features/{auth,membresias,biometria,nutricion,planes,comunidad,admin}` | Lógica de negocio inline |
-| Hooks | Estado de servidor: sesión, perfil, mediciones, membresía, plan | `src/hooks/` (`useSession`, `usePerfil`, `useMediciones`…) sobre GymData | Renderizado |
-| Services | Lógica de negocio pura: IMC, TDEE, déficit/superávit, formateo | `src/services/` — funciones TS puras, testeables sin DOM | Acceso a datos o al DOM |
-| Data | Lecturas/escrituras vía `supabase-js`: `select`, `insert`, `update`, RPC | `src/lib/gym-data.ts` (wrapper único del cliente Supabase) | Lógica de presentación |
-| Backend (BaaS) | Identidad, permisos por fila, triggers, IA | Supabase Auth · RLS · Edge Functions | Lógica de UI |
+| Rutas + Controllers | HTTP, strong params, `authenticate` + `authorize` (Pundit), redirecciones | `config/routes.rb` · `app/controllers` (skinny) | Lógica de negocio y queries complejas |
+| Models | Validaciones, asociaciones, scopes, enums de dominio | `app/models` (ActiveRecord) | Llamadas HTTP externas |
+| Policies | Autorización por rol y por registro | `app/policies` (Pundit, una por modelo) | Acceso a datos fuera del record/user |
+| Services | Lógica pura: IMC, TDEE, déficit/superávit, propensión, horarios | `app/services` — POROs sin estado, testeables sin DB | Acceso a la base o a la sesión |
+| Jobs | Trabajo asíncrono: generación de plan con IA, vencimiento de membresías | `app/jobs` (ActiveJob + Solid Queue) | Renderizado |
+| Views | HTML server-rendered, partials reutilizables, Turbo Frames/Streams | `app/views` (ERB) + `app/javascript/controllers` (Stimulus) | Queries a la base |
 
 ### Diagrama de alto nivel
 
 ```
-┌────────────────────────────────┐      ┌─────────────────────────────────┐
-│  SPA React 19 (bundle Vite)    │      │  Supabase                       │
-│  ┌────────┐  ┌─────────────┐   │ JWT  │  ┌──────┐ ┌──────────────────┐  │
-│  │Features│←→│ hooks +     │───┼─────→│  │ Auth │ │ Postgres + RLS   │  │
-│  │+ ui    │  │ GymData     │   │      │  └──────┘ └──────────────────┘  │
-│  └────────┘  │(supabase-js)│───┼─────→│  ┌──────────────────────────┐   │
-│  ┌────────┐  └─────────────┘   │      │  │ Edge Fn: generar-plan    │───┼──→ Claude API
-│  │Services│ (IMC/TDEE puras)   │      │  │ (service_role + secreto) │   │
-│  └────────┘                    │      │  └──────────────────────────┘   │
-└────────────────────────────────┘      └─────────────────────────────────┘
+┌───────────────┐   HTTP    ┌─────────────────────────────────────────┐
+│   Navegador    │◄────────►│  Rails 8.1 (Puma)                       │
+│  HTML + Turbo  │           │  Controllers → Policies (Pundit)        │
+│  + Stimulus    │           │      │                                  │
+└───────────────┘           │  Models (AR) ── Services (IMC/TDEE)     │
+                            │      │                                  │
+                            │  Solid Queue ── GenerarPlanJob ─────────┼──→ Claude API
+                            └──────┼──────────────────────────────────┘
+                                   ▼
+                            ┌─────────────┐
+                            │ PostgreSQL  │  datos + queue + cache + cable
+                            └─────────────┘
 ```
 
 ### Principios de diseño
 
 | Principio | Detalle |
 |---|---|
-| Supabase es la fuente de verdad | Los hooks se hidratan desde Postgres al iniciar sesión; localStorage es solo caché de arranque. Nunca se decide un permiso en el cliente. |
-| RLS como única frontera de seguridad | El cliente puede tener bugs; las policies no. Toda tabla tiene RLS activado y sin policy para `anon`. Las rutas protegidas por rol son UX, no seguridad. |
-| Un solo punto de acceso a datos | Ningún componente importa `supabase-js` directo: todo pasa por `GymData` (`src/lib/gym-data.ts`). Cambiar una query es tocar un solo archivo. |
-| Features como módulos | Cada módulo del §03 es una carpeta autocontenida bajo `src/features/`; lo compartido vive en `components/ui`, `hooks`, `services`, `lib`. |
-| Cálculos derivados no se persisten | IMC se genera en Postgres (columna generada); TDEE, déficit y propensión se calculan en Services. Solo se guardan los inputs. |
-| IA detrás de Edge Functions | La API key de Claude vive como secreto de la función. El cliente jamás llama a Claude directo. |
-| Tipos desde la base | `pnpm dlx supabase gen types typescript` genera `src/lib/database.types.ts`; GymData queda tipado contra el schema real. |
+| Convención sobre configuración | Se sigue el camino Rails por defecto (generadores, REST, minitest). Desviarse requiere justificación en este documento. |
+| Pundit como única frontera de autorización | Ocultar un link en la vista es UX; el `authorize` del controller y la policy son la seguridad. Toda acción de controller pasa por Pundit (`verify_authorized`). |
+| Controllers delgados | Un controller orquesta: autentica, autoriza, delega a modelo/servicio/job, responde. Nada de reglas de negocio inline. |
+| Cálculos derivados no se persisten | IMC es columna generada en Postgres; TDEE, déficit y propensión se calculan en services. Solo se guardan los inputs. |
+| IA en jobs, nunca en el request | `GenerarPlanJob` corre en Solid Queue: el request del usuario no espera a Claude. La API key vive en credentials/ENV, jamás en el cliente. |
+| Todo comando local pasa por dip | `dip rails …`, `dip test`, `dip rubocop`, `dip psql`. Nadie necesita Ruby ni Postgres instalados en el host. |
+| Tests en cada fase | Cada fase entrega sus models/policies/controllers con tests minitest verdes; los system tests cubren los flujos del §10. |
 
 ---
 
@@ -193,11 +197,11 @@ El logo de Advance Fitness es un **fisicoculturista vectorial monocromo** (pose 
 
 | Asset | Ruta | Uso |
 |---|---|---|
-| `logo.svg` (ideal) o `logo.png` | `public/brand/` | Header/nav, pantalla de auth, pantalla de carga |
-| `logo-white.svg` | `public/brand/` | Variante invertida para nav oscuro y footer |
+| `logo.svg` (ideal) o `logo.png` | `app/assets/images/brand/` | Header/nav, pantalla de auth, correos |
+| `logo-white.svg` | `app/assets/images/brand/` | Variante invertida para nav oscuro y footer |
 | `favicon.svg` | `public/` | Favicon (recorte del torso) |
 
-> El archivo fuente del logo lo aporta el cliente; queda pendiente de copiarse a `public/brand/`. Ningún componente lo embebe inline: siempre se referencia por ruta.
+> El archivo fuente del logo lo aporta el cliente; queda pendiente de copiarse. Se referencia con `image_tag "brand/logo.svg"` — nunca embebido inline.
 
 ### Paleta de colores
 
@@ -214,7 +218,7 @@ El logo de Advance Fitness es un **fisicoculturista vectorial monocromo** (pose 
 
 | Fuente | Rol | Uso |
 |---|---|---|
-| Geist Variable (`@fontsource-variable/geist`) | Body / UI | Texto general, formularios, etiquetas — la misma de la landing |
+| Geist | Body / UI | Texto general, formularios, etiquetas — vendored en `app/assets/fonts` (woff2) |
 | Space Grotesk | Display | Métricas grandes (peso, IMC, kcal), títulos de sección, números de progreso |
 
 ### Escala tipográfica
@@ -228,9 +232,9 @@ El logo de Advance Fitness es un **fisicoculturista vectorial monocromo** (pose 
 | `text-label` | 0.75 rem (12px) | 700 | Tags, estado de membresía, categorías |
 | `text-micro` | 0.6875 rem (11px) | 700 | Metadatos, timestamps, ejes de gráficas |
 
-### Design tokens — Tailwind v4 (`@theme` en `src/index.css`)
+### Design tokens — Tailwind v4 (`@theme` en `app/assets/tailwind/application.css`)
 
-Tailwind v4 es CSS-first: los tokens se declaran en `@theme` y generan las utilidades (`bg-volt`, `text-steel-3`, `font-display`…). Conviven con las variables de shadcn/ui.
+Tailwind v4 es CSS-first: los tokens se declaran en `@theme` y generan las utilidades (`bg-volt`, `text-steel-3`, `font-display`…).
 
 ```css
 @import "tailwindcss";
@@ -251,149 +255,159 @@ Tailwind v4 es CSS-first: los tokens se declaran en `@theme` y generan las utili
   --color-card:    #FFFFFF;   /* Cards y paneles                        */
 
   /* ── Tipografía ── */
-  --font-body:    "Geist Variable", sans-serif;
+  --font-body:    "Geist", sans-serif;
   --font-display: "Space Grotesk", sans-serif;
 }
 ```
+
+Los componentes visuales reutilizables son **partials ERB** (`app/views/shared/_metric_card.html.erb`, `_badge_estado.html.erb`…) — no hay librería de componentes externa.
 
 ---
 
 ## 07 — Entidades del dominio
 
-Schema de datos en **Supabase Postgres** (snake_case). Toda tabla tiene `id uuid primary key default gen_random_uuid()`, `creado_en timestamptz default now()` y **RLS activado**. Los datos anidados de forma natural (horarios, rutinas, dietas) se guardan como JSONB — misma convención del proyecto de referencia — para evitar joins innecesarios.
+Schema en **PostgreSQL** gestionado con **migraciones ActiveRecord** (snake_case, IDs `bigint` autoincrementales por convención Rails, `created_at`/`updated_at` en toda tabla). Los datos anidados de forma natural (horarios, rutinas, dietas) se guardan como **JSONB**. Los nombres de dominio van en español; los plurales se registran en `config/initializers/inflections.rb` (`medicion → mediciones`, etc.). `users` y `sessions` conservan el nombre del generador de auth de Rails.
 
-### `perfiles` — extiende `auth.users` (1:1)
+### `users` — miembro, entrenador o admin (auth + perfil)
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `id` | `uuid` PK | FK → `auth.users.id`, creado por trigger al registrarse |
-| `nombre` | `text` | Obligatorio |
+| `id` | `bigint` PK | — |
+| `email_address` | `string` | Unique, normalizado (generador de auth Rails 8) |
+| `password_digest` | `string` | bcrypt (`has_secure_password`) |
+| `nombre` | `string` | Obligatorio |
 | `fecha_nacimiento` | `date` | La edad se deriva, nunca se guarda |
-| `sexo` | `text` | `'M'` · `'F'` — requerido por Mifflin-St Jeor |
-| `talla_cm` | `numeric(5,1)` | Talla base; cada medición puede actualizarla |
-| `fecha_ingreso` | `date` | Fecha de alta en el gimnasio |
-| `somatotipo` | `text` | `'ectomorfo'` · `'mesomorfo'` · `'endomorfo'` · `null` |
-| `nivel_actividad` | `numeric(2,1)` | Factor 1.2–1.9 para TDEE |
-| `rol` | `text` | `'miembro'` · `'entrenador'` · `'admin'` — default `'miembro'` |
+| `sexo` | `string` | `'M'` · `'F'` — requerido por Mifflin-St Jeor |
+| `talla_cm` | `decimal(5,1)` | Talla base; cada medición puede actualizarla |
+| `fecha_ingreso` | `date` | Fecha de alta en el gimnasio; default hoy |
+| `somatotipo` | `string` | enum: `ectomorfo` · `mesomorfo` · `endomorfo` · `nil` |
+| `nivel_actividad` | `decimal(2,1)` | Factor 1.2–1.9 para TDEE |
+| `rol` | `string` | enum: `miembro` (default) · `entrenador` · `admin` |
+
+### `sessions` — sesiones activas (generador de auth)
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `bigint` PK | — |
+| `user_id` | `bigint` | FK → `users` |
+| `ip_address` / `user_agent` | `string` | Auditoría de sesión |
 
 ### `membresias`
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `id` | `uuid` PK | — |
-| `perfil_id` | `uuid` | FK → `perfiles.id` |
+| `id` | `bigint` PK | — |
+| `user_id` | `bigint` | FK → `users` |
 | `fecha_inicio` | `date` | Inicio del período vigente |
 | `fecha_vencimiento` | `date` | Vencimiento mensual; renovar la extiende |
-| `estado` | `text` | `'activa'` · `'vencida'` · `'suspendida'` (job diario la marca vencida) |
+| `estado` | `string` | enum: `activa` · `vencida` · `suspendida` (job diario la marca vencida) |
 | `horario_acceso` | `jsonb` | `{ "lun": ["06:00","22:00"], … }` — validado en check-in |
 
 ### `pagos`
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `id` | `uuid` PK | — |
-| `membresia_id` | `uuid` | FK → `membresias.id` |
-| `monto` | `numeric(10,0)` | COP, sin decimales |
+| `id` | `bigint` PK | — |
+| `membresia_id` | `bigint` | FK → `membresias` |
+| `monto` | `decimal(10,0)` | COP, sin decimales |
 | `fecha_pago` | `date` | Cuándo pagó |
-| `periodo_inicio` | `date` | Período que cubre |
-| `periodo_fin` | `date` | — |
-| `metodo` | `text` | `'efectivo'` · `'transferencia'` · `'tarjeta'` |
-| `registrado_por` | `uuid` | FK → `perfiles.id` (admin que registró) |
+| `periodo_inicio` / `periodo_fin` | `date` | Período que cubre |
+| `metodo` | `string` | enum: `efectivo` · `transferencia` · `tarjeta` |
+| `registrado_por_id` | `bigint` | FK → `users` (admin que registró) |
 
 ### `accesos` — check-ins e historial de reingresos
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `id` | `uuid` PK | — |
-| `perfil_id` | `uuid` | FK → `perfiles.id` |
-| `fecha_hora` | `timestamptz` | Momento del check-in |
-| `tipo` | `text` | `'checkin'` · `'reingreso'` (primer acceso tras renovar una membresía vencida) |
+| `id` | `bigint` PK | — |
+| `user_id` | `bigint` | FK → `users` |
+| `fecha_hora` | `datetime` | Momento del check-in |
+| `tipo` | `string` | enum: `checkin` · `reingreso` (primer acceso tras renovar una membresía vencida) |
 | `dentro_de_horario` | `boolean` | Resultado de validar contra `horario_acceso` |
 
-### `mediciones_biometricas`
+### `mediciones`
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `id` | `uuid` PK | — |
-| `perfil_id` | `uuid` | FK → `perfiles.id` |
-| `fecha` | `date` | Una medición por fecha (unique `perfil_id + fecha`) |
-| `peso_kg` | `numeric(5,2)` | Input |
-| `talla_cm` | `numeric(5,1)` | Input (normalmente estable) |
-| `imc` | `numeric(4,1)` | **Columna generada**: `peso_kg / (talla_cm/100)^2` |
-| `grasa_pct` | `numeric(4,1)` | Opcional |
+| `id` | `bigint` PK | — |
+| `user_id` | `bigint` | FK → `users` |
+| `fecha` | `date` | Una medición por fecha (índice unique `user_id + fecha`) |
+| `peso_kg` | `decimal(5,2)` | Input |
+| `talla_cm` | `decimal(5,1)` | Input (normalmente estable) |
+| `imc` | `decimal(4,1)` | **Columna generada** en Postgres: `peso_kg / (talla_cm/100)^2` |
+| `grasa_pct` | `decimal(4,1)` | Opcional |
 | `notas` | `text` | Opcional |
 
 ### `objetivos_nutricionales`
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `id` | `uuid` PK | — |
-| `perfil_id` | `uuid` | FK → `perfiles.id` |
-| `tipo` | `text` | `'deficit'` · `'superavit'` · `'mantenimiento'` |
+| `id` | `bigint` PK | — |
+| `user_id` | `bigint` | FK → `users` |
+| `tipo` | `string` | enum: `deficit` · `superavit` · `mantenimiento` |
 | `tdee_kcal` | `integer` | TDEE calculado al crear el objetivo (snapshot de inputs) |
 | `objetivo_kcal` | `integer` | `deficit: tdee−500` · `superavit: tdee+300..500` |
-| `activo` | `boolean` | Solo un objetivo activo por perfil |
+| `activo` | `boolean` | Solo un objetivo activo por usuario (índice unique parcial) |
 
 ### `registros_calorias`
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `id` | `uuid` PK | — |
-| `perfil_id` | `uuid` | FK → `perfiles.id` |
-| `fecha` | `date` | Unique `perfil_id + fecha` |
+| `id` | `bigint` PK | — |
+| `user_id` | `bigint` | FK → `users` |
+| `fecha` | `date` | Índice unique `user_id + fecha` |
 | `kcal_consumidas` | `integer` | Input diario del miembro |
 
 ### `planes` — catálogo de monetización
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `id` | `uuid` PK | — |
-| `codigo` | `text` | `'free'` · `'personalizado'` — unique |
-| `nombre` | `text` | Nombre comercial |
-| `precio` | `numeric(10,0)` | COP; `0` para free |
+| `id` | `bigint` PK | — |
+| `codigo` | `string` | `free` · `personalizado` — unique |
+| `nombre` | `string` | Nombre comercial |
+| `precio` | `decimal(10,0)` | COP; `0` para free |
 | `beneficios` | `jsonb` | Lista de features mostrada en la pantalla de upgrade |
 
 ### `suscripciones`
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `id` | `uuid` PK | — |
-| `perfil_id` | `uuid` | FK → `perfiles.id` |
-| `plan_id` | `uuid` | FK → `planes.id` |
-| `estado` | `text` | `'activa'` · `'cancelada'` · `'expirada'` |
-| `fecha_inicio` | `date` | — |
-| `fecha_fin` | `date` | `null` para free |
+| `id` | `bigint` PK | — |
+| `user_id` | `bigint` | FK → `users` |
+| `plan_id` | `bigint` | FK → `planes` |
+| `estado` | `string` | enum: `activa` · `cancelada` · `expirada` |
+| `fecha_inicio` / `fecha_fin` | `date` | `fecha_fin` nil para free |
 
 ### `planes_personalizados` — output del flujo de IA
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `id` | `uuid` PK | — |
-| `perfil_id` | `uuid` | FK → `perfiles.id` |
+| `id` | `bigint` PK | — |
+| `user_id` | `bigint` | FK → `users` |
 | `rutina` | `jsonb` | Días → ejercicios → series/reps, generado por IA |
 | `plan_nutricional` | `jsonb` | Comidas → macros → kcal, generado por IA |
-| `generado_por` | `text` | `'ia'` · `'entrenador'` |
-| `estado` | `text` | `'borrador'` · `'aprobado'` — el miembro solo ve aprobados |
-| `aprobado_por` | `uuid` | FK → `perfiles.id` (entrenador), `null` en borrador |
+| `generado_por` | `string` | enum: `ia` · `entrenador` |
+| `estado` | `string` | enum: `borrador` · `aprobado` — el miembro solo ve aprobados |
+| `aprobado_por_id` | `bigint` | FK → `users` (entrenador), nil en borrador |
 
-### `posts_blog`
+### `posts`
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `id` | `uuid` PK | — |
-| `autor_id` | `uuid` | FK → `perfiles.id` |
-| `titulo` | `text` | — |
-| `slug` | `text` | Unique |
-| `contenido_md` | `text` | Markdown renderizado en cliente |
+| `id` | `bigint` PK | — |
+| `autor_id` | `bigint` | FK → `users` |
+| `titulo` | `string` | — |
+| `slug` | `string` | Unique |
+| `contenido_md` | `text` | Markdown, renderizado en el servidor |
 | `publicado` | `boolean` | Los miembros solo ven publicados |
-| `publicado_en` | `timestamptz` | — |
+| `publicado_en` | `datetime` | — |
 
 ### `novedades`
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| `id` | `uuid` PK | — |
-| `titulo` | `text` | — |
+| `id` | `bigint` PK | — |
+| `titulo` | `string` | — |
 | `contenido` | `text` | Anuncio corto |
 | `fecha_evento` | `date` | Fecha de la actividad (clase, reto, cierre) |
 | `publicado` | `boolean` | — |
@@ -402,66 +416,73 @@ Schema de datos en **Supabase Postgres** (snake_case). Toda tabla tiene `id uuid
 
 ## 08 — Seguridad y autenticación
 
-### Autenticación — Supabase Auth
+### Autenticación — nativa de Rails 8
 
 | Regla | Detalle |
 |---|---|
-| Login obligatorio | No existe vista anónima más allá de la pantalla de login/registro. El rol `anon` no tiene ninguna policy en ninguna tabla. |
-| Método | Email + password (Supabase Auth). Magic link como recuperación. |
-| Sesión | JWT gestionado por `supabase-js`; auto-refresh activado. Al expirar sin refresh → redirect a login. |
-| Alta de perfil | Trigger `on auth.users insert` crea la fila en `perfiles` con `rol = 'miembro'` y `fecha_ingreso = today()`. |
-| Roles | `miembro` · `entrenador` · `admin` en `perfiles.rol`. El rol se lee vía la función SQL `rol_actual()` (`security definer`) dentro de las policies — nunca se confía en el cliente. |
+| Login obligatorio | `ApplicationController` exige sesión (`Authentication` concern del generador); solo login, registro y reset de contraseña son públicos (`allow_unauthenticated_access`). |
+| Método principal | Email + password con `has_secure_password` (bcrypt). Sesión persistida en `sessions` con cookie firmada `httponly` + `same_site: :lax`. |
+| Google OAuth | Segundo método vía `omniauth-google-oauth2` + `omniauth-rails_csrf_protection` (se agrega en la fase 1.5); crea/vincula el `user` por email verificado. |
+| Recuperación | `PasswordsMailer` con token firmado de corta duración (generador de auth). |
+| Rate limiting | `rate_limit` nativo de Rails 8 en login y reset (fuerza bruta). |
 
-### Autorización — Row Level Security
+### Autorización — Pundit
 
-RLS activado en **todas** las tablas. Resumen de policies (`auth.uid()` = usuario autenticado):
+Roles en `users.rol`: `miembro` · `entrenador` · `admin`. **Staff** = entrenador o admin. Cada modelo tiene su policy; los controllers usan `authorize` + `policy_scope` y `verify_authorized` está activo globalmente.
 
-| Tabla | SELECT | INSERT | UPDATE | DELETE |
+| Policy | Ver (show/index) | Crear | Editar | Eliminar |
 |---|---|---|---|---|
-| `perfiles` | propio, o staff* ve todos | trigger (nadie directo) | propio (campos de perfil), staff todos | nadie |
-| `membresias` | propia, o staff todas | solo staff | solo staff | nadie |
-| `pagos` | propios (vía membresía), o staff todos | solo staff | nadie | nadie |
-| `accesos` | propios, o staff todos | staff, o propio (self check-in) | nadie | nadie |
-| `mediciones_biometricas` | propias, o staff todas | propio | propia (mismo día) | propia (mismo día) |
-| `objetivos_nutricionales` | propios, o staff | propio | propio | propio |
-| `registros_calorias` | propios, o staff | propio | propio (mismo día) | propio (mismo día) |
-| `planes` | todos los autenticados | solo admin | solo admin | solo admin |
-| `suscripciones` | propia, o staff | solo staff | solo staff | nadie |
-| `planes_personalizados` | propio **solo si `estado='aprobado'`**; staff todos | solo `service_role` (Edge Function) | solo staff (aprobar/editar) | solo staff |
-| `posts_blog` | autenticados si `publicado`, staff todos | staff | staff | admin |
-| `novedades` | autenticados si `publicado`, staff todas | staff | staff | admin |
+| `UserPolicy` | propio, o staff ve todos | registro público | propio (campos de perfil; **nunca `rol`**), admin todo | nadie |
+| `MembresiaPolicy` | propia, o staff todas | solo staff | solo staff | nadie |
+| `PagoPolicy` | propios, o staff todos | solo staff | nadie (historial inmutable) | nadie |
+| `AccesoPolicy` | propios, o staff todos | staff, o propio (self check-in) | nadie | nadie |
+| `MedicionPolicy` | propias, o staff todas | propio | propia (mismo día) | propia (mismo día) |
+| `ObjetivoNutricionalPolicy` | propios, o staff | propio | propio | propio |
+| `RegistroCaloriasPolicy` | propios, o staff | propio | propio (mismo día) | propio (mismo día) |
+| `PlanPolicy` | todos los autenticados | solo admin | solo admin | solo admin |
+| `SuscripcionPolicy` | propia, o staff | solo staff | solo staff | nadie |
+| `PlanPersonalizadoPolicy` | propio **solo si `aprobado`**; staff todos | job (sistema) / staff | staff (aprobar/editar) | staff |
+| `PostPolicy` | autenticados si `publicado`, staff todos | staff | staff | admin |
+| `NovedadPolicy` | autenticados si `publicado`, staff todas | staff | staff | admin |
 
-\* *staff* = `rol_actual() in ('entrenador','admin')`. Los pagos y membresías son inmutables o de solo-staff a propósito: el historial financiero no se edita, se corrige con un registro nuevo.
+El historial financiero (pagos) es inmutable a propósito: se corrige con un registro nuevo, no editando.
 
-### Secretos y Edge Functions
+### Defensas del framework y secretos
 
 | Regla | Detalle |
 |---|---|
-| API key de Claude | Secreto de la Edge Function (`supabase secrets set`). Jamás en el HTML. |
-| `service_role` | Solo dentro de Edge Functions. El cliente usa únicamente la publishable key. |
-| Validación server-side | `generar-plan` verifica en la base (no en el request) que el perfil tenga suscripción `personalizado` activa antes de llamar a Claude. |
+| Strong parameters | Ningún mass-assignment sin `params.expect/permit`; `rol` jamás es asignable desde formularios. |
+| CSRF / XSS / SQLi | Protecciones por defecto de Rails: token CSRF, escape de ERB, queries parametrizadas de ActiveRecord. |
+| API key de Claude | `Rails.application.credentials.anthropic_api_key` (o ENV en producción vía Kamal secrets). Jamás llega a una vista. |
+| Validación server-side del upgrade | `GenerarPlanJob` verifica en la base (no en el request) que el usuario tenga suscripción `personalizado` activa antes de llamar a Claude. |
+| Auditoría estática | `dip brakeman` y `bundler-audit` en cada fase y en CI; cero hallazgos altos para cerrar una fase. |
 
 ---
 
-## 09 — Contrato de datos
+## 09 — Contrato de rutas (REST)
 
-No hay API HTTP propia. Las operaciones son llamadas de `supabase-js` envueltas en `GymData`, más una Edge Function. Se documentan con el mismo contrato que tendría un backend.
+Rutas RESTful de Rails; los nombres siguen el dominio en español. Las de staff van bajo namespaces `admin` y `entrenador` (protegidos por Pundit, no solo por el namespace).
 
-| Operación | Tipo | Descripción |
-|---|---|---|
-| `GymData.miPerfil()` | READ | `perfiles` + `membresias` + suscripción activa del usuario |
-| `GymData.registrarMedicion({ peso_kg, talla_cm, grasa_pct? })` | ACTION | Inserta medición del día; el IMC lo genera Postgres |
-| `GymData.misMediciones(rango)` | READ | Serie para las gráficas de progreso mensual |
-| `GymData.registrarCalorias({ fecha, kcal })` | ACTION | Upsert del registro diario de calorías |
-| `GymData.fijarObjetivo({ tipo })` | ACTION | Calcula TDEE en Services, desactiva el anterior, inserta el nuevo |
-| `GymData.checkin(perfilId)` | ACTION | Valida membresía activa + horario; inserta en `accesos` con `tipo` correcto |
-| `GymData.renovarMembresia({ perfilId, monto, metodo })` | ACTION (staff) | Inserta pago + extiende `fecha_vencimiento` (RPC transaccional) |
-| `GymData.miPlanPersonalizado()` | READ | Último `planes_personalizados` con `estado='aprobado'` |
-| `GymData.blog()` / `GymData.novedades()` | READ | Contenido publicado |
-| `POST /functions/v1/generar-plan` | EDGE FN | Valida suscripción → arma prompt con biometría + objetivo + somatotipo → Claude API (JSON estructurado) → inserta `planes_personalizados` en `'borrador'` |
-| `GymData.aprobarPlan(planId)` | ACTION (staff) | Entrenador revisa el borrador y lo pasa a `'aprobado'` |
+| Ruta | Verbo | Rol mínimo | Descripción |
+|---|---|---|---|
+| `/session` · `/registro` · `/passwords` | — | público | Login/logout, registro, reset (generador auth) |
+| `/dashboard` | GET | miembro | Métricas del día: membresía, última medición, kcal restantes |
+| `/onboarding` | GET/PATCH | miembro | Wizard: perfil → somatotipo → primera medición → objetivo |
+| `/mediciones` | GET/POST | miembro | Historial + nueva medición; `GET /progreso` para las gráficas |
+| `/registros_calorias` | POST/PATCH | miembro | Upsert del registro diario de calorías |
+| `/objetivo` | GET/POST | miembro | Ver y fijar objetivo (déficit/superávit/mantenimiento) |
+| `/mi_plan` | GET | miembro | Plan free o personalizado aprobado |
+| `/upgrade` | GET | miembro | Comparación Free vs. Personalizado |
+| `/blog` · `/blog/:slug` · `/novedades` | GET | miembro | Comunidad (solo publicados) |
+| `/admin/users` · `/admin/membresias` · `/admin/pagos` | CRUD | admin | Gestión de miembros, membresías y pagos |
+| `/admin/checkins` | GET/POST | staff | Búsqueda de miembro + registro de acceso (valida horario) |
+| `/admin/membresias/:id/renovacion` | POST | admin | Transacción: crea pago + extiende vencimiento |
+| `/admin/suscripciones` | CRUD | admin | Alta del plan personalizado (dispara `GenerarPlanJob`) |
+| `/entrenador/borradores` | GET | entrenador | Planes generados por IA pendientes de revisión |
+| `/entrenador/borradores/:id/aprobacion` | POST | entrenador | Ajusta el JSONB si hace falta y aprueba |
+| `/admin/posts` · `/admin/novedades` | CRUD | staff | Contenido de comunidad |
 
-> **Migración futura:** si algún flujo exige más cómputo (p. ej. reportes pesados), se agrega otra Edge Function con el mismo nombre de operación. Los componentes no cambian: solo la implementación dentro de `GymData`.
+> **Jobs (sin ruta):** `GenerarPlanJob` (Solid Queue, disparado al crear la suscripción premium) y `VencerMembresiasJob` (recurrente diario vía `config/recurring.yml`) — marca `vencida` toda membresía con `fecha_vencimiento < hoy`.
 
 ---
 
@@ -471,11 +492,11 @@ No hay API HTTP propia. Las operaciones son llamadas de `supabase-js` envueltas 
 
 | Paso | Acción | Detalle |
 |---|---|---|
-| 1 | Crear cuenta | Email + password en Supabase Auth. El trigger crea `perfiles` con `fecha_ingreso = hoy`. |
-| 2 | Completar perfil | Nombre, fecha de nacimiento, sexo, talla, nivel de actividad. |
-| 3 | Cuestionario de somatotipo | 5 preguntas guiadas → clasifica ectomorfo / mesomorfo / endomorfo y lo guarda en el perfil. |
-| 4 | Primera medición | Peso (talla precargada). Postgres genera el IMC; la app muestra el estado de peso (OMS) y el indicador de propensión a sobrepeso. |
-| 5 | Fijar objetivo | El miembro elige bajar de peso / ganar masa / mantener. Services calcula TDEE y el objetivo kcal (déficit −500 o superávit +300..500). |
+| 1 | Crear cuenta | Email + password (o Google). Se crea el `user` con `rol: miembro` y `fecha_ingreso: hoy`. |
+| 2 | Completar perfil | Nombre, fecha de nacimiento, sexo, talla, nivel de actividad (wizard de onboarding). |
+| 3 | Cuestionario de somatotipo | 5 preguntas guiadas → clasifica ectomorfo / mesomorfo / endomorfo y lo guarda en el user. |
+| 4 | Primera medición | Peso (talla precargada). Postgres genera el IMC; la vista muestra el estado de peso (OMS) y la propensión a sobrepeso. |
+| 5 | Fijar objetivo | El miembro elige bajar de peso / ganar masa / mantener. El service calcula TDEE y el objetivo kcal (déficit −500 o superávit +300..500). |
 | 6 | Aterrizar en el dashboard | Métricas del día, plan free con guías según su objetivo, y CTA de upgrade. |
 
 ### Flujo B — Compra de plan personalizado (upgrade)
@@ -484,9 +505,9 @@ No hay API HTTP propia. Las operaciones son llamadas de `supabase-js` envueltas 
 |---|---|---|
 | 1 | Ver oferta | El miembro abre "Mejorar plan": comparación Free vs. Personalizado desde `planes.beneficios`. |
 | 2 | Pagar en recepción | MVP sin pasarela: el admin registra el pago y crea la `suscripcion` al plan personalizado. |
-| 3 | Generar con IA | El cliente invoca la Edge Function `generar-plan`. Esta revalida la suscripción en la base, arma el prompt con biometría reciente, somatotipo, objetivo y restricciones, y pide a Claude un JSON de rutina semanal + plan nutricional. |
-| 4 | Revisión del entrenador | El plan queda en `'borrador'`. El entrenador lo revisa en su panel, ajusta el JSONB si hace falta y lo aprueba. |
-| 5 | Publicación | Al pasar a `'aprobado'`, la RLS lo hace visible para el miembro, que lo ve en "Mi plan" con rutina por día y comidas con macros. |
+| 3 | Generar con IA | Al crearse la suscripción se encola `GenerarPlanJob`: revalida la suscripción, arma el prompt con biometría reciente, somatotipo, objetivo y restricciones, y pide a Claude un JSON de rutina semanal + plan nutricional. |
+| 4 | Revisión del entrenador | El plan queda en `borrador`. El entrenador lo revisa en su panel, ajusta el JSONB si hace falta y lo aprueba. |
+| 5 | Publicación | Al pasar a `aprobado`, la policy lo hace visible para el miembro, que lo ve en "Mi plan" con rutina por día y comidas con macros. |
 
 ### Flujo C — Actualización de progreso mensual
 
@@ -494,18 +515,18 @@ No hay API HTTP propia. Las operaciones son llamadas de `supabase-js` envueltas 
 |---|---|---|
 | 1 | Recordatorio | El dashboard marca "medición pendiente" si la última tiene más de 30 días. |
 | 2 | Nueva medición | El miembro registra peso (y grasa % opcional). Se agrega el punto a la serie. |
-| 3 | Ver progreso | Gráficas SVG de peso e IMC por mes; delta contra la medición anterior y contra la inicial. |
-| 4 | Recalibrar | Si el objetivo sigue activo, Services recalcula TDEE con el peso nuevo y actualiza el objetivo kcal. |
+| 3 | Ver progreso | Gráficas SVG de peso e IMC por mes (partial server-rendered); delta contra la medición anterior y contra la inicial. |
+| 4 | Recalibrar | Si el objetivo sigue activo, el service recalcula TDEE con el peso nuevo y actualiza el objetivo kcal. |
 | 5 | Señal al entrenador | Si el miembro es premium y su tendencia se aleja del objetivo 2 meses seguidos, el panel del entrenador lo destaca para regenerar el plan (repite Flujo B paso 3). |
 
 ### Flujo D — Check-in y control de acceso
 
 | Paso | Acción | Detalle |
 |---|---|---|
-| 1 | Identificar | Recepción busca al miembro (nombre / documento) o el miembro se auto-identifica en la tablet de entrada. |
-| 2 | Validar | `GymData.checkin()`: membresía `activa` + hora dentro de `horario_acceso`. Vencida → aviso de renovación; fuera de horario → se registra con `dentro_de_horario = false` y alerta. |
-| 3 | Registrar | Inserta en `accesos`. Si es el primer acceso tras una renovación de membresía vencida, `tipo = 'reingreso'` — esto alimenta el historial de reingresos. |
-| 4 | Renovar (si aplica) | El admin registra el pago; `renovarMembresia` extiende el vencimiento en una transacción. |
+| 1 | Identificar | Recepción busca al miembro (nombre / email) en `/admin/checkins`, o el miembro se auto-identifica en la tablet de entrada. |
+| 2 | Validar | Membresía `activa` + hora dentro de `horario_acceso`. Vencida → aviso de renovación; fuera de horario → se registra con `dentro_de_horario: false` y alerta. |
+| 3 | Registrar | Crea el `acceso`. Si es el primer acceso tras una renovación de membresía vencida, `tipo: reingreso` — esto alimenta el historial de reingresos. |
+| 4 | Renovar (si aplica) | El admin registra el pago; la renovación extiende el vencimiento dentro de una transacción. |
 
 ---
 
@@ -513,12 +534,12 @@ No hay API HTTP propia. Las operaciones son llamadas de `supabase-js` envueltas 
 
 | Fase | Nombre | Duración | Entregable | Criterio de aceptación |
 |---|---|---|---|---|
-| 1 | UI Kit & Auth | ~1 semana | Design tokens, componentes base, login/registro con Supabase Auth, trigger de perfiles | Puedo registrarme, iniciar sesión y ver mi perfil vacío; sin sesión no se ve nada |
-| 2 | Membresías & Accesos | ~1.5 semanas | Schema + RLS de membresías/pagos/accesos, panel admin, check-in con validación de horario | El admin da de alta una membresía, registra un pago y el check-in valida estado y horario |
-| 3 | Biometría & Progreso | ~1.5 semanas | Mediciones, IMC generado, somatotipo, gráficas SVG mensuales | Registro 3 mediciones y veo la gráfica con clasificación OMS y propensión correctas |
-| 4 | Nutrición & Objetivos | ~1 semana | TDEE, objetivos déficit/superávit, registro diario de calorías | Al fijar "bajar de peso" veo mi objetivo kcal y el faltante del día se actualiza al registrar consumo |
-| 5 | Planes & IA | ~1.5 semanas | Catálogo de planes, suscripciones, Edge Function `generar-plan`, panel de aprobación del entrenador | Un miembro premium recibe un plan generado por IA solo después de la aprobación del entrenador |
-| 6 | Comunidad & Cierre | ~1 semana | Blog, novedades, pulido responsive, checklist MVP completo | Un miembro lee posts y novedades publicadas; todo el checklist §14 en verde |
+| 1 | Base Rails & Auth | ~1 semana | App Rails 8.1 + dip/Docker, auth nativa (login/registro/reset), campos de perfil + rol en `users`, Pundit instalado, layout con tokens §06 | `dip provision && dip test` en verde; puedo registrarme e iniciar sesión; sin sesión todo redirige a login |
+| 2 | Membresías & Accesos | ~1.5 semanas | Modelos membresías/pagos/accesos + policies, panel admin, check-in con validación de horario, `VencerMembresiasJob` | El admin da de alta una membresía, registra un pago y el check-in valida estado y horario; tests de policies verdes |
+| 3 | Biometría & Progreso | ~1.5 semanas | Mediciones (IMC generado), somatotipo, wizard de onboarding, gráficas SVG mensuales | Registro 3 mediciones y veo la gráfica con clasificación OMS y propensión correctas |
+| 4 | Nutrición & Objetivos | ~1 semana | Services TDEE, objetivos déficit/superávit, registro diario de calorías | Al fijar "bajar de peso" veo mi objetivo kcal y el faltante del día se actualiza al registrar consumo |
+| 5 | Planes & IA | ~1.5 semanas | Catálogo de planes, suscripciones, `GenerarPlanJob` (Claude), panel de aprobación del entrenador | Un miembro premium recibe un plan generado por IA solo después de la aprobación del entrenador |
+| 6 | Comunidad & Cierre | ~1 semana | Blog, novedades, pulido responsive, checklist MVP completo | Un miembro lee posts y novedades publicadas; todo el checklist §15 en verde |
 
 ---
 
@@ -528,120 +549,111 @@ Estas decisiones están cerradas. Reabrirlas durante el MVP genera deuda técnic
 
 | Decisión | Valor | Por qué |
 |---|---|---|
-| Framework | React 19.2.7 + Vite 8 + TypeScript | Versión exacta ya validada por la landing; build estático sin servidor propio |
-| Empaquetador | **pnpm — siempre** | Estándar del proyecto; nunca npm ni yarn (`pnpm dlx` en vez de npx) |
-| Estilos | Tailwind CSS v4 + shadcn/ui | Tokens CSS-first en `@theme`; componentes accesibles (Radix) copiados al repo |
-| Routing | react-router-dom 7 | Rutas protegidas por sesión y rol; ya usada en la landing |
-| Backend | Supabase (Postgres + Auth + RLS + Edge Functions) | Elimina el servidor propio; la seguridad vive en la base |
-| Autenticación | Email + password, login obligatorio | Sin policies para `anon`; datos de salud jamás públicos |
-| Autorización | RLS por fila + `perfiles.rol` | El cliente nunca decide permisos |
-| IA | Claude API vía Edge Function, salida JSON estructurada | API key protegida; humano (entrenador) aprueba antes de publicar |
-| Orquestación IA | `fetch` directo, sin LangChain | Un solo paso de IA no justifica un framework de orquestación |
-| Gráficas | SVG inline en un componente React propio | Cero dependencias de charts; suficiente para series mensuales |
+| Framework | Rails 8.1 monolito (Ruby 3.4.5) | Un solo lenguaje para dominio server-side; auth, jobs, cache y cable incluidos |
+| Frontend | Hotwire (Turbo + Stimulus) + importmap — **sin Node, sin bundler JS** | Server-rendered; cero build step de JavaScript |
+| Estilos | Tailwind CSS v4 (`tailwindcss-rails`, binario standalone) | Tokens CSS-first en `@theme`; mismos tokens de la v1.x |
+| Base de datos | PostgreSQL 17 | JSONB para datos anidados, columnas generadas (IMC) |
+| Background / cache / websockets | Solid Queue · Solid Cache · Solid Cable | Todo sobre Postgres; **sin Redis ni servicios extra** |
+| Autenticación | Nativa Rails 8 (`has_secure_password` + sesiones) · Google OAuth como segundo método | Sin dependencia de BaaS; el generador oficial es auditable |
+| Autorización | Pundit, una policy por modelo, `verify_authorized` global | El servidor decide permisos; las vistas solo ocultan UX |
+| IA | Claude API desde `GenerarPlanJob` (Solid Queue), salida JSON estructurada | API key server-side; humano (entrenador) aprueba antes de publicar |
+| Orquestación IA | Llamada HTTP directa, sin LangChain | Un solo paso de IA no justifica un framework de orquestación |
+| Entorno local | dip 8 + Docker Compose (`Dockerfile.dev`, Postgres 17 en contenedor) | Nadie instala Ruby/Postgres en el host; onboarding = `dip provision` |
+| Despliegue | Kamal 2 + Thruster (`Dockerfile` de producción del generador) | Autocontenido, cualquier VPS con Docker |
+| Tests | Minitest + fixtures + Capybara (system) | Stack por defecto de Rails; corre con `dip test` |
+| Calidad | RuboCop omakase · Brakeman · bundler-audit | Ya vienen con Rails 8.1; corren en CI |
+| Gráficas | SVG inline en partials ERB | Cero dependencias de charts; suficiente para series mensuales |
 | Fórmulas | OMS (IMC) + Mifflin-St Jeor (TMB/TDEE) | Estándares documentados y auditables |
-| Datos anidados | JSONB (`horario_acceso`, `rutina`, `plan_nutricional`) | Misma forma que en memoria; evita joins innecesarios |
-| IDs | `gen_random_uuid()` en Postgres | Nativo, consistente entre tablas |
+| Datos anidados | JSONB (`horario_acceso`, `rutina`, `plan_nutricional`) | Evita joins innecesarios; misma forma que en memoria |
+| Nombres | Dominio en español (con `inflections.rb`); `users`/`sessions` del generador quedan en inglés | UI y datos en español; no se pelea contra el generador |
 | Moneda | COP — sin decimales | El gimnasio no maneja centavos |
-| Idioma | UI y datos en español | Público objetivo local |
 
 ---
 
-## 13 — Estructura del proyecto
+## 13 — Estructura del proyecto y entorno dip
 
-Proyecto Vite + React scaffoldeado con `pnpm create vite` (template `react-ts`), organizado por features — la misma convención que ya usaba la landing (`features/*/pages/*`).
+Estructura estándar de Rails; lo específico del proyecto son `app/services`, `app/policies` y el entorno dockerizado.
 
 ```
 advance_fitness_app/
 │
-├── public/
-│   ├── brand/                     ← logo.svg · logo-white.svg (§06 Marca)
-│   └── favicon.svg
+├── app/
+│   ├── controllers/               ← REST + namespaces admin/ y entrenador/
+│   ├── models/                    ← user, membresia, pago, acceso, medicion…
+│   ├── policies/                  ← Pundit (una por modelo, §08)
+│   ├── services/                  ← calculadora_imc.rb · calculadora_tdee.rb ·
+│   │                                clasificador_somatotipo.rb · generador_prompt_plan.rb
+│   ├── jobs/                      ← generar_plan_job.rb · vencer_membresias_job.rb
+│   ├── views/                     ← ERB + partials compartidos en views/shared/
+│   ├── javascript/controllers/    ← Stimulus (tabs, quiz de somatotipo…)
+│   └── assets/
+│       ├── tailwind/application.css   ← @theme con los tokens §06
+│       └── images/brand/              ← logo.svg · logo-white.svg
 │
-├── supabase/
-│   ├── migrations/                ← schema, RLS policies, triggers, seed
-│   └── functions/generar-plan/    ← Edge Function (Claude API)
+├── config/
+│   ├── routes.rb                  ← contrato §09
+│   ├── recurring.yml              ← VencerMembresiasJob diario (Solid Queue)
+│   └── initializers/inflections.rb ← plurales en español
 │
-├── src/
-│   ├── main.tsx                   ← BrowserRouter + providers
-│   ├── App.tsx                    ← rutas (públicas / miembro / staff)
-│   ├── index.css                  ← @import tailwindcss + @theme (§06)
-│   ├── config/constants.ts        ← rangos IMC, factores actividad, kcal
-│   ├── lib/
-│   │   ├── supabase.ts            ← createClient (URL + publishable key)
-│   │   ├── database.types.ts      ← tipos generados desde el schema
-│   │   └── gym-data.ts            ← GymData: única capa de acceso a datos
-│   ├── services/                  ← imc.ts · tdee.ts · somatotipo.ts (puras)
-│   ├── hooks/                     ← useSession · usePerfil · useMediciones…
-│   ├── components/
-│   │   ├── ui/                    ← shadcn/ui (Button, Card, Dialog, Tabs…)
-│   │   └── layout/                ← AppLayout (nav + logo), RequireRole
-│   └── features/
-│       ├── auth/                  ← AuthPage (login/registro)
-│       ├── onboarding/            ← perfil + somatotipo + 1ª medición
-│       ├── dashboard/             ← métricas del día, kcal, avisos
-│       ├── biometria/             ← MedicionForm, ProgresoChart, historial
-│       ├── nutricion/             ← objetivo, CaloriasTracker
-│       ├── planes/                ← PlanViewer, PlanComparador (upgrade)
-│       ├── comunidad/             ← BlogList, PostView, NovedadesBoard
-│       ├── admin/                 ← miembros, membresías, pagos, check-in
-│       └── entrenador/            ← borradores de IA + aprobación
+├── db/migrate/                    ← migraciones ActiveRecord (schema §07)
+├── test/                          ← minitest: models, policies, controllers, system
 │
-├── package.json                   ← scripts: dev · build · lint · preview
-├── vite.config.ts                 ← @vitejs/plugin-react + @tailwindcss/vite
-└── pnpm-lock.yaml                 ← pnpm, siempre
+├── Dockerfile                     ← PRODUCCIÓN (Kamal + Thruster)
+├── Dockerfile.dev                 ← desarrollo (usado por docker-compose)
+├── docker-compose.yml             ← web (bin/dev) + db (postgres:17-alpine)
+├── dip.yml                        ← comandos: rails · test · rubocop · brakeman · psql
+└── Procfile.dev                   ← web (puma -b 0.0.0.0) + css (tailwind watch)
 ```
 
-> **Principio de navegación:** react-router-dom 7. Rutas públicas: `/auth`. Rutas de miembro bajo `AppLayout` (redirect a `/auth` sin sesión). Rutas de staff bajo `RequireRole` (`/admin/*`, `/entrenador/*`) — el guard de rutas es UX; la protección real es la RLS.
+### Flujo de trabajo con dip
+
+| Comando | Qué hace |
+|---|---|
+| `dip provision` | Levanta todo desde cero: build de la imagen dev, `bundle install` (volumen `bundle`), `db:prepare` en development y test |
+| `dip rails s` | Servidor en `http://localhost:3000` (publica puertos) |
+| `dip rails c` · `dip rails db:migrate` · `dip rails g …` | Cualquier comando Rails dentro del contenedor |
+| `dip test` | Suite minitest completa (RAILS_ENV=test, base de test propia) |
+| `dip rubocop` · `dip brakeman` | Lint y análisis de seguridad |
+| `dip psql` | Consola Postgres de desarrollo |
+| `dip bash` | Shell dentro del contenedor web |
+
+> **Bases de datos:** dentro de Docker, `DATABASE_URL` y `TEST_DATABASE_URL` apuntan al servicio `db` del compose (desarrollo y test separadas). El `DATABASE_URL` de Supabase que quede en `.env` **no aplica dentro de los contenedores** — queda reservado para un uso futuro (p. ej. producción gestionada) o se elimina.
 
 ---
 
-## 14 — Componentes
+## 14 — Vistas y componentes
 
-Cada componente vive en su feature (§13); los datos entran por hooks y las acciones salen por `GymData`. Los primitivos de UI son shadcn/ui.
+Los "componentes" son **partials ERB** (datos vía locals) más controladores **Stimulus** cuando hay comportamiento en el cliente. Nada consulta la base desde la vista: el controller pasa lo necesario.
 
-| Componente | Datos (hook) | Descripción | Fase |
+| Componente | Tipo | Descripción | Fase |
 |---|---|---|---|
-| `AuthPage` | `useSession()` | Login / registro contra Supabase Auth, manejo de errores | F1 |
-| `MembresiaCard` | `useMembresia()` | Estado (activa/vencida), vencimiento, días restantes, tiempo activo | F2 |
-| `CheckinPanel` | `useBusquedaMiembros()` | Búsqueda de miembro + validación de horario + registro de acceso | F2 |
-| `MedicionForm` | `useMediciones()` | Formulario de medición; muestra IMC y clasificación al guardar | F3 |
-| `ProgresoChart` | `useMediciones(rango)` | Gráfica SVG de peso/IMC mensual con deltas | F3 |
-| `SomatotipoQuiz` | estado local (`useState`) | Cuestionario de 5 pasos que clasifica el somatotipo | F3 |
-| `CaloriasTracker` | `useObjetivoActivo()` | Kcal objetivo vs. consumidas del día, barra de progreso | F4 |
-| `ObjetivoSelector` | `usePerfil()` | Elegir déficit / superávit / mantenimiento; muestra el TDEE calculado | F4 |
-| `PlanComparador` | `usePlanes()` | Tabla Free vs. Personalizado desde `planes.beneficios` | F5 |
-| `PlanViewer` | `useMiPlan()` | Render de la rutina (tabs por día) y plan nutricional (comidas + macros) | F5 |
-| `AprobacionPanel` | `useBorradores()` | Panel del entrenador: revisar/editar JSONB del borrador de IA, aprobar | F5 |
-| `BlogList` / `PostView` | `usePosts()` | Lista de posts publicados + render Markdown del contenido | F6 |
-| `NovedadesBoard` | `useNovedades()` | Tarjetas de anuncios ordenadas por `fecha_evento` | F6 |
-| `AdminTable` | props genéricas | Tabla genérica de administración (miembros, pagos, membresías) | F2 |
+| `shared/_metric_card` | Partial | Card de métrica del dashboard (título, valor display, badge de estado) | F1 |
+| `shared/_badge_estado` | Partial | Badge activa/vencida/borrador/aprobado con colores §06 | F1 |
+| `sessions/new` · `registrations/new` | Vista | Login / registro (auth nativa + botón Google) | F1 |
+| `membresias/_resumen` | Partial | Vencimiento, días restantes, tiempo activo | F2 |
+| `admin/checkins/index` | Vista + Turbo | Búsqueda de miembro y registro de acceso sin recargar (Turbo Frame) | F2 |
+| `mediciones/_form` | Partial | Formulario de medición; al guardar muestra IMC y clasificación (Turbo Stream) | F3 |
+| `mediciones/_grafica_progreso` | Partial SVG | Serie mensual de peso/IMC con deltas, generada en el servidor | F3 |
+| `onboarding/quiz_somatotipo` | Stimulus | Cuestionario de 5 pasos que clasifica el somatotipo | F3 |
+| `nutricion/_tracker_calorias` | Partial + Turbo | Kcal objetivo vs. consumidas del día, barra de progreso | F4 |
+| `planes/_comparador` | Partial | Tabla Free vs. Personalizado desde `planes.beneficios` | F5 |
+| `planes_personalizados/_plan` | Partial | Rutina por día (tabs Stimulus) y comidas con macros | F5 |
+| `entrenador/borradores/show` | Vista | Revisión/edición del JSONB del borrador de IA + botón aprobar | F5 |
+| `posts/index` · `posts/show` | Vista | Blog (Markdown renderizado server-side) | F6 |
+| `novedades/_board` | Partial | Tarjetas de anuncios ordenadas por `fecha_evento` | F6 |
 
-### Patrón de componente
+### Patrón de partial
 
-```tsx
-// src/features/biometria/components/MetricaPeso.tsx
-import { useMediciones } from '@/hooks/use-mediciones'
-import { clasificarIMC } from '@/services/imc'
-import { ProgresoChart } from './ProgresoChart'
-
-export function MetricaPeso() {
-  const { ultima, serie } = useMediciones()
-  if (!ultima) return null
-
-  const clasificacion = clasificarIMC(ultima.imc)
-  return (
-    <section className="space-y-4">
-      <div className="rounded-xl bg-card p-6 shadow-sm">
-        <span className="text-label text-steel-3">Peso actual</span>
-        <span className="font-display text-display">{ultima.peso_kg} kg</span>
-        <span className={clasificacion === 'normal' ? 'text-volt-d' : 'text-pulse'}>
-          {clasificacion}
-        </span>
-      </div>
-      <ProgresoChart serie={serie} />
-    </section>
-  )
-}
+```erb
+<%# app/views/shared/_metric_card.html.erb %>
+<%# locals: (titulo:, valor:, estado: nil) %>
+<div class="rounded-xl bg-card p-6 shadow-sm">
+  <span class="text-label text-steel-3"><%= titulo %></span>
+  <span class="font-display text-display"><%= valor %></span>
+  <% if estado %>
+    <%= render "shared/badge_estado", estado: estado %>
+  <% end %>
+</div>
 ```
 
 ---
@@ -652,15 +664,15 @@ El sistema está listo para uso real cuando todos estos puntos estén en verde.
 
 | Funcional | Calidad y seguridad |
 |---|---|
-| Registro + login funcionan; sin sesión no se ve ningún dato | RLS activado en el 100% de las tablas; `anon` sin policies |
-| El trigger crea el perfil con fecha de ingreso al registrarse | Un miembro no puede leer datos de otro (verificado con dos cuentas) |
-| Renovar membresía registra el pago y extiende el vencimiento | La API key de Claude no aparece en ninguna parte del cliente |
-| El check-in valida estado y horario, y clasifica reingresos | `generar-plan` rechaza perfiles sin suscripción premium |
-| La medición calcula IMC, clasificación OMS y propensión | Responsive en móvil 375px, tablet y desktop |
-| Las gráficas muestran el progreso mensual con deltas correctos | Sin errores en consola en Chrome / Safari |
-| Déficit y superávit se calculan con Mifflin-St Jeor + factor de actividad | `pnpm build` y `pnpm lint` pasan sin errores; bundle inicial < 300 KB gzip |
-| El plan free muestra guías según el objetivo elegido | El estado se rehidrata al recargar (localStorage → Supabase) |
-| El plan IA solo es visible tras aprobación del entrenador | Fechas y moneda en formato es-CO |
-| Blog y novedades muestran solo contenido publicado | El JSONB de rutina/dieta valida su forma antes de guardarse |
+| Registro + login funcionan; sin sesión todo redirige a login | `dip test` completo en verde (models, policies, controllers, system) |
+| El registro fija `fecha_ingreso` y `rol: miembro` | Toda acción de controller pasa por Pundit (`verify_authorized` sin excepciones) |
+| Renovar membresía registra el pago y extiende el vencimiento (transacción) | Un miembro no puede leer datos de otro (tests de policy con dos usuarios) |
+| El check-in valida estado y horario, y clasifica reingresos | `rol` no es asignable por mass-assignment (test explícito) |
+| La medición calcula IMC (columna generada), clasificación OMS y propensión | Brakeman y bundler-audit sin hallazgos altos |
+| Las gráficas muestran el progreso mensual con deltas correctos | La API key de Claude no aparece en código ni en vistas (solo credentials/ENV) |
+| Déficit y superávit se calculan con Mifflin-St Jeor + factor de actividad | `GenerarPlanJob` rechaza usuarios sin suscripción premium activa |
+| El plan free muestra guías según el objetivo elegido | Sin N+1 en dashboards y paneles (verificado con logs) |
+| El plan IA solo es visible tras aprobación del entrenador | Responsive en móvil 375px, tablet y desktop |
+| Blog y novedades muestran solo contenido publicado | Fechas y moneda en formato es-CO; `dip provision` funciona desde cero |
 
-> **Siguiente paso recomendado:** construir la Fase 1 (UI Kit & Auth): scaffolding con `pnpm create vite` (react-ts) + Tailwind v4 + shadcn/ui siguiendo la estructura del §13, tokens `@theme` del §06, logo en `public/brand/`, y el flujo de login/registro contra Supabase. Validar autenticación y RLS con dos cuentas reales antes de añadir lógica de negocio.
+> **Siguiente paso recomendado:** cerrar la Fase 1: campos de perfil + rol en `users` (migración), Pundit con `ApplicationPolicy` y `verify_authorized`, layout base con tokens §06 y logo, y vista de registro (el generador de auth solo trae login/reset). Después, Fase 2 (Membresías & Accesos).
