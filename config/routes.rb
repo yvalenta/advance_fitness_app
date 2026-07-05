@@ -2,6 +2,10 @@ Rails.application.routes.draw do
   resource :session
   resources :passwords, param: :token
 
+  # Login con Google (OmniAuth)
+  get "auth/:provider/callback", to: "omniauth_sessions#create", as: :omniauth_callback
+  get "auth/failure", to: "omniauth_sessions#failure"
+
   # Defines the root path route ("/")
   root "dashboard#show"
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html

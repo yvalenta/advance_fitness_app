@@ -70,3 +70,7 @@ end
 gem "pundit", "~> 2.5"
 
 gem "dotenv-rails", "~> 3.2", groups: [ :development, :test ]
+
+# Login con Google (SDD §08)
+gem "omniauth-google-oauth2", "~> 1.2"
+gem "omniauth-rails_csrf_protection", "~> 1.0"

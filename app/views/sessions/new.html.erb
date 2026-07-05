@@ -7,7 +7,26 @@
     <p class="py-2 px-3 bg-green-50 mb-5 text-green-500 font-medium rounded-lg inline-block" id="notice"><%= notice %></p>
   <% end %>
 
-  <h1 class="font-bold text-4xl">Sign in</h1>
+  <h1 class="font-bold text-4xl">Iniciar sesión</h1>
+
+  <div class="my-5">
+    <%= button_to "/auth/google_oauth2", data: { turbo: false },
+          class: "w-full sm:w-auto flex items-center justify-center gap-2 rounded-md border border-gray-400 bg-white px-3.5 py-2.5 font-medium hover:bg-gray-50 cursor-pointer" do %>
+      <svg viewBox="0 0 24 24" class="h-5 w-5" aria-hidden="true">
+        <path fill="#4285F4" d="M23.5 12.27c0-.85-.08-1.66-.22-2.45H12v4.64h6.45a5.52 5.52 0 0 1-2.39 3.62v3h3.87c2.26-2.09 3.57-5.16 3.57-8.81Z"/>
+        <path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.93-2.91l-3.87-3c-1.07.72-2.44 1.14-4.06 1.14-3.12 0-5.77-2.11-6.71-4.95H1.29v3.1A11.99 11.99 0 0 0 12 24Z"/>
+        <path fill="#FBBC05" d="M5.29 14.28a7.22 7.22 0 0 1 0-4.56v-3.1H1.29a12.01 12.01 0 0 0 0 10.76l4-3.1Z"/>
+        <path fill="#EA4335" d="M12 4.77c1.76 0 3.34.6 4.58 1.79l3.44-3.44C17.95 1.19 15.24 0 12 0A11.99 11.99 0 0 0 1.29 6.62l4 3.1C6.23 6.88 8.88 4.77 12 4.77Z"/>
+      </svg>
+      Continuar con Google
+    <% end %>
+  </div>
+
+  <div class="my-5 flex items-center gap-3 text-sm text-gray-400">
+    <span class="h-px flex-1 bg-gray-200"></span>
+    o con tu correo
+    <span class="h-px flex-1 bg-gray-200"></span>
+  </div>
 
   <%= form_with url: session_url, class: "contents" do |form| %>
     <div class="my-5">
