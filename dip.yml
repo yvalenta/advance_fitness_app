@@ -1,0 +1,62 @@
+version: "8.1"
+
+environment:
+  RAILS_ENV: development
+
+compose:
+  files:
+    - docker-compose.yml
+  project_name: advance_fitness_app
+
+interaction:
+  bash:
+    description: Shell dentro del contenedor web
+    service: web
+    command: /bin/bash
+
+  bundle:
+    description: Bundler (dip bundle install, dip bundle add …)
+    service: web
+    command: bundle
+
+  rails:
+    description: Rails (dip rails c, dip rails db:migrate, dip rails g …)
+    service: web
+    command: bin/rails
+    subcommands:
+      s:
+        description: Servidor con puertos publicados
+        service: web
+        compose:
+          run_options: [service-ports]
+
+  test:
+    description: Suite de tests (minitest)
+    service: web
+    environment:
+      RAILS_ENV: test
+    command: bin/rails test
+
+  rubocop:
+    description: Lint (rubocop-rails-omakase)
+    service: web
+    command: bin/rubocop
+
+  brakeman:
+    description: Análisis estático de seguridad
+    service: web
+    command: bin/brakeman --no-pager
+
+  psql:
+    description: Consola Postgres de desarrollo
+    service: db
+    command: psql -h db -U postgres -d advance_fitness_app_development
+    environment:
+      PGPASSWORD: postgres
+
+provision:
+  - dip compose down
+  - dip compose build web
+  - dip bundle install
+  - dip rails db:prepare
+  - dip rails db:prepare RAILS_ENV=test
