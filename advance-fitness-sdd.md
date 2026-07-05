@@ -11,7 +11,7 @@
 | Stack | Rails 8.1.3 · Ruby 3.4.5 · PostgreSQL 17 · Hotwire · Tailwind · Pundit · Solid stack |
 | Entorno local | dip 8 + Docker Compose (`dip provision`, `dip rails s`, `dip test`) |
 | Actualizado | Julio 2026 |
-| Documento de referencia | Restaurante Resplandor POS — SDD v1.0 · `rails8_analysis.md` |
+| Documento de referencia | Restaurante Resplandor POS — SDD v1.0 · [`docs/rails8_analysis.md`](./docs/rails8_analysis.md) |
 
 > **Nota de transición (v2.0):** las versiones 1.x diseñaban una SPA React 19 + Supabase (Auth, RLS, Edge Functions). El proyecto pivotó a un monolito Rails 8.1: un solo lenguaje y framework para todo el dominio, autenticación y jobs nativos (sin BaaS), server-rendered con Hotwire. El modelo de dominio (§03, §07) y los flujos (§10) se conservan; cambia el plano de ejecución.
 
@@ -104,7 +104,7 @@ Fórmulas estándar utilizadas (implementadas como POROs en `app/services`, puro
 
 | Requerimiento | Solución | Entidad |
 |---|---|---|
-| Sección de Blog | Posts en Markdown creados por admin/entrenador, lectura para todo miembro autenticado | `posts` |
+| Sección de Blog | Posts con contenido enriquecido (**Action Text**, editor Trix nativo de Rails) creados por admin/entrenador, lectura para todo miembro autenticado | `posts` |
 | Panel de novedades | Anuncios cortos con fecha de evento (clases, horarios especiales, retos) | `novedades` |
 
 ---
@@ -125,7 +125,9 @@ Monolito Rails con **cero dependencias de Node** (importmap + binario standalone
 | Auth nativa Rails 8 | — | Autenticación | `bin/rails generate authentication`: `has_secure_password`, sesiones firmadas, reset por email |
 | Pundit | ~2.5 | Autorización por rol | Una policy por modelo; `authorize` en cada controller |
 | Solid Queue | — | Jobs en background | `GenerarPlanJob` (IA), vencimiento diario de membresías; corre sobre Postgres |
-| Solid Cache / Solid Cable | — | Cache y WebSockets | Sobre Postgres; sin Redis |
+| Solid Cache | — | Caché de fragmentos | Sobre Postgres; blog/novedades, catálogo de planes y métricas del dashboard (expiración corta) |
+| Solid Cable + Turbo Streams | — | Tiempo real | Sobre Postgres; notificación al aprobarse un plan, check-in panel del admin en vivo |
+| Action Text | — | Contenido rich del blog | Editor Trix + Active Storage (posts y novedades) |
 | Claude API (`claude-sonnet-5`) | — | IA generativa | Llamada HTTP desde el job; salida JSON estructurada; API key en credentials/ENV |
 | Minitest + Capybara | — | Tests | Unit, integration y system tests en cada fase |
 | RuboCop (omakase) + Brakeman + bundler-audit | — | Calidad y seguridad | `dip rubocop` · `dip brakeman`; corren también en CI (`.github/workflows`) |
@@ -398,7 +400,7 @@ Schema en **PostgreSQL** gestionado con **migraciones ActiveRecord** (snake_case
 | `autor_id` | `bigint` | FK → `users` |
 | `titulo` | `string` | — |
 | `slug` | `string` | Unique |
-| `contenido_md` | `text` | Markdown, renderizado en el servidor |
+| `contenido` | rich text | **Action Text** (`has_rich_text :contenido`) — editor Trix, sin parser Markdown |
 | `publicado` | `boolean` | Los miembros solo ven publicados |
 | `publicado_en` | `datetime` | — |
 
@@ -558,6 +560,8 @@ Estas decisiones están cerradas. Reabrirlas durante el MVP genera deuda técnic
 | Autorización | Pundit, una policy por modelo, `verify_authorized` global | El servidor decide permisos; las vistas solo ocultan UX |
 | IA | Claude API desde `GenerarPlanJob` (Solid Queue), salida JSON estructurada | API key server-side; humano (entrenador) aprueba antes de publicar |
 | Orquestación IA | Llamada HTTP directa, sin LangChain | Un solo paso de IA no justifica un framework de orquestación |
+| Contenido del blog | Action Text (Trix + Active Storage) | Editor rich nativo de Rails; sin parser Markdown que mantener |
+| Tiempo real | Turbo Streams sobre Solid Cable | Aprobación de plan y check-ins en vivo sin polling ni Redis |
 | Entorno local | dip 8 + Docker Compose (`Dockerfile.dev`, Postgres 17 en contenedor) | Nadie instala Ruby/Postgres en el host; onboarding = `dip provision` |
 | Despliegue | Kamal 2 + Thruster (`Dockerfile` de producción del generador) | Autocontenido, cualquier VPS con Docker |
 | Tests | Minitest + fixtures + Capybara (system) | Stack por defecto de Rails; corre con `dip test` |
@@ -639,7 +643,7 @@ Los "componentes" son **partials ERB** (datos vía locals) más controladores **
 | `planes/_comparador` | Partial | Tabla Free vs. Personalizado desde `planes.beneficios` | F5 |
 | `planes_personalizados/_plan` | Partial | Rutina por día (tabs Stimulus) y comidas con macros | F5 |
 | `entrenador/borradores/show` | Vista | Revisión/edición del JSONB del borrador de IA + botón aprobar | F5 |
-| `posts/index` · `posts/show` | Vista | Blog (Markdown renderizado server-side) | F6 |
+| `posts/index` · `posts/show` | Vista | Blog (contenido Action Text; fragmentos cacheados con Solid Cache) | F6 |
 | `novedades/_board` | Partial | Tarjetas de anuncios ordenadas por `fecha_evento` | F6 |
 
 ### Patrón de partial
