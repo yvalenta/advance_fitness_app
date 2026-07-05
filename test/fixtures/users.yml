@@ -3,7 +3,27 @@
 one:
   email_address: one@example.com
   password_digest: <%= password_digest %>
+  nombre: Usuario Uno
+  rol: miembro
+  fecha_ingreso: <%= Date.current %>
 
 two:
   email_address: two@example.com
   password_digest: <%= password_digest %>
+  nombre: Usuario Dos
+  rol: miembro
+  fecha_ingreso: <%= Date.current %>
+
+entrenador:
+  email_address: entrenador@example.com
+  password_digest: <%= password_digest %>
+  nombre: Coach Ejemplo
+  rol: entrenador
+  fecha_ingreso: <%= Date.current %>
+
+admin:
+  email_address: admin@example.com
+  password_digest: <%= password_digest %>
+  nombre: Admin Ejemplo
+  rol: admin
+  fecha_ingreso: <%= Date.current %>

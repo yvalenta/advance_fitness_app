@@ -122,6 +122,7 @@ Monolito Rails con **cero dependencias de Node** (importmap + binario standalone
 | importmap-rails | — | JavaScript sin build | Los módulos JS se sirven tal cual; **no hay `package.json`** |
 | Turbo + Stimulus (Hotwire) | — | Interactividad | Navegación SPA-like, frames/streams; JS mínimo y declarativo |
 | tailwindcss-rails | v4 | Estilos | Binario standalone; tokens en `@theme` (`app/assets/tailwind/application.css`) |
+| DaisyUI | 5 | Componentes UI | CSS-only sobre Tailwind (`daisyui.mjs` vendored, sin Node); tema `advance` mapeado a los tokens §06 |
 | Auth nativa Rails 8 | — | Autenticación | `bin/rails generate authentication`: `has_secure_password`, sesiones firmadas, reset por email |
 | Pundit | ~2.5 | Autorización por rol | Una policy por modelo; `authorize` en cada controller |
 | Solid Queue | — | Jobs en background | `GenerarPlanJob` (IA), vencimiento diario de membresías; corre sobre Postgres |
@@ -262,7 +263,7 @@ Tailwind v4 es CSS-first: los tokens se declaran en `@theme` y generan las utili
 }
 ```
 
-Los componentes visuales reutilizables son **partials ERB** (`app/views/shared/_metric_card.html.erb`, `_badge_estado.html.erb`…) — no hay librería de componentes externa.
+Los componentes visuales reutilizables son **partials ERB** (`app/views/shared/_metric_card.html.erb`, `_navbar.html.erb`…) construidos con clases de **DaisyUI 5** (`card`, `btn`, `input`, `alert`, `badge`…). DaisyUI se vendorea como plugin CSS (`daisyui.mjs` + `daisyui-theme.mjs` en `app/assets/tailwind/`), sin Node; el tema `advance` (declarado en `application.css`) mapea `primary→volt`, `error→pulse`, `accent/info→ocean`, `base-content→steel`.
 
 ---
 
@@ -554,6 +555,7 @@ Estas decisiones están cerradas. Reabrirlas durante el MVP genera deuda técnic
 | Framework | Rails 8.1 monolito (Ruby 3.4.5) | Un solo lenguaje para dominio server-side; auth, jobs, cache y cable incluidos |
 | Frontend | Hotwire (Turbo + Stimulus) + importmap — **sin Node, sin bundler JS** | Server-rendered; cero build step de JavaScript |
 | Estilos | Tailwind CSS v4 (`tailwindcss-rails`, binario standalone) | Tokens CSS-first en `@theme`; mismos tokens de la v1.x |
+| Componentes UI | DaisyUI 5 (CSS-only, vendored — sin Node) | Look tipo shadcn en clases CSS puras; Stimulus cubre el rol de Alpine.js y ActiveModel el de zod |
 | Base de datos | PostgreSQL 17 | JSONB para datos anidados, columnas generadas (IMC) |
 | Background / cache / websockets | Solid Queue · Solid Cache · Solid Cable | Todo sobre Postgres; **sin Redis ni servicios extra** |
 | Autenticación | Nativa Rails 8 (`has_secure_password` + sesiones) · Google OAuth como segundo método | Sin dependencia de BaaS; el generador oficial es auditable |

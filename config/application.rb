@@ -16,6 +16,11 @@ module AdvanceFitnessApp
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w[assets tasks])
 
+    # UI y datos en español (SDD §12); fechas es-CO vía rails-i18n
+    config.i18n.default_locale = :es
+    config.i18n.available_locales = %i[es en]
+    config.time_zone = "America/Bogota"
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files

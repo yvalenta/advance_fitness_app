@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
   resource :session
+  resource :registro, controller: "registrations", only: %i[ new create ]
   resources :passwords, param: :token
 
   # Login con Google (OmniAuth)

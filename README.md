@@ -13,6 +13,7 @@ Aplicación web integral de gestión de gimnasio: membresías y control de acces
 | PostgreSQL | 17 | Base de datos única |
 | Hotwire (Turbo + Stimulus) + importmap | — | Interactividad sin build de JS (sin Node) |
 | Tailwind CSS | v4 | Estilos (binario standalone, tokens en `@theme`) |
+| DaisyUI | 5 | Componentes UI CSS-only (vendored, sin Node) — tema `advance` |
 | Auth nativa Rails 8 + Pundit | — | Autenticación y autorización por rol |
 | Solid Queue / Cache / Cable | — | Jobs, cache y websockets sobre Postgres (sin Redis) |
 | Claude API | — | Generación de rutinas y planes nutricionales (`GenerarPlanJob`) |

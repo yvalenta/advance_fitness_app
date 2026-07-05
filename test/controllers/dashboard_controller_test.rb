@@ -12,6 +12,6 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
 
     get root_url
     assert_response :success
-    assert_select "p", text: user.email_address
+    assert_select "h1", text: /#{user.nombre}/
   end
 end

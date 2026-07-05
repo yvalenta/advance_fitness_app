@@ -13,4 +13,8 @@ export PORT="${PORT:-3000}"
 export RUBY_DEBUG_OPEN="true"
 export RUBY_DEBUG_LAZY="true"
 
-exec foreman start -f Procfile.dev "$@"
+# --env /dev/null: foreman NO debe cargar .env — pisaría el DATABASE_URL
+# del docker-compose con el de Supabase. Las variables de .env (Google
+# OAuth, etc.) las carga dotenv-rails dentro de Rails, sin sobreescribir
+# el entorno real.
+exec foreman start -f Procfile.dev --env /dev/null "$@"

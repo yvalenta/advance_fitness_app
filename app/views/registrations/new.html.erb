@@ -1,0 +1,37 @@
+<% content_for :title, "Crear cuenta — Advance Fitness" %>
+
+<div class="flex min-h-screen items-center justify-center px-4">
+  <div class="card w-full max-w-sm border border-base-300 bg-base-100 shadow-sm">
+    <div class="card-body">
+      <div class="mb-2 flex flex-col items-center gap-2 text-center">
+        <div class="flex size-12 items-center justify-center rounded-xl bg-secondary">
+          <%= render "shared/logo" %>
+        </div>
+        <h1 class="font-display text-xl font-bold tracking-widest">CREA TU CUENTA</h1>
+        <p class="text-sm opacity-60">Empieza a registrar tu progreso hoy</p>
+      </div>
+
+      <% if @user.errors.any? %>
+        <div role="alert" class="alert alert-error text-sm">
+          <span><%= @user.errors.full_messages.to_sentence %></span>
+        </div>
+      <% end %>
+
+      <%= form_with model: @user, url: registro_path, class: "flex flex-col gap-3" do |form| %>
+        <%= form.text_field :nombre, required: true, autofocus: true, autocomplete: "name",
+              placeholder: "Nombre completo", class: "input input-bordered w-full" %>
+        <%= form.email_field :email_address, required: true, autocomplete: "username",
+              placeholder: "Correo electrónico", class: "input input-bordered w-full" %>
+        <%= form.password_field :password, required: true, autocomplete: "new-password",
+              placeholder: "Contraseña (mínimo 8 caracteres)", minlength: 8, maxlength: 72, class: "input input-bordered w-full" %>
+        <%= form.password_field :password_confirmation, required: true, autocomplete: "new-password",
+              placeholder: "Confirma tu contraseña", maxlength: 72, class: "input input-bordered w-full" %>
+        <%= form.submit "Crear cuenta", class: "btn btn-primary w-full" %>
+      <% end %>
+
+      <div class="mt-2 text-center text-sm">
+        ¿Ya tienes cuenta? <%= link_to "Inicia sesión", new_session_path, class: "link link-hover font-medium" %>
+      </div>
+    </div>
+  </div>
+</div>

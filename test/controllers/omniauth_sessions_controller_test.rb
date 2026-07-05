@@ -19,6 +19,7 @@ class OmniauthSessionsControllerTest < ActionDispatch::IntegrationTest
 
     assert_redirected_to root_url
     assert cookies[:session_id].present?
+    assert_equal "Usuario Google", User.find_by!(email_address: "nuevo@example.com").nombre
   end
 
   test "signs in an existing user without duplicating it" do

@@ -1,21 +1,21 @@
-<div class="mx-auto md:w-2/3 w-full">
-  <% if alert = flash[:alert] %>
-    <p class="py-2 px-3 bg-red-50 mb-5 text-red-500 font-medium rounded-lg inline-block" id="alert"><%= alert %></p>
-  <% end %>
+<% content_for :title, "Nueva contraseña — Advance Fitness" %>
 
-  <h1 class="font-bold text-4xl">Update your password</h1>
+<div class="flex min-h-screen items-center justify-center px-4">
+  <div class="card w-full max-w-sm border border-base-300 bg-base-100 shadow-sm">
+    <div class="card-body">
+      <h1 class="font-display text-lg font-bold">Actualiza tu contraseña</h1>
 
-  <%= form_with url: password_path(params[:token]), method: :put, class: "contents" do |form| %>
-    <div class="my-5">
-      <%= form.password_field :password, required: true, autocomplete: "new-password", placeholder: "Enter new password", maxlength: 72, class: "block shadow-sm rounded-md border border-gray-400 focus:outline-solid focus:outline-blue-600 px-3 py-2 mt-2 w-full" %>
+      <% if (mensaje = flash[:alert]) %>
+        <div role="alert" class="alert alert-error text-sm" id="alert"><span><%= mensaje %></span></div>
+      <% end %>
+
+      <%= form_with url: password_path(params[:token]), method: :put, class: "flex flex-col gap-3" do |form| %>
+        <%= form.password_field :password, required: true, autocomplete: "new-password",
+              placeholder: "Nueva contraseña", maxlength: 72, class: "input input-bordered w-full" %>
+        <%= form.password_field :password_confirmation, required: true, autocomplete: "new-password",
+              placeholder: "Repite la nueva contraseña", maxlength: 72, class: "input input-bordered w-full" %>
+        <%= form.submit "Guardar", class: "btn btn-primary w-full" %>
+      <% end %>
     </div>
-
-    <div class="my-5">
-      <%= form.password_field :password_confirmation, required: true, autocomplete: "new-password", placeholder: "Repeat new password", maxlength: 72, class: "block shadow-sm rounded-md border border-gray-400 focus:outline-solid focus:outline-blue-600 px-3 py-2 mt-2 w-full" %>
-    </div>
-
-    <div class="inline">
-      <%= form.submit "Save", class: "w-full sm:w-auto text-center rounded-md px-3.5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white inline-block font-medium cursor-pointer" %>
-    </div>
-  <% end %>
+  </div>
 </div>
