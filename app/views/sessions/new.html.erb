@@ -1,46 +1,55 @@
 <% content_for :title, "Iniciar sesión — Advance Fitness" %>
 
-<div class="flex min-h-screen items-center justify-center px-4">
-  <div class="card w-full max-w-sm border border-base-300 bg-base-100 shadow-sm">
-    <div class="card-body">
-      <div class="mb-2 flex flex-col items-center gap-2 text-center">
-        <div class="flex size-12 items-center justify-center rounded-xl bg-secondary">
+<div class="grid min-h-screen lg:grid-cols-2">
+  <%= render "shared/auth_brand" %>
+
+  <div class="flex items-center justify-center bg-base-200 px-4 py-10">
+    <div class="w-full max-w-sm">
+      <div class="mb-6 flex flex-col items-center gap-3 text-center lg:hidden">
+        <span class="flex size-12 items-center justify-center rounded-2xl bg-steel">
           <%= render "shared/logo" %>
-        </div>
-        <h1 class="font-display text-xl font-bold tracking-widest">ADVANCE FITNESS</h1>
-        <p class="text-sm opacity-60">Inicia sesión para ver tu progreso</p>
+        </span>
+        <span class="font-display text-sm font-bold tracking-[0.18em]">ADVANCE<span class="text-volt-d">FITNESS</span></span>
       </div>
 
-      <% if (mensaje = flash[:alert]) %>
-        <div role="alert" class="alert alert-error text-sm" id="alert"><span><%= mensaje %></span></div>
-      <% end %>
-      <% if (mensaje = flash[:notice]) %>
-        <div role="alert" class="alert alert-success text-sm" id="notice"><span><%= mensaje %></span></div>
-      <% end %>
+      <div class="card border border-base-300 bg-base-100 shadow-xl">
+        <div class="card-body gap-4">
+          <div>
+            <h1 class="font-display text-2xl font-bold">Bienvenido de vuelta</h1>
+            <p class="mt-1 text-sm text-steel-5">Inicia sesión para ver tu progreso</p>
+          </div>
 
-      <%= button_to "/auth/google_oauth2", data: { turbo: false }, class: "btn btn-outline w-full" do %>
-        <svg viewBox="0 0 24 24" class="h-5 w-5" aria-hidden="true">
-          <path fill="#4285F4" d="M23.5 12.27c0-.85-.08-1.66-.22-2.45H12v4.64h6.45a5.52 5.52 0 0 1-2.39 3.62v3h3.87c2.26-2.09 3.57-5.16 3.57-8.81Z"/>
-          <path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.93-2.91l-3.87-3c-1.07.72-2.44 1.14-4.06 1.14-3.12 0-5.77-2.11-6.71-4.95H1.29v3.1A11.99 11.99 0 0 0 12 24Z"/>
-          <path fill="#FBBC05" d="M5.29 14.28a7.22 7.22 0 0 1 0-4.56v-3.1H1.29a12.01 12.01 0 0 0 0 10.76l4-3.1Z"/>
-          <path fill="#EA4335" d="M12 4.77c1.76 0 3.34.6 4.58 1.79l3.44-3.44C17.95 1.19 15.24 0 12 0A11.99 11.99 0 0 0 1.29 6.62l4 3.1C6.23 6.88 8.88 4.77 12 4.77Z"/>
-        </svg>
-        Continuar con Google
-      <% end %>
+          <%= button_to "/auth/google_oauth2", data: { turbo: false }, class: "btn btn-outline w-full" do %>
+            <svg viewBox="0 0 24 24" class="h-5 w-5" aria-hidden="true">
+              <path fill="#4285F4" d="M23.5 12.27c0-.85-.08-1.66-.22-2.45H12v4.64h6.45a5.52 5.52 0 0 1-2.39 3.62v3h3.87c2.26-2.09 3.57-5.16 3.57-8.81Z"/>
+              <path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.93-2.91l-3.87-3c-1.07.72-2.44 1.14-4.06 1.14-3.12 0-5.77-2.11-6.71-4.95H1.29v3.1A11.99 11.99 0 0 0 12 24Z"/>
+              <path fill="#FBBC05" d="M5.29 14.28a7.22 7.22 0 0 1 0-4.56v-3.1H1.29a12.01 12.01 0 0 0 0 10.76l4-3.1Z"/>
+              <path fill="#EA4335" d="M12 4.77c1.76 0 3.34.6 4.58 1.79l3.44-3.44C17.95 1.19 15.24 0 12 0A11.99 11.99 0 0 0 1.29 6.62l4 3.1C6.23 6.88 8.88 4.77 12 4.77Z"/>
+            </svg>
+            Continuar con Google
+          <% end %>
 
-      <div class="divider text-xs opacity-60">o con tu correo</div>
+          <div class="divider my-0 text-xs text-steel-3">o con tu correo</div>
 
-      <%= form_with url: session_url, class: "flex flex-col gap-3" do |form| %>
-        <%= form.email_field :email_address, required: true, autofocus: true, autocomplete: "username",
-              placeholder: "Correo electrónico", value: params[:email_address], class: "input input-bordered w-full" %>
-        <%= form.password_field :password, required: true, autocomplete: "current-password",
-              placeholder: "Contraseña", maxlength: 72, class: "input input-bordered w-full" %>
-        <%= form.submit "Entrar", class: "btn btn-primary w-full" %>
-      <% end %>
+          <%= form_with url: session_url, class: "flex flex-col gap-3" do |form| %>
+            <label class="form-control w-full">
+              <span class="label-text mb-1 text-xs font-semibold">Correo electrónico</span>
+              <%= form.email_field :email_address, required: true, autofocus: true, autocomplete: "username",
+                    placeholder: "tu@correo.com", value: params[:email_address], class: "input input-bordered w-full" %>
+            </label>
+            <label class="form-control w-full">
+              <span class="label-text mb-1 text-xs font-semibold">Contraseña</span>
+              <%= form.password_field :password, required: true, autocomplete: "current-password",
+                    placeholder: "••••••••", maxlength: 72, class: "input input-bordered w-full" %>
+            </label>
+            <%= form.submit "Entrar", class: "btn btn-primary w-full font-bold" %>
+          <% end %>
 
-      <div class="mt-2 flex items-center justify-between text-sm">
-        <%= link_to "Crear cuenta", new_registro_path, class: "link link-hover font-medium" %>
-        <%= link_to "¿Olvidaste tu contraseña?", new_password_path, class: "link link-hover opacity-70" %>
+          <div class="flex items-center justify-between text-sm">
+            <%= link_to "Crear cuenta", new_registro_path, class: "link link-hover font-semibold text-volt-d" %>
+            <%= link_to "¿Olvidaste tu contraseña?", new_password_path, class: "link link-hover text-steel-3" %>
+          </div>
+        </div>
       </div>
     </div>
   </div>

@@ -221,8 +221,8 @@ El logo de Advance Fitness es un **fisicoculturista vectorial monocromo** (pose 
 
 | Fuente | Rol | Uso |
 |---|---|---|
-| Geist | Body / UI | Texto general, formularios, etiquetas — vendored en `app/assets/fonts` (woff2) |
-| Space Grotesk | Display | Métricas grandes (peso, IMC, kcal), títulos de sección, números de progreso |
+| Geist | Body / UI | Texto general, formularios, etiquetas — servida desde Google Fonts (vendored en `app/assets/fonts` como mejora futura) |
+| Space Grotesk | Display | Métricas grandes (peso, IMC, kcal), títulos de sección, números de progreso — servida desde Google Fonts |
 
 ### Escala tipográfica
 

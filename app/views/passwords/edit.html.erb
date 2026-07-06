@@ -1,21 +1,30 @@
 <% content_for :title, "Nueva contraseña — Advance Fitness" %>
 
-<div class="flex min-h-screen items-center justify-center px-4">
-  <div class="card w-full max-w-sm border border-base-300 bg-base-100 shadow-sm">
-    <div class="card-body">
-      <h1 class="font-display text-lg font-bold">Actualiza tu contraseña</h1>
+<div class="grid min-h-screen lg:grid-cols-2">
+  <%= render "shared/auth_brand" %>
 
-      <% if (mensaje = flash[:alert]) %>
-        <div role="alert" class="alert alert-error text-sm" id="alert"><span><%= mensaje %></span></div>
-      <% end %>
+  <div class="flex items-center justify-center bg-base-200 px-4 py-10">
+    <div class="card w-full max-w-sm border border-base-300 bg-base-100 shadow-xl">
+      <div class="card-body gap-4">
+        <div>
+          <h1 class="font-display text-2xl font-bold">Actualiza tu contraseña</h1>
+          <p class="mt-1 text-sm text-steel-5">Elige una nueva contraseña segura.</p>
+        </div>
 
-      <%= form_with url: password_path(params[:token]), method: :put, class: "flex flex-col gap-3" do |form| %>
-        <%= form.password_field :password, required: true, autocomplete: "new-password",
-              placeholder: "Nueva contraseña", maxlength: 72, class: "input input-bordered w-full" %>
-        <%= form.password_field :password_confirmation, required: true, autocomplete: "new-password",
-              placeholder: "Repite la nueva contraseña", maxlength: 72, class: "input input-bordered w-full" %>
-        <%= form.submit "Guardar", class: "btn btn-primary w-full" %>
-      <% end %>
+        <%= form_with url: password_path(params[:token]), method: :put, class: "flex flex-col gap-3" do |form| %>
+          <label class="form-control w-full">
+            <span class="label-text mb-1 text-xs font-semibold">Nueva contraseña</span>
+            <%= form.password_field :password, required: true, autocomplete: "new-password",
+                  placeholder: "Mínimo 8 caracteres", maxlength: 72, class: "input input-bordered w-full" %>
+          </label>
+          <label class="form-control w-full">
+            <span class="label-text mb-1 text-xs font-semibold">Repite la contraseña</span>
+            <%= form.password_field :password_confirmation, required: true, autocomplete: "new-password",
+                  placeholder: "Repite la nueva contraseña", maxlength: 72, class: "input input-bordered w-full" %>
+          </label>
+          <%= form.submit "Guardar", class: "btn btn-primary w-full font-bold" %>
+        <% end %>
+      </div>
     </div>
   </div>
 </div>

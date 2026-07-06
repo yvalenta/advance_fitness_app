@@ -6,6 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="application-name" content="Advance Fitness">
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0b1220">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
@@ -18,24 +19,35 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
 
+    <%# Tipografía de marca (SDD §06): Geist (body) + Space Grotesk (display) %>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
     <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
 
-  <body class="min-h-screen bg-base-200">
+  <body class="min-h-screen bg-base-200 font-sans text-base-content">
     <% if authenticated? %>
       <%= render "shared/navbar" %>
     <% end %>
 
-    <% if (mensaje = flash[:alert]) %>
-      <div class="mx-auto mt-4 max-w-6xl px-4">
-        <div role="alert" class="alert alert-error" id="alert"><span><%= mensaje %></span></div>
-      </div>
-    <% end %>
-    <% if (mensaje = flash[:notice]) %>
-      <div class="mx-auto mt-4 max-w-6xl px-4">
-        <div role="alert" class="alert alert-success" id="notice"><span><%= mensaje %></span></div>
+    <% if flash[:alert].present? || flash[:notice].present? %>
+      <div class="toast toast-top toast-center z-50 w-full max-w-lg px-4 pt-16">
+        <% if (mensaje = flash[:alert]) %>
+          <div role="alert" class="alert alert-error shadow-lg" id="alert">
+            <%= render "shared/icono", nombre: :alerta, clase: "size-5 shrink-0" %>
+            <span class="text-sm font-medium"><%= mensaje %></span>
+          </div>
+        <% end %>
+        <% if (mensaje = flash[:notice]) %>
+          <div role="alert" class="alert alert-success shadow-lg" id="notice">
+            <%= render "shared/icono", nombre: :check, clase: "size-5 shrink-0" %>
+            <span class="text-sm font-medium"><%= mensaje %></span>
+          </div>
+        <% end %>
       </div>
     <% end %>
 

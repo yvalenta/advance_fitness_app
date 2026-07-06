@@ -12,6 +12,7 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
 
     get root_url
     assert_response :success
-    assert_select "h1", text: /#{user.nombre}/
+    # El saludo usa solo el primer nombre del miembro
+    assert_select "h1", text: /#{user.nombre.split.first}/
   end
 end

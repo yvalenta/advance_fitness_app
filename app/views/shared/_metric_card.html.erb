@@ -1,10 +1,17 @@
-<%# locals: (titulo:, valor: "—", descripcion: nil, badge: nil) %>
-<div class="card border border-base-300 bg-base-100 shadow-sm">
-  <div class="card-body gap-1">
-    <h2 class="text-xs font-bold uppercase tracking-widest text-steel-3"><%= titulo %></h2>
-    <span class="font-display text-4xl font-bold"><%= valor %></span>
+<%# locals: (titulo:, valor: "—", descripcion: nil, badge: nil, icono: nil, acento: "bg-volt/15 text-volt-d", bloqueada: false) %>
+<div class="card card-hover border border-base-300 bg-base-100 shadow-sm <%= "border-dashed opacity-80" if local_assigns[:bloqueada] %>">
+  <div class="card-body gap-1.5">
+    <div class="flex items-start justify-between">
+      <h2 class="eyebrow text-steel-3"><%= titulo %></h2>
+      <% if local_assigns[:icono] %>
+        <span class="flex size-9 items-center justify-center rounded-xl <%= local_assigns.fetch(:acento, "bg-volt/15 text-volt-d") %>">
+          <%= render "shared/icono", nombre: local_assigns[:bloqueada] ? :candado : local_assigns[:icono], clase: "size-4.5" %>
+        </span>
+      <% end %>
+    </div>
+    <span class="font-display text-4xl font-bold tracking-tight"><%= valor %></span>
     <% if descripcion %>
-      <p class="text-sm text-steel-3"><%= descripcion %></p>
+      <p class="text-sm text-steel-5"><%= descripcion %></p>
     <% end %>
     <% if badge %>
       <div class="card-actions mt-1">

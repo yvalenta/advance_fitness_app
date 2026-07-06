@@ -1,0 +1,36 @@
+<%# Panel izquierdo de marca para las pantallas de autenticación %>
+<div class="gradient-hero relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between lg:p-12">
+  <div class="trama-puntos absolute inset-0"></div>
+
+  <div class="relative flex items-center gap-3">
+    <span class="flex size-10 items-center justify-center rounded-xl bg-volt text-steel shadow-[0_0_18px_rgba(180,240,0,0.35)]">
+      <%= render "shared/logo", clase: "h-6 w-6 text-steel" %>
+    </span>
+    <span class="font-display text-sm font-bold tracking-[0.18em] text-white">ADVANCE<span class="text-volt">FITNESS</span></span>
+  </div>
+
+  <div class="relative max-w-md">
+    <div class="animate-fade-up inline-flex items-center gap-2 rounded-full border border-volt/40 px-4 py-1.5">
+      <span class="inline-block size-2 rounded-full bg-volt pulse-volt"></span>
+      <span class="eyebrow text-volt">Entrena con datos</span>
+    </div>
+    <h2 class="animate-fade-up fade-delay-1 mt-6 font-display text-4xl font-bold leading-[1.15] text-white xl:text-5xl">
+      Tu progreso,<br><span class="text-volt">medido</span> de verdad.
+    </h2>
+    <ul class="animate-fade-up fade-delay-2 mt-8 space-y-3">
+      <% [ "Membresía y check-in sin filas",
+           "IMC, somatotipo y progreso mensual",
+           "Objetivo calórico según tu meta",
+           "Planes con IA aprobados por tu coach" ].each do |beneficio| %>
+        <li class="flex items-center gap-3 text-sm text-white/85">
+          <span class="flex size-5 shrink-0 items-center justify-center rounded-full bg-volt text-steel">
+            <%= render "shared/icono", nombre: :check, clase: "size-3" %>
+          </span>
+          <%= beneficio %>
+        </li>
+      <% end %>
+    </ul>
+  </div>
+
+  <p class="relative text-xs text-white/30">© <%= Date.current.year %> Advance Fitness · Medellín, Colombia</p>
+</div>

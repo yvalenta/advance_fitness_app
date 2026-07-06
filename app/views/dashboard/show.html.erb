@@ -1,36 +1,99 @@
 <% content_for :title, "Dashboard — Advance Fitness" %>
 
-<div class="mx-auto max-w-6xl px-4 py-8">
-  <div class="mb-6">
-    <h1 class="font-display text-2xl font-bold">
-      Hola, <%= Current.user.nombre.presence || Current.user.email_address %> 👋
+<div class="gradient-hero relative overflow-hidden">
+  <div class="trama-puntos absolute inset-0"></div>
+  <div class="relative mx-auto w-full max-w-6xl px-4 pb-24 pt-12">
+    <div class="animate-fade-up inline-flex items-center gap-2 rounded-full border border-volt/40 px-4 py-1.5">
+      <span class="inline-block size-2 rounded-full bg-volt pulse-volt"></span>
+      <span class="eyebrow text-volt">Panel del miembro</span>
+    </div>
+    <h1 class="animate-fade-up fade-delay-1 mt-5 font-display text-4xl font-bold leading-tight text-white sm:text-5xl">
+      Hola, <span class="text-volt"><%= nombre_visible(Current.user).split.first %></span> 💪
     </h1>
-    <p class="text-sm text-steel-3">Miembro desde <%= l Current.user.fecha_ingreso, format: :long %></p>
+    <p class="animate-fade-up fade-delay-2 mt-2 text-sm text-white/60">
+      Miembro desde <%= l Current.user.fecha_ingreso, format: :long %> · tu progreso, medido de verdad.
+    </p>
+  </div>
+</div>
+
+<div class="mx-auto -mt-14 w-full max-w-6xl px-4 pb-12">
+  <div class="grid gap-4 sm:grid-cols-3">
+    <div class="animate-fade-up card card-hover border border-base-300 bg-base-100 shadow-sm">
+      <div class="card-body gap-1.5">
+        <div class="flex items-start justify-between">
+          <h2 class="eyebrow text-steel-3">Membresía</h2>
+          <span class="flex size-9 items-center justify-center rounded-xl bg-volt/15 text-volt-d">
+            <%= render "shared/icono", nombre: :escudo, clase: "size-4.5" %>
+          </span>
+        </div>
+        <% if @membresia %>
+          <div class="flex items-center gap-4">
+            <% dias = @membresia.dias_restantes %>
+            <% progreso = ((dias / 31.0) * 100).clamp(0, 100).round %>
+            <div class="radial-progress <%= dias > 7 ? "text-volt-d" : dias >= 0 ? "text-warning" : "text-error" %>"
+                 style="--value:<%= progreso %>; --size:4.5rem; --thickness:5px;"
+                 aria-valuenow="<%= progreso %>" role="progressbar">
+              <span class="font-display text-lg font-bold text-base-content"><%= dias %></span>
+            </div>
+            <div>
+              <p class="font-display text-2xl font-bold tracking-tight">días</p>
+              <p class="text-sm text-steel-5">Vence el <%= l @membresia.fecha_vencimiento, format: :long %></p>
+              <div class="mt-1"><%= badge_estado(@membresia.estado) %></div>
+            </div>
+          </div>
+        <% else %>
+          <span class="font-display text-4xl font-bold tracking-tight">—</span>
+          <p class="text-sm text-steel-5">Acércate a recepción para activar tu membresía</p>
+          <div class="card-actions mt-1">
+            <span class="badge badge-ghost badge-sm">sin membresía</span>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="animate-fade-up fade-delay-1">
+      <%= render "shared/metric_card",
+            titulo: "Biometría",
+            valor: "—",
+            descripcion: "Peso, IMC y progreso mensual",
+            badge: "Disponible en Fase 3",
+            icono: :actividad,
+            acento: "bg-ocean/15 text-ocean",
+            bloqueada: true %>
+    </div>
+    <div class="animate-fade-up fade-delay-2">
+      <%= render "shared/metric_card",
+            titulo: "Calorías",
+            valor: "—",
+            descripcion: "Objetivo diario y consumo",
+            badge: "Disponible en Fase 4",
+            icono: :fuego,
+            acento: "bg-pulse/15 text-pulse",
+            bloqueada: true %>
+    </div>
   </div>
 
-  <div class="grid gap-4 sm:grid-cols-3">
-    <% if @membresia %>
-      <%= render "shared/metric_card",
-            titulo: "Membresía",
-            valor: "#{@membresia.dias_restantes} días",
-            descripcion: "Vence el #{l @membresia.fecha_vencimiento, format: :long}",
-            badge: @membresia.estado %>
-    <% else %>
-      <%= render "shared/metric_card",
-            titulo: "Membresía",
-            valor: "—",
-            descripcion: "Acércate a recepción para activar tu membresía",
-            badge: "sin membresía" %>
-    <% end %>
-    <%= render "shared/metric_card",
-          titulo: "Biometría",
-          valor: "—",
-          descripcion: "Peso, IMC y progreso mensual",
-          badge: "Disponible en Fase 3" %>
-    <%= render "shared/metric_card",
-          titulo: "Calorías",
-          valor: "—",
-          descripcion: "Objetivo diario y consumo",
-          badge: "Disponible en Fase 4" %>
+  <div class="animate-fade-up fade-delay-3 mt-8 grid gap-4 sm:grid-cols-3">
+    <div class="rounded-2xl border border-base-300 bg-base-100 p-5 shadow-sm">
+      <div class="mb-2 flex size-9 items-center justify-center rounded-xl bg-volt/15 text-volt-d">
+        <%= render "shared/icono", nombre: :rayo, clase: "size-4.5" %>
+      </div>
+      <h3 class="font-semibold">Entrena con datos</h3>
+      <p class="mt-1 text-sm text-steel-5">Registra tus mediciones y mira tu progreso mes a mes con gráficas claras.</p>
+    </div>
+    <div class="rounded-2xl border border-base-300 bg-base-100 p-5 shadow-sm">
+      <div class="mb-2 flex size-9 items-center justify-center rounded-xl bg-ocean/15 text-ocean">
+        <%= render "shared/icono", nombre: :fuego, clase: "size-4.5" %>
+      </div>
+      <h3 class="font-semibold">Nutrición a tu medida</h3>
+      <p class="mt-1 text-sm text-steel-5">Objetivo calórico según tu meta: déficit para bajar, superávit para crecer.</p>
+    </div>
+    <div class="rounded-2xl border border-base-300 bg-base-100 p-5 shadow-sm">
+      <div class="mb-2 flex size-9 items-center justify-center rounded-xl bg-pulse/15 text-pulse">
+        <%= render "shared/icono", nombre: :check, clase: "size-4.5" %>
+      </div>
+      <h3 class="font-semibold">Planes con IA</h3>
+      <p class="mt-1 text-sm text-steel-5">Rutinas personalizadas generadas con IA y aprobadas por tu entrenador.</p>
+    </div>
   </div>
 </div>

@@ -1,35 +1,48 @@
 <% content_for :title, "Miembros — Advance Fitness" %>
 
-<div class="mx-auto max-w-6xl px-4 py-8">
-  <h1 class="mb-6 font-display text-2xl font-bold">Miembros</h1>
+<%= render "shared/encabezado",
+      titulo: "Miembros",
+      descripcion: "Todas las personas registradas en el gimnasio." %>
 
-  <div class="card border border-base-300 bg-base-100 shadow-sm">
+<div class="mx-auto -mt-8 w-full max-w-6xl px-4 pb-12">
+  <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
     <div class="card-body">
-      <table class="table">
-        <thead>
-          <tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Membresía</th><th>Ingreso</th><th></th></tr>
-        </thead>
-        <tbody>
-          <% @users.each do |usuario| %>
-            <tr>
-              <td><%= usuario.nombre.presence || "—" %></td>
-              <td class="text-sm text-steel-5"><%= usuario.email_address %></td>
-              <td><span class="badge badge-sm badge-ghost"><%= usuario.rol %></span></td>
-              <td>
-                <% if usuario.membresia %>
-                  <%= badge_estado(usuario.membresia.estado) %>
-                <% else %>
-                  <span class="text-xs text-steel-3">sin membresía</span>
-                <% end %>
-              </td>
-              <td class="text-sm"><%= l usuario.fecha_ingreso %></td>
-              <td class="text-right">
-                <%= link_to "Ver", admin_user_path(usuario), class: "btn btn-ghost btn-xs" %>
-              </td>
+      <div class="overflow-x-auto">
+        <table class="table">
+          <thead>
+            <tr class="text-xs uppercase tracking-wider text-steel-3">
+              <th>Miembro</th><th>Rol</th><th>Membresía</th><th>Ingreso</th><th></th>
             </tr>
-          <% end %>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <% @users.each do |usuario| %>
+              <tr class="hover:bg-base-200">
+                <td>
+                  <div class="flex items-center gap-3">
+                    <%= render "shared/avatar", user: usuario %>
+                    <div>
+                      <p class="font-semibold"><%= usuario.nombre.presence || "—" %></p>
+                      <p class="text-xs text-steel-3"><%= usuario.email_address %></p>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="badge badge-sm badge-ghost"><%= usuario.rol %></span></td>
+                <td>
+                  <% if usuario.membresia %>
+                    <%= badge_estado(usuario.membresia.estado) %>
+                  <% else %>
+                    <span class="text-xs text-steel-3">sin membresía</span>
+                  <% end %>
+                </td>
+                <td class="text-sm text-steel-5"><%= l usuario.fecha_ingreso %></td>
+                <td class="text-right">
+                  <%= link_to "Ver", admin_user_path(usuario), class: "btn btn-ghost btn-xs" %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>

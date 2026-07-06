@@ -1,36 +1,59 @@
 <% content_for :title, "Crear cuenta — Advance Fitness" %>
 
-<div class="flex min-h-screen items-center justify-center px-4">
-  <div class="card w-full max-w-sm border border-base-300 bg-base-100 shadow-sm">
-    <div class="card-body">
-      <div class="mb-2 flex flex-col items-center gap-2 text-center">
-        <div class="flex size-12 items-center justify-center rounded-xl bg-secondary">
+<div class="grid min-h-screen lg:grid-cols-2">
+  <%= render "shared/auth_brand" %>
+
+  <div class="flex items-center justify-center bg-base-200 px-4 py-10">
+    <div class="w-full max-w-sm">
+      <div class="mb-6 flex flex-col items-center gap-3 text-center lg:hidden">
+        <span class="flex size-12 items-center justify-center rounded-2xl bg-steel">
           <%= render "shared/logo" %>
-        </div>
-        <h1 class="font-display text-xl font-bold tracking-widest">CREA TU CUENTA</h1>
-        <p class="text-sm opacity-60">Empieza a registrar tu progreso hoy</p>
+        </span>
+        <span class="font-display text-sm font-bold tracking-[0.18em]">ADVANCE<span class="text-volt-d">FITNESS</span></span>
       </div>
 
-      <% if @user.errors.any? %>
-        <div role="alert" class="alert alert-error text-sm">
-          <span><%= @user.errors.full_messages.to_sentence %></span>
+      <div class="card border border-base-300 bg-base-100 shadow-xl">
+        <div class="card-body gap-4">
+          <div>
+            <h1 class="font-display text-2xl font-bold">Crea tu cuenta</h1>
+            <p class="mt-1 text-sm text-steel-5">Empieza a registrar tu progreso hoy</p>
+          </div>
+
+          <% if @user.errors.any? %>
+            <div role="alert" class="alert alert-error text-sm">
+              <%= render "shared/icono", nombre: :alerta, clase: "size-5 shrink-0" %>
+              <span><%= @user.errors.full_messages.to_sentence %></span>
+            </div>
+          <% end %>
+
+          <%= form_with model: @user, url: registro_path, class: "flex flex-col gap-3" do |form| %>
+            <label class="form-control w-full">
+              <span class="label-text mb-1 text-xs font-semibold">Nombre completo</span>
+              <%= form.text_field :nombre, required: true, autofocus: true, autocomplete: "name",
+                    placeholder: "Nombre y apellido", class: "input input-bordered w-full" %>
+            </label>
+            <label class="form-control w-full">
+              <span class="label-text mb-1 text-xs font-semibold">Correo electrónico</span>
+              <%= form.email_field :email_address, required: true, autocomplete: "username",
+                    placeholder: "tu@correo.com", class: "input input-bordered w-full" %>
+            </label>
+            <label class="form-control w-full">
+              <span class="label-text mb-1 text-xs font-semibold">Contraseña</span>
+              <%= form.password_field :password, required: true, autocomplete: "new-password",
+                    placeholder: "Mínimo 8 caracteres", minlength: 8, maxlength: 72, class: "input input-bordered w-full" %>
+            </label>
+            <label class="form-control w-full">
+              <span class="label-text mb-1 text-xs font-semibold">Confirma tu contraseña</span>
+              <%= form.password_field :password_confirmation, required: true, autocomplete: "new-password",
+                    placeholder: "Repite la contraseña", maxlength: 72, class: "input input-bordered w-full" %>
+            </label>
+            <%= form.submit "Crear cuenta", class: "btn btn-primary w-full font-bold" %>
+          <% end %>
+
+          <div class="text-center text-sm text-steel-5">
+            ¿Ya tienes cuenta? <%= link_to "Inicia sesión", new_session_path, class: "link link-hover font-semibold text-volt-d" %>
+          </div>
         </div>
-      <% end %>
-
-      <%= form_with model: @user, url: registro_path, class: "flex flex-col gap-3" do |form| %>
-        <%= form.text_field :nombre, required: true, autofocus: true, autocomplete: "name",
-              placeholder: "Nombre completo", class: "input input-bordered w-full" %>
-        <%= form.email_field :email_address, required: true, autocomplete: "username",
-              placeholder: "Correo electrónico", class: "input input-bordered w-full" %>
-        <%= form.password_field :password, required: true, autocomplete: "new-password",
-              placeholder: "Contraseña (mínimo 8 caracteres)", minlength: 8, maxlength: 72, class: "input input-bordered w-full" %>
-        <%= form.password_field :password_confirmation, required: true, autocomplete: "new-password",
-              placeholder: "Confirma tu contraseña", maxlength: 72, class: "input input-bordered w-full" %>
-        <%= form.submit "Crear cuenta", class: "btn btn-primary w-full" %>
-      <% end %>
-
-      <div class="mt-2 text-center text-sm">
-        ¿Ya tienes cuenta? <%= link_to "Inicia sesión", new_session_path, class: "link link-hover font-medium" %>
       </div>
     </div>
   </div>

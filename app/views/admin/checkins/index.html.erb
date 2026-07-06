@@ -1,66 +1,98 @@
 <% content_for :title, "Check-in — Advance Fitness" %>
 
-<div class="mx-auto max-w-6xl px-4 py-8">
-  <h1 class="mb-6 font-display text-2xl font-bold">Check-in</h1>
+<%= render "shared/encabezado",
+      titulo: "Check-in",
+      descripcion: "Busca al miembro, valida su membresía y registra el acceso." %>
 
-  <div class="grid gap-6 lg:grid-cols-2">
-    <div class="card border border-base-300 bg-base-100 shadow-sm">
+<div class="mx-auto -mt-8 w-full max-w-6xl px-4 pb-12">
+  <div class="grid items-start gap-6 lg:grid-cols-2">
+    <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
       <div class="card-body">
-        <h2 class="card-title text-base">Buscar miembro</h2>
+        <h2 class="card-title text-base">
+          <%= render "shared/icono", nombre: :busqueda, clase: "size-4 text-steel-3" %>
+          Buscar miembro
+        </h2>
         <%= form_with url: admin_checkins_path, method: :get, class: "join w-full" do |form| %>
           <%= form.text_field :q, value: @busqueda, placeholder: "Nombre o correo…",
-                autofocus: true, class: "input input-bordered join-item w-full" %>
-          <%= form.submit "Buscar", class: "btn btn-primary join-item" %>
+                autofocus: true, class: "input input-bordered input-lg join-item w-full" %>
+          <%= form.submit "Buscar", class: "btn btn-primary btn-lg join-item font-bold" %>
         <% end %>
 
         <% if @busqueda.present? && @miembros.empty? %>
-          <p class="mt-3 text-sm text-steel-3">Sin resultados para "<%= @busqueda %>".</p>
+          <div class="mt-4 flex flex-col items-center gap-2 rounded-xl bg-base-200 py-8 text-center">
+            <%= render "shared/icono", nombre: :busqueda, clase: "size-8 text-steel-1" %>
+            <p class="text-sm text-steel-3">Sin resultados para "<%= @busqueda %>".</p>
+          </div>
         <% end %>
 
         <% @miembros.each do |miembro| %>
-          <div class="mt-3 flex items-center justify-between rounded-lg border border-base-300 p-3">
-            <div>
-              <p class="font-medium"><%= miembro.nombre.presence || miembro.email_address %></p>
-              <p class="text-xs text-steel-3">
-                <% if miembro.membresia %>
-                  <%= badge_estado(miembro.membresia.estado) %>
-                  vence <%= l miembro.membresia.fecha_vencimiento %>
-                <% else %>
-                  <span class="badge badge-sm badge-ghost">sin membresía</span>
-                <% end %>
-              </p>
+          <div class="card-hover mt-3 flex items-center justify-between gap-3 rounded-xl border border-base-300 p-3">
+            <div class="flex min-w-0 items-center gap-3">
+              <%= render "shared/avatar", user: miembro, clase: "size-11 text-sm" %>
+              <div class="min-w-0">
+                <p class="truncate font-semibold"><%= nombre_visible(miembro) %></p>
+                <p class="mt-0.5 flex items-center gap-1.5 text-xs text-steel-3">
+                  <% if miembro.membresia %>
+                    <%= badge_estado(miembro.membresia.estado) %>
+                    vence <%= l miembro.membresia.fecha_vencimiento %>
+                  <% else %>
+                    <span class="badge badge-sm badge-ghost">sin membresía</span>
+                  <% end %>
+                </p>
+              </div>
             </div>
-            <%= button_to "Registrar acceso", admin_checkins_path, params: { user_id: miembro.id },
-                  class: "btn btn-primary btn-sm" %>
+            <%= button_to admin_checkins_path, params: { user_id: miembro.id }, class: "btn btn-primary btn-sm shrink-0 font-bold" do %>
+              <%= render "shared/icono", nombre: :rayo, clase: "size-4" %>
+              Registrar
+            <% end %>
           </div>
         <% end %>
       </div>
     </div>
 
-    <div class="card border border-base-300 bg-base-100 shadow-sm">
+    <div class="card animate-fade-up fade-delay-1 border border-base-300 bg-base-100 shadow-md">
       <div class="card-body">
-        <h2 class="card-title text-base">Últimos accesos</h2>
-        <table class="table table-sm">
-          <thead>
-            <tr><th>Miembro</th><th>Tipo</th><th>Horario</th><th>Fecha</th></tr>
-          </thead>
-          <tbody>
-            <% @accesos.each do |acceso| %>
-              <tr>
-                <td><%= acceso.user.nombre.presence || acceso.user.email_address %></td>
-                <td><%= badge_estado(acceso.tipo) %></td>
-                <td>
-                  <% if acceso.dentro_de_horario? %>
-                    <span class="badge badge-sm badge-success">en horario</span>
-                  <% else %>
-                    <span class="badge badge-sm badge-error">fuera de horario</span>
-                  <% end %>
-                </td>
-                <td class="text-xs text-steel-3"><%= l acceso.fecha_hora, format: :short %></td>
-              </tr>
-            <% end %>
-          </tbody>
-        </table>
+        <h2 class="card-title text-base">
+          <%= render "shared/icono", nombre: :reloj, clase: "size-4 text-steel-3" %>
+          Últimos accesos
+        </h2>
+        <% if @accesos.any? %>
+          <div class="overflow-x-auto">
+            <table class="table table-sm">
+              <thead>
+                <tr class="text-xs uppercase tracking-wider text-steel-3">
+                  <th>Miembro</th><th>Tipo</th><th>Horario</th><th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @accesos.each do |acceso| %>
+                  <tr class="hover:bg-base-200">
+                    <td>
+                      <div class="flex items-center gap-2">
+                        <%= render "shared/avatar", user: acceso.user, clase: "size-7 text-[10px]" %>
+                        <span class="font-medium"><%= nombre_visible(acceso.user) %></span>
+                      </div>
+                    </td>
+                    <td><%= badge_estado(acceso.tipo) %></td>
+                    <td>
+                      <% if acceso.dentro_de_horario? %>
+                        <span class="badge badge-sm badge-success">en horario</span>
+                      <% else %>
+                        <span class="badge badge-sm badge-error">fuera de horario</span>
+                      <% end %>
+                    </td>
+                    <td class="text-xs text-steel-3"><%= l acceso.fecha_hora, format: :short %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% else %>
+          <div class="flex flex-col items-center gap-2 rounded-xl bg-base-200 py-10 text-center">
+            <%= render "shared/icono", nombre: :reloj, clase: "size-8 text-steel-1" %>
+            <p class="text-sm text-steel-3">Aún no hay accesos registrados hoy.</p>
+          </div>
+        <% end %>
       </div>
     </div>
   </div>

@@ -1,22 +1,62 @@
-<div class="navbar bg-secondary text-secondary-content shadow-md">
-  <div class="mx-auto flex w-full max-w-6xl items-center px-4">
-    <div class="flex flex-1 items-center gap-4">
-      <%= link_to root_path, class: "flex items-center gap-2" do %>
-        <%= render "shared/logo" %>
-        <span class="font-display text-sm font-bold tracking-widest">ADVANCE FITNESS</span>
-      <% end %>
+<header class="gradient-hero sticky top-0 z-40 border-b border-white/10 shadow-lg">
+  <div class="mx-auto flex h-16 w-full max-w-6xl items-center gap-4 px-4">
+    <%= link_to root_path, class: "flex shrink-0 items-center gap-2.5" do %>
+      <span class="flex size-9 items-center justify-center rounded-xl bg-volt text-steel shadow-[0_0_18px_rgba(180,240,0,0.35)]">
+        <%= render "shared/logo", clase: "h-6 w-6 text-steel" %>
+      </span>
+      <span class="font-display text-sm font-bold tracking-[0.18em] text-white">
+        ADVANCE<span class="text-volt">FITNESS</span>
+      </span>
+    <% end %>
+
+    <% if Current.user.staff? %>
+      <nav class="hidden flex-1 items-center gap-1 md:flex">
+        <%= nav_link "Check-in", admin_checkins_path %>
+        <%= nav_link "Miembros", admin_users_path %>
+        <%= nav_link "Membresías", admin_membresias_path %>
+        <%= nav_link "Pagos", admin_pagos_path %>
+      </nav>
+    <% else %>
+      <div class="flex-1"></div>
+    <% end %>
+
+    <div class="ml-auto flex items-center gap-2">
+      <div class="dropdown dropdown-end">
+        <div tabindex="0" role="button" class="flex cursor-pointer items-center gap-2.5 rounded-full py-1 pl-1 pr-3 transition-colors hover:bg-white/10">
+          <%= render "shared/avatar", user: Current.user %>
+          <span class="hidden max-w-40 truncate text-sm font-medium text-white/85 sm:block">
+            <%= nombre_visible(Current.user) %>
+          </span>
+        </div>
+        <div tabindex="0" class="dropdown-content z-50 mt-3 w-60 rounded-2xl border border-base-300 bg-base-100 p-2 shadow-xl">
+          <div class="flex items-center gap-3 rounded-xl bg-base-200 p-3">
+            <%= render "shared/avatar", user: Current.user %>
+            <div class="min-w-0">
+              <p class="truncate text-sm font-semibold"><%= nombre_visible(Current.user) %></p>
+              <p class="truncate text-xs text-steel-3"><%= Current.user.email_address %></p>
+            </div>
+          </div>
+          <span class="badge badge-ghost badge-sm m-2"><%= Current.user.rol %></span>
+          <%= button_to session_path, method: :delete, class: "btn btn-ghost btn-sm w-full justify-start gap-2 text-error" do %>
+            <%= render "shared/icono", nombre: :salir, clase: "size-4" %>
+            Cerrar sesión
+          <% end %>
+        </div>
+      </div>
+
       <% if Current.user.staff? %>
-        <nav class="hidden items-center gap-1 text-sm md:flex">
-          <%= link_to "Check-in", admin_checkins_path, class: "btn btn-ghost btn-sm" %>
-          <%= link_to "Miembros", admin_users_path, class: "btn btn-ghost btn-sm" %>
-          <%= link_to "Membresías", admin_membresias_path, class: "btn btn-ghost btn-sm" %>
-          <%= link_to "Pagos", admin_pagos_path, class: "btn btn-ghost btn-sm" %>
-        </nav>
+        <div class="dropdown dropdown-end md:hidden">
+          <div tabindex="0" role="button" class="btn btn-ghost btn-sm text-white">
+            <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+          </div>
+          <ul tabindex="0" class="menu dropdown-content z-50 mt-3 w-52 rounded-2xl border border-base-300 bg-base-100 p-2 shadow-xl">
+            <li><%= link_to "Check-in", admin_checkins_path %></li>
+            <li><%= link_to "Miembros", admin_users_path %></li>
+            <li><%= link_to "Membresías", admin_membresias_path %></li>
+            <li><%= link_to "Pagos", admin_pagos_path %></li>
+          </ul>
+        </div>
       <% end %>
-    </div>
-    <div class="flex items-center gap-3">
-      <span class="hidden text-xs opacity-70 sm:block"><%= Current.user.nombre.presence || Current.user.email_address %></span>
-      <%= button_to "Cerrar sesión", session_path, method: :delete, class: "btn btn-ghost btn-sm" %>
     </div>
   </div>
-</div>
+</header>

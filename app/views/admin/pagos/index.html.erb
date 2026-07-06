@@ -1,29 +1,44 @@
 <% content_for :title, "Pagos — Advance Fitness" %>
 
-<div class="mx-auto max-w-6xl px-4 py-8">
-  <h1 class="mb-6 font-display text-2xl font-bold">Pagos</h1>
+<%= render "shared/encabezado",
+      titulo: "Pagos",
+      descripcion: "Historial financiero inmutable: los pagos se corrigen con registros nuevos, nunca se editan." %>
 
-  <div class="card border border-base-300 bg-base-100 shadow-sm">
+<div class="mx-auto -mt-8 w-full max-w-6xl px-4 pb-12">
+  <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
     <div class="card-body">
-      <table class="table">
-        <thead>
-          <tr><th>Fecha</th><th>Miembro</th><th>Período</th><th>Monto</th><th>Método</th><th>Registró</th></tr>
-        </thead>
-        <tbody>
-          <% @pagos.each do |pago| %>
-            <tr>
-              <td><%= l pago.fecha_pago %></td>
-              <td><%= pago.membresia.user.nombre.presence || pago.membresia.user.email_address %></td>
-              <td class="text-xs"><%= l pago.periodo_inicio %> — <%= l pago.periodo_fin %></td>
-              <td class="font-medium"><%= cop pago.monto %></td>
-              <td><%= pago.metodo %></td>
-              <td class="text-xs text-steel-3"><%= pago.registrado_por.nombre %></td>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
-      <% if @pagos.empty? %>
-        <p class="text-sm text-steel-3">Aún no hay pagos registrados.</p>
+      <% if @pagos.any? %>
+        <div class="overflow-x-auto">
+          <table class="table">
+            <thead>
+              <tr class="text-xs uppercase tracking-wider text-steel-3">
+                <th>Fecha</th><th>Miembro</th><th>Período</th><th>Monto</th><th>Método</th><th>Registró</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @pagos.each do |pago| %>
+                <tr class="hover:bg-base-200">
+                  <td class="text-sm"><%= l pago.fecha_pago %></td>
+                  <td>
+                    <div class="flex items-center gap-2">
+                      <%= render "shared/avatar", user: pago.membresia.user, clase: "size-7 text-[10px]" %>
+                      <span class="font-medium"><%= nombre_visible(pago.membresia.user) %></span>
+                    </div>
+                  </td>
+                  <td class="text-xs text-steel-5"><%= l pago.periodo_inicio %> — <%= l pago.periodo_fin %></td>
+                  <td class="font-display font-bold"><%= cop pago.monto %></td>
+                  <td><span class="badge badge-sm badge-ghost"><%= pago.metodo %></span></td>
+                  <td class="text-xs text-steel-3"><%= pago.registrado_por.nombre %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <div class="flex flex-col items-center gap-2 rounded-xl bg-base-200 py-12 text-center">
+          <%= render "shared/icono", nombre: :tarjeta, clase: "size-8 text-steel-1" %>
+          <p class="text-sm text-steel-3">Aún no hay pagos registrados.</p>
+        </div>
       <% end %>
     </div>
   </div>

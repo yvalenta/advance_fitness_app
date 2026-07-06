@@ -1,40 +1,59 @@
 <% content_for :title, "#{@user.nombre.presence || @user.email_address} — Advance Fitness" %>
 
-<div class="mx-auto max-w-4xl px-4 py-8">
-  <h1 class="mb-1 font-display text-2xl font-bold"><%= @user.nombre.presence || @user.email_address %></h1>
-  <p class="mb-6 text-sm text-steel-3">
-    <span class="badge badge-sm badge-ghost"><%= @user.rol %></span>
-    · miembro desde <%= l @user.fecha_ingreso, format: :long %>
-  </p>
+<div class="gradient-hero relative overflow-hidden">
+  <div class="trama-puntos absolute inset-0"></div>
+  <div class="relative mx-auto flex w-full max-w-4xl items-center gap-4 px-4 pb-14 pt-10">
+    <%= render "shared/avatar", user: @user, clase: "size-14 text-lg" %>
+    <div>
+      <p class="eyebrow mb-1 text-volt">Miembro</p>
+      <h1 class="font-display text-2xl font-bold text-white sm:text-3xl"><%= nombre_visible(@user) %></h1>
+      <p class="mt-1.5 flex flex-wrap items-center gap-2 text-sm text-white/60">
+        <span class="badge badge-sm badge-ghost"><%= @user.rol %></span>
+        miembro desde <%= l @user.fecha_ingreso, format: :long %>
+      </p>
+    </div>
+  </div>
+</div>
 
-  <div class="grid gap-6 md:grid-cols-2">
-    <div class="card border border-base-300 bg-base-100 shadow-sm">
+<div class="mx-auto -mt-8 w-full max-w-4xl px-4 pb-12">
+  <div class="grid items-start gap-6 md:grid-cols-2">
+    <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
       <div class="card-body">
-        <h2 class="card-title text-base">Membresía</h2>
+        <h2 class="card-title text-base">
+          <span class="flex size-7 items-center justify-center rounded-lg bg-volt/15 text-volt-d">
+            <%= render "shared/icono", nombre: :escudo, clase: "size-4" %>
+          </span>
+          Membresía
+        </h2>
         <% if @user.membresia %>
           <p><%= badge_estado(@user.membresia.estado) %></p>
-          <p class="text-sm">Vence el <%= l @user.membresia.fecha_vencimiento, format: :long %> (<%= @user.membresia.dias_restantes %> días)</p>
-          <div class="card-actions">
-            <%= link_to "Gestionar", edit_admin_membresia_path(@user.membresia), class: "btn btn-primary btn-sm" %>
+          <p class="text-sm text-steel-5">Vence el <%= l @user.membresia.fecha_vencimiento, format: :long %> (<%= @user.membresia.dias_restantes %> días)</p>
+          <div class="card-actions mt-1">
+            <%= link_to "Gestionar", edit_admin_membresia_path(@user.membresia), class: "btn btn-primary btn-sm font-bold" %>
           </div>
         <% else %>
           <p class="text-sm text-steel-3">Sin membresía.</p>
-          <div class="card-actions">
-            <%= link_to "Crear membresía", new_admin_membresia_path, class: "btn btn-primary btn-sm" %>
+          <div class="card-actions mt-1">
+            <%= link_to "Crear membresía", new_admin_membresia_path, class: "btn btn-primary btn-sm font-bold" %>
           </div>
         <% end %>
       </div>
     </div>
 
-    <div class="card border border-base-300 bg-base-100 shadow-sm">
+    <div class="card animate-fade-up fade-delay-1 border border-base-300 bg-base-100 shadow-md">
       <div class="card-body">
-        <h2 class="card-title text-base">Últimos accesos</h2>
+        <h2 class="card-title text-base">
+          <span class="flex size-7 items-center justify-center rounded-lg bg-base-200 text-steel-5">
+            <%= render "shared/icono", nombre: :reloj, clase: "size-4" %>
+          </span>
+          Últimos accesos
+        </h2>
         <% if @accesos.any? %>
-          <ul class="flex flex-col gap-1 text-sm">
+          <ul class="flex flex-col gap-2 text-sm">
             <% @accesos.each do |acceso| %>
               <li class="flex items-center gap-2">
                 <%= badge_estado(acceso.tipo) %>
-                <%= l acceso.fecha_hora, format: :short %>
+                <span class="text-steel-5"><%= l acceso.fecha_hora, format: :short %></span>
                 <% unless acceso.dentro_de_horario? %>
                   <span class="badge badge-sm badge-error">fuera de horario</span>
                 <% end %>

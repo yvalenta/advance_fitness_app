@@ -11,7 +11,7 @@
   color-scheme: light;
 
   --color-base-100: #ffffff; /* card                              */
-  --color-base-200: #f8fafc; /* surface                           */
+  --color-base-200: #f4f7fa; /* surface                           */
   --color-base-300: #e2e8f0; /* bordes                            */
   --color-base-content: #1e293b; /* steel — texto base            */
   --color-primary: #b4f000; /* volt — acción principal, CTA      */
@@ -32,20 +32,114 @@
   --color-error-content: #ffffff;
 
   --radius-selector: 0.5rem;
-  --radius-field: 0.5rem;
-  --radius-box: 0.75rem;
+  --radius-field: 0.625rem;
+  --radius-box: 1rem;
+  --depth: 1;
+  --noise: 0;
 }
 
 /* ── Utilidades de marca (bg-volt, text-steel-3, font-display…) ── */
 @theme {
   --color-volt: #b4f000;
   --color-volt-d: #8fbf00;
+  --color-volt-l: #d3ff4d;
   --color-pulse: #ef4444;
   --color-ocean: #0ea5e9;
   --color-steel: #1e293b;
+  --color-steel-9: #0b1220;
+  --color-steel-7: #334155;
   --color-steel-5: #475569;
   --color-steel-3: #94a3b8;
   --color-steel-1: #cbd5e1;
 
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+
+  --animate-fade-up: fade-up 0.55s ease both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@layer base {
+  body {
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer components {
+  /* Fondo hero oscuro de marca (navbar, cabeceras, panel de auth) */
+  .gradient-hero {
+    background: linear-gradient(160deg, #0b1220 0%, #1e293b 55%, #26364c 100%);
+  }
+
+  /* Trama de puntos sutil sobre superficies oscuras */
+  .trama-puntos {
+    background-image: radial-gradient(rgb(148 163 184 / 0.18) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+
+  .gradient-volt {
+    background: linear-gradient(135deg, #8fbf00 0%, #b4f000 55%, #d3ff4d 100%);
+  }
+
+  /* Barra corta decorativa bajo títulos de sección */
+  .divider-volt {
+    width: 56px;
+    height: 3px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #8fbf00, #d3ff4d);
+  }
+
+  .eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .card-hover {
+    transition:
+      transform 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgb(11 18 32 / 0.12);
+  }
+
+  .pulse-volt {
+    animation: pulse-volt 2.4s ease infinite;
+  }
+
+  @keyframes pulse-volt {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgb(180 240 0 / 0.45);
+    }
+    50% {
+      box-shadow: 0 0 0 10px rgb(180 240 0 / 0);
+    }
+  }
+
+  .fade-delay-1 {
+    animation-delay: 0.1s;
+  }
+
+  .fade-delay-2 {
+    animation-delay: 0.22s;
+  }
+
+  .fade-delay-3 {
+    animation-delay: 0.34s;
+  }
 }
