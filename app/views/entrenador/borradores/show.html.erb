@@ -1,0 +1,63 @@
+<% content_for :title, "Revisar plan — Advance Fitness" %>
+
+<div class="gradient-hero relative overflow-hidden">
+  <div class="trama-puntos absolute inset-0"></div>
+  <div class="relative mx-auto flex w-full max-w-4xl items-center gap-4 px-4 pb-14 pt-10">
+    <%= render "shared/avatar", user: @plan.user, clase: "size-14 text-lg" %>
+    <div>
+      <p class="eyebrow mb-1 text-volt">Borrador · generado por <%= @plan.generado_por %></p>
+      <h1 class="font-display text-2xl font-bold text-white sm:text-3xl">Plan de <%= nombre_visible(@plan.user) %></h1>
+      <p class="mt-1.5 text-sm text-white/60">
+        <% if (objetivo = @plan.user.objetivo_activo) %>
+          Meta: <%= objetivo.nombre.downcase %> · <%= objetivo.objetivo_kcal %> kcal/día · <%= objetivo.peso_kg.to_f %> kg
+        <% else %>
+          Sin objetivo nutricional activo
+        <% end %>
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="mx-auto -mt-8 flex w-full max-w-4xl flex-col gap-6 px-4 pb-12">
+  <div class="animate-fade-up">
+    <%= render "planes_personalizados/plan", plan: @plan %>
+  </div>
+
+  <div class="card animate-fade-up fade-delay-1 border-2 border-volt/50 bg-base-100 shadow-md">
+    <div class="card-body">
+      <h2 class="card-title text-base">
+        <span class="flex size-7 items-center justify-center rounded-lg bg-volt/15 text-volt-d">
+          <%= render "shared/icono", nombre: :check, clase: "size-4" %>
+        </span>
+        Aprobar plan
+      </h2>
+      <p class="text-sm text-steel-5">
+        Si necesitas ajustar algo, edita el JSON antes de aprobar; si está bien, aprueba directo.
+        Al aprobar, el plan se publica de inmediato para el miembro.
+      </p>
+
+      <%= form_with url: entrenador_borrador_aprobacion_path(@plan), method: :post, class: "flex flex-col gap-4" do %>
+        <details class="collapse-arrow collapse border border-base-300">
+          <summary class="collapse-title text-sm font-semibold">Ajustar JSON (opcional)</summary>
+          <div class="collapse-content flex flex-col gap-3">
+            <label class="form-control">
+              <span class="label-text mb-1 text-xs font-semibold">Rutina</span>
+              <%= text_area_tag :rutina, JSON.pretty_generate(@plan.rutina),
+                    rows: 12, class: "textarea textarea-bordered w-full font-mono text-xs" %>
+            </label>
+            <label class="form-control">
+              <span class="label-text mb-1 text-xs font-semibold">Plan nutricional</span>
+              <%= text_area_tag :plan_nutricional, JSON.pretty_generate(@plan.plan_nutricional),
+                    rows: 12, class: "textarea textarea-bordered w-full font-mono text-xs" %>
+            </label>
+          </div>
+        </details>
+
+        <div class="flex gap-2">
+          <%= submit_tag "Aprobar y publicar", class: "btn btn-primary font-bold" %>
+          <%= link_to "Volver", entrenador_borradores_path, class: "btn btn-ghost" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

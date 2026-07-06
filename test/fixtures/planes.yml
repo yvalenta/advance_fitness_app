@@ -1,0 +1,14 @@
+free:
+  codigo: free
+  nombre: Free
+  precio: 0
+  beneficios:
+    - Guías generales según tu meta
+
+personalizado:
+  codigo: personalizado
+  nombre: Personalizado
+  precio: 60000
+  beneficios:
+    - Rutina semanal generada con IA
+    - Aprobado por tu entrenador

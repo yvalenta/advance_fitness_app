@@ -1,0 +1,81 @@
+<%# Rutina por día (tabs Stimulus) + comidas con macros (SDD §14) %>
+<%# locals: (plan:) %>
+<% dias = Array(plan.rutina["dias"]) %>
+<% nutricion = plan.plan_nutricional %>
+
+<div class="flex flex-col gap-6">
+  <div class="card border border-base-300 bg-base-100 shadow-md" data-controller="tabs">
+    <div class="card-body">
+      <h2 class="card-title text-base">
+        <span class="flex size-7 items-center justify-center rounded-lg bg-volt/15 text-volt-d">
+          <%= render "shared/icono", nombre: :actividad, clase: "size-4" %>
+        </span>
+        Rutina semanal
+      </h2>
+
+      <div role="tablist" class="tabs tabs-box w-fit max-w-full flex-nowrap overflow-x-auto">
+        <% dias.each do |dia| %>
+          <button type="button" role="tab" class="tab whitespace-nowrap font-semibold capitalize"
+                  data-tabs-target="tab" data-action="tabs#seleccionar"><%= dia["dia"] %></button>
+        <% end %>
+      </div>
+
+      <% dias.each do |dia| %>
+        <div data-tabs-target="panel" hidden>
+          <% if dia["enfoque"].present? %>
+            <p class="mb-3 text-sm font-semibold text-steel-5">Enfoque: <%= dia["enfoque"] %></p>
+          <% end %>
+          <div class="overflow-x-auto">
+            <table class="table table-sm">
+              <thead>
+                <tr class="text-xs uppercase tracking-wider text-steel-3">
+                  <th>Ejercicio</th><th>Series</th><th>Reps</th><th>Descanso</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% Array(dia["ejercicios"]).each do |ejercicio| %>
+                  <tr class="hover:bg-base-200">
+                    <td class="font-medium"><%= ejercicio["nombre"] %></td>
+                    <td><%= ejercicio["series"] %></td>
+                    <td><%= ejercicio["repeticiones"] %></td>
+                    <td class="text-steel-3"><%= ejercicio["descanso_seg"] %> s</td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="card border border-base-300 bg-base-100 shadow-md">
+    <div class="card-body">
+      <h2 class="card-title text-base">
+        <span class="flex size-7 items-center justify-center rounded-lg bg-pulse/15 text-pulse">
+          <%= render "shared/icono", nombre: :fuego, clase: "size-4" %>
+        </span>
+        Plan nutricional
+        <% if nutricion["kcal_diarias"].present? %>
+          <span class="badge badge-ghost badge-sm ml-auto"><%= number_with_delimiter(nutricion["kcal_diarias"], delimiter: ".") %> kcal/día</span>
+        <% end %>
+      </h2>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <% Array(nutricion["comidas"]).each do |comida| %>
+          <div class="rounded-xl border border-base-300 p-4">
+            <div class="flex items-center justify-between">
+              <h3 class="font-semibold"><%= comida["nombre"] %></h3>
+              <span class="font-display text-sm font-bold text-volt-d"><%= comida["kcal"] %> kcal</span>
+            </div>
+            <p class="mt-1 text-sm text-steel-5"><%= comida["descripcion"] %></p>
+            <div class="mt-2 flex gap-2 text-xs">
+              <span class="badge badge-ghost badge-sm">P <%= comida["proteinas_g"] %>g</span>
+              <span class="badge badge-ghost badge-sm">C <%= comida["carbohidratos_g"] %>g</span>
+              <span class="badge badge-ghost badge-sm">G <%= comida["grasas_g"] %>g</span>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

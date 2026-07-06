@@ -15,4 +15,6 @@ ActiveSupport::Inflector.inflections(:en) do |inflect|
   inflect.irregular "plan_personalizado", "planes_personalizados"
   inflect.irregular "novedad", "novedades"
   inflect.irregular "renovacion", "renovaciones"
+  inflect.irregular "borrador", "borradores"
+  inflect.irregular "aprobacion", "aprobaciones"
 end

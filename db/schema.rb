@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_06_150002) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_06_160003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -64,6 +64,30 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_06_150002) do
     t.index ["registrado_por_id"], name: "index_pagos_on_registrado_por_id"
   end
 
+  create_table "planes", force: :cascade do |t|
+    t.jsonb "beneficios", default: [], null: false
+    t.string "codigo", null: false
+    t.datetime "created_at", null: false
+    t.string "nombre", null: false
+    t.decimal "precio", precision: 10, default: "0", null: false
+    t.datetime "updated_at", null: false
+    t.index ["codigo"], name: "index_planes_on_codigo", unique: true
+  end
+
+  create_table "planes_personalizados", force: :cascade do |t|
+    t.bigint "aprobado_por_id"
+    t.datetime "created_at", null: false
+    t.string "estado", default: "borrador", null: false
+    t.string "generado_por", default: "ia", null: false
+    t.jsonb "plan_nutricional", default: {}, null: false
+    t.jsonb "rutina", default: {}, null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["aprobado_por_id"], name: "index_planes_personalizados_on_aprobado_por_id"
+    t.index ["user_id", "estado"], name: "index_planes_personalizados_on_user_id_and_estado"
+    t.index ["user_id"], name: "index_planes_personalizados_on_user_id"
+  end
+
   create_table "registros_calorias", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.date "fecha", null: false
@@ -81,6 +105,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_06_150002) do
     t.string "user_agent"
     t.bigint "user_id", null: false
     t.index ["user_id"], name: "index_sessions_on_user_id"
+  end
+
+  create_table "suscripciones", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "estado", default: "activa", null: false
+    t.date "fecha_fin"
+    t.date "fecha_inicio", null: false
+    t.bigint "plan_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["plan_id"], name: "index_suscripciones_on_plan_id"
+    t.index ["user_id"], name: "index_suscripciones_on_user_id"
+    t.index ["user_id"], name: "index_suscripciones_una_activa_por_user", unique: true, where: "((estado)::text = 'activa'::text)"
   end
 
   create_table "users", force: :cascade do |t|
@@ -105,6 +142,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_06_150002) do
   add_foreign_key "objetivos_nutricionales", "users"
   add_foreign_key "pagos", "membresias"
   add_foreign_key "pagos", "users", column: "registrado_por_id"
+  add_foreign_key "planes_personalizados", "users"
+  add_foreign_key "planes_personalizados", "users", column: "aprobado_por_id"
   add_foreign_key "registros_calorias", "users"
   add_foreign_key "sessions", "users"
+  add_foreign_key "suscripciones", "planes"
+  add_foreign_key "suscripciones", "users"
 end

@@ -66,7 +66,7 @@ app/
 | 2 | Membresías & Accesos | ✅ Completa |
 | 3 | Biometría & Progreso | Aplazada (ver nota SDD §11) |
 | 4 | Nutrición & Objetivos | ✅ Completa |
-| 5 | Planes & IA | Pendiente |
+| 5 | Planes & IA | ✅ Completa |
 | 6 | Comunidad & Cierre | Pendiente |
 
 ## Marca

@@ -18,6 +18,8 @@ class User < ApplicationRecord
   has_many :accesos, dependent: :destroy
   has_many :objetivos_nutricionales, dependent: :destroy
   has_many :registros_calorias, dependent: :destroy
+  has_many :suscripciones, dependent: :destroy
+  has_many :planes_personalizados, dependent: :destroy
 
   normalizes :email_address, with: ->(e) { e.strip.downcase }
 
@@ -32,6 +34,15 @@ class User < ApplicationRecord
   def entrenador? = rol == "entrenador"
 
   def objetivo_activo = objetivos_nutricionales.find_by(activo: true)
+
+  def suscripcion_activa = suscripciones.activas.includes(:plan).first
+
+  # Premium = suscripción activa al plan personalizado (validado en DB, SDD §08)
+  def premium?
+    suscripcion_activa&.plan&.personalizado? || false
+  end
+
+  def plan_aprobado = planes_personalizados.aprobados.order(created_at: :desc).first
 
   # La edad se deriva de la fecha de nacimiento, nunca se guarda (SDD §07)
   def edad

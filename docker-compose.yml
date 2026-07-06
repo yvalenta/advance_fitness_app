@@ -10,6 +10,8 @@ x-app: &app
     # DATABASE_URL de Supabase del .env queda para producción/host.
     DATABASE_URL: postgres://postgres:postgres@db:5432/advance_fitness_app_development
     TEST_DATABASE_URL: postgres://postgres:postgres@db:5432/advance_fitness_app_test
+    # GenerarPlanJob (Fase 5): compose la toma del .env del host si existe
+    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
   depends_on:
     db:
       condition: service_healthy

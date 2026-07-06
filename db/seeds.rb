@@ -22,3 +22,27 @@ admin.update!(rol: "admin") unless admin.admin?
 if ENV["ADMIN_EMAIL"].present?
   User.find_by(email_address: ENV["ADMIN_EMAIL"])&.update!(rol: "admin")
 end
+
+# Catálogo de planes (SDD §07 — monetización). Idempotente.
+Plan.find_or_create_by!(codigo: "free") do |plan|
+  plan.nombre = "Free"
+  plan.precio = 0
+  plan.beneficios = [
+    "Control de membresía y check-in",
+    "Objetivo calórico y registro diario",
+    "Guías generales según tu meta",
+    "Acceso al blog y novedades"
+  ]
+end
+
+Plan.find_or_create_by!(codigo: "personalizado") do |plan|
+  plan.nombre = "Personalizado"
+  plan.precio = 60_000
+  plan.beneficios = [
+    "Todo lo del plan Free",
+    "Rutina semanal generada con IA para tu perfil",
+    "Plan nutricional con comidas y macros",
+    "Revisado y aprobado por tu entrenador",
+    "Recalibración cuando cambia tu objetivo"
+  ]
+end

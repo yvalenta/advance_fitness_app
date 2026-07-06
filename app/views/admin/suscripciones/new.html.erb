@@ -1,0 +1,49 @@
+<% content_for :title, "Nueva suscripción — Advance Fitness" %>
+
+<%= render "shared/encabezado",
+      titulo: "Nueva suscripción",
+      descripcion: "Alta del plan Personalizado pagado en recepción. Al guardar se encola la generación con IA." %>
+
+<div class="mx-auto -mt-8 w-full max-w-2xl px-4 pb-12">
+  <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
+    <div class="card-body">
+      <% if @suscripcion.errors.any? %>
+        <div role="alert" class="alert alert-error text-sm">
+          <%= render "shared/icono", nombre: :alerta, clase: "size-5 shrink-0" %>
+          <span><%= @suscripcion.errors.full_messages.to_sentence %></span>
+        </div>
+      <% end %>
+
+      <%= form_with model: @suscripcion, url: admin_suscripciones_path, class: "flex flex-col gap-4" do |form| %>
+        <label class="form-control">
+          <span class="label-text mb-1 text-xs font-semibold">Miembro</span>
+          <%= form.collection_select :user_id,
+                User.where.not(id: Suscripcion.activas.select(:user_id)).order(:nombre), :id, :nombre,
+                { prompt: "Selecciona un miembro" }, { class: "select select-bordered w-full", required: true } %>
+        </label>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="form-control">
+            <span class="label-text mb-1 text-xs font-semibold">Fecha de inicio</span>
+            <%= form.date_field :fecha_inicio, required: true, class: "input input-bordered w-full" %>
+          </label>
+          <label class="form-control">
+            <span class="label-text mb-1 text-xs font-semibold">Fecha de fin (opcional)</span>
+            <%= form.date_field :fecha_fin, class: "input input-bordered w-full" %>
+          </label>
+        </div>
+
+        <div class="rounded-xl bg-volt/10 p-3 text-sm text-steel-5">
+          Plan: <strong>Personalizado (<%= cop Plan.personalizado&.precio.to_i %>/mes)</strong>.
+          El pago se registra en recepción; al guardar, la IA genera el plan y queda en
+          <em>borrador</em> hasta que el entrenador lo apruebe.
+        </div>
+
+        <div class="flex gap-2">
+          <%= form.submit "Crear suscripción", class: "btn btn-primary font-bold" %>
+          <%= link_to "Cancelar", admin_suscripciones_path, class: "btn btn-ghost" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

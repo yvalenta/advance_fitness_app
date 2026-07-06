@@ -15,6 +15,16 @@ Rails.application.routes.draw do
   resource :objetivo, only: %i[ show new create ], controller: "objetivos"
   resources :registros_calorias, only: :create
 
+  # Planes y monetización (SDD §09, Fase 5)
+  get "mi_plan", to: "planes_personalizados#show", as: :mi_plan
+  get "upgrade", to: "planes#index", as: :upgrade
+
+  namespace :entrenador do
+    resources :borradores, only: %i[ index show ], controller: "borradores" do
+      resource :aprobacion, only: :create, controller: "aprobaciones"
+    end
+  end
+
   # Panel de administración (SDD §09) — protegido por Pundit, no solo por el namespace
   namespace :admin do
     resources :users, only: %i[ index show ]
@@ -23,6 +33,7 @@ Rails.application.routes.draw do
     end
     resources :pagos, only: :index
     resources :checkins, only: %i[ index create ]
+    resources :suscripciones, only: %i[ index new create update ]
   end
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 

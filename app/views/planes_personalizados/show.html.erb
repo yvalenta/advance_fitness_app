@@ -1,0 +1,70 @@
+<% content_for :title, "Mi plan — Advance Fitness" %>
+
+<%= render "shared/encabezado",
+      eyebrow: "Mi plan",
+      titulo: @plan ? "Tu plan personalizado" : "Tu plan Free",
+      descripcion: @plan ? "Generado con IA para tu perfil y aprobado por #{@plan.aprobado_por&.nombre || "tu entrenador"}." : "Guías generales según tu objetivo.",
+      accion: (@plan ? nil : link_to("Mejorar mi plan", upgrade_path, class: "btn btn-primary btn-sm font-bold")) %>
+
+<div class="mx-auto -mt-8 w-full max-w-4xl px-4 pb-12">
+  <% if @plan %>
+    <div class="animate-fade-up">
+      <%= render "planes_personalizados/plan", plan: @plan %>
+    </div>
+  <% else %>
+    <% if @pendiente %>
+      <div class="alert alert-info animate-fade-up mb-6 shadow-md">
+        <%= render "shared/icono", nombre: :reloj, clase: "size-5 shrink-0" %>
+        <span class="text-sm">Tu plan personalizado está en preparación: la IA ya lo generó o lo está generando,
+        y tu entrenador lo revisará antes de publicarlo. Te aparecerá aquí apenas esté aprobado.</span>
+      </div>
+    <% end %>
+
+    <% guias = {
+         "deficit" => [ [ "Cardio 3–4 veces por semana", "30–40 minutos en zona moderada: caminata rápida, elíptica o bici." ],
+                        [ "Fuerza para conservar músculo", "Rutina de cuerpo completo 2–3 veces por semana." ],
+                        [ "Mantén tu déficit", "Registra tus calorías a diario; tu objetivo ya descuenta 500 kcal." ] ],
+         "superavit" => [ [ "Fuerza progresiva 4–5 días", "Aumenta peso o repeticiones cada semana (sobrecarga progresiva)." ],
+                          [ "Proteína en cada comida", "Apunta a 1.6–2 g por kg de peso corporal al día." ],
+                          [ "Cumple tu superávit", "Tu objetivo ya suma el excedente según tu somatotipo." ] ],
+         "mantenimiento" => [ [ "Mezcla fuerza y cardio", "3 días de fuerza + 2 de cardio mantienen tu composición." ],
+                              [ "Consistencia sobre intensidad", "La regularidad semanal pesa más que sesiones extremas." ],
+                              [ "Vigila tu balance", "Registra tus calorías para sostener tu TDEE." ] ]
+       } %>
+    <% claves = guias.fetch(@objetivo&.tipo, guias["mantenimiento"]) %>
+
+    <div class="grid gap-4 sm:grid-cols-3">
+      <% claves.each_with_index do |(titulo, detalle), indice| %>
+        <div class="card animate-fade-up <%= "fade-delay-#{indice}" if indice.positive? %> card-hover border border-base-300 bg-base-100 shadow-sm">
+          <div class="card-body gap-2">
+            <span class="flex size-9 items-center justify-center rounded-xl bg-volt/15 text-volt-d">
+              <%= render "shared/icono", nombre: :check, clase: "size-4" %>
+            </span>
+            <h3 class="font-semibold"><%= titulo %></h3>
+            <p class="text-sm text-steel-5"><%= detalle %></p>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <% unless @objetivo %>
+      <p class="mt-4 text-sm text-steel-3">
+        <%= link_to "Fija tu objetivo calórico", objetivo_path, class: "link font-semibold" %> para recibir guías acordes a tu meta.
+      </p>
+    <% end %>
+
+    <% unless Current.user.premium? %>
+      <div class="gradient-hero animate-fade-up fade-delay-2 relative mt-8 overflow-hidden rounded-2xl p-6 shadow-md">
+        <div class="trama-puntos absolute inset-0"></div>
+        <div class="relative flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p class="eyebrow text-volt">Plan personalizado</p>
+            <p class="mt-1 font-display text-xl font-bold text-white">Rutina y dieta generadas con IA, aprobadas por tu coach</p>
+            <p class="mt-1 text-sm text-white/60">Hechas para tu somatotipo, tu objetivo y tu semana real.</p>
+          </div>
+          <%= link_to "Conocer el plan", upgrade_path, class: "btn btn-primary font-bold" %>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+</div>

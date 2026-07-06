@@ -1,0 +1,39 @@
+<% content_for :title, "Borradores — Advance Fitness" %>
+
+<%= render "shared/encabezado",
+      eyebrow: "Panel del entrenador",
+      titulo: "Planes por revisar",
+      descripcion: "Generados con IA; se publican al miembro solo cuando los apruebas." %>
+
+<div class="mx-auto -mt-8 w-full max-w-4xl px-4 pb-12">
+  <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
+    <div class="card-body">
+      <% if @borradores.any? %>
+        <div class="flex flex-col divide-y divide-base-200">
+          <% @borradores.each do |borrador| %>
+            <div class="flex items-center justify-between gap-3 py-3">
+              <div class="flex min-w-0 items-center gap-3">
+                <%= render "shared/avatar", user: borrador.user, clase: "size-11 text-sm" %>
+                <div class="min-w-0">
+                  <p class="truncate font-semibold"><%= nombre_visible(borrador.user) %></p>
+                  <p class="text-xs text-steel-3">
+                    Generado por <%= borrador.generado_por %> · <%= l borrador.created_at, format: :short %>
+                    <% if (objetivo = borrador.user.objetivo_activo) %>
+                      · meta: <%= objetivo.nombre.downcase %> (<%= objetivo.objetivo_kcal %> kcal)
+                    <% end %>
+                  </p>
+                </div>
+              </div>
+              <%= link_to "Revisar", entrenador_borrador_path(borrador), class: "btn btn-primary btn-sm shrink-0 font-bold" %>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="flex flex-col items-center gap-2 rounded-xl bg-base-200 py-12 text-center">
+          <%= render "shared/icono", nombre: :check, clase: "size-8 text-steel-1" %>
+          <p class="text-sm text-steel-3">No hay borradores pendientes. ¡Todo revisado!</p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
