@@ -5,52 +5,87 @@
       titulo: "¿Cuál es tu meta?",
       descripcion: "Con tu perfil y tu peso actual calculamos tu TDEE y el objetivo de calorías diarias." %>
 
-<div class="mx-auto -mt-8 w-full max-w-2xl px-4 pb-12">
-  <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
-    <div class="card-body">
-      <% if @objetivo.errors.any? %>
-        <div role="alert" class="alert alert-error text-sm">
-          <%= render "shared/icono", nombre: :alerta, clase: "size-5 shrink-0" %>
-          <span><%= @objetivo.errors.full_messages.to_sentence %></span>
-        </div>
-      <% end %>
+<% seleccionado = @objetivo.tipo.presence || "deficit" %>
 
-      <%= form_with model: @objetivo, url: objetivo_path, method: :post, class: "flex flex-col gap-5" do |form| %>
-        <fieldset>
-          <legend class="mb-3 text-sm font-bold">Meta</legend>
-          <div class="grid gap-3 sm:grid-cols-3">
-            <% [ [ "deficit", "🔻", "Bajar de peso", "Déficit de 500 kcal" ],
-                 [ "mantenimiento", "⚖️", "Mantenerme", "Calorías de mantenimiento" ],
-                 [ "superavit", "📈", "Ganar masa", "Superávit según somatotipo" ] ].each do |valor, emoji, nombre, detalle| %>
-              <label class="card-hover flex cursor-pointer flex-col gap-1 rounded-xl border-2 border-base-300 p-4 has-checked:border-volt-d has-checked:bg-volt/10">
-                <span class="flex items-center justify-between">
-                  <span class="text-2xl"><%= emoji %></span>
-                  <%= form.radio_button :tipo, valor, class: "radio radio-primary radio-sm",
-                        checked: @objetivo.tipo == valor, required: true %>
-                </span>
-                <span class="font-semibold"><%= nombre %></span>
-                <span class="text-xs text-steel-3"><%= detalle %></span>
-              </label>
-            <% end %>
+<div class="mx-auto -mt-8 w-full max-w-4xl px-4 pb-12"
+     data-controller="objetivo"
+     data-objetivo-talla-value="<%= Current.user.talla_cm.to_f %>"
+     data-objetivo-edad-value="<%= Current.user.edad %>"
+     data-objetivo-sexo-value="<%= Current.user.sexo %>"
+     data-objetivo-factor-value="<%= Current.user.nivel_actividad.to_f %>"
+     data-objetivo-superavit-value="<%= ObjetivoCalorico.superavit_para(Current.user.somatotipo) %>">
+  <div class="grid items-start gap-6 lg:grid-cols-[1fr_300px]">
+    <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
+      <div class="card-body">
+        <% if @objetivo.errors.any? %>
+          <div role="alert" class="alert alert-error text-sm">
+            <%= render "shared/icono", nombre: :alerta, clase: "size-5 shrink-0" %>
+            <span><%= @objetivo.errors.full_messages.to_sentence %></span>
           </div>
-        </fieldset>
+        <% end %>
 
-        <label class="form-control max-w-xs">
-          <span class="label-text mb-1 text-xs font-semibold">Peso actual (kg)</span>
-          <%= form.number_field :peso_kg, step: 0.1, min: 20, max: 399, required: true,
-                placeholder: "70.5", class: "input input-bordered w-full" %>
-        </label>
+        <%= form_with model: @objetivo, url: objetivo_path, method: :post, class: "flex flex-col gap-6" do |form| %>
+          <fieldset>
+            <legend class="mb-3 text-sm font-bold">Elige tu meta</legend>
+            <div class="grid gap-3 sm:grid-cols-3">
+              <% [ [ "deficit", :tendencia_baja, "bg-pulse/15 text-pulse", "Bajar de peso", "Déficit de 500 kcal" ],
+                   [ "mantenimiento", :igual, "bg-ocean/15 text-ocean", "Mantenerme", "Calorías de mantenimiento" ],
+                   [ "superavit", :tendencia_alta, "bg-volt/25 text-volt-d", "Ganar masa", "Superávit según somatotipo" ] ].each do |valor, icono, acento, nombre, detalle| %>
+                <label class="group card-hover relative flex cursor-pointer flex-col gap-2 rounded-2xl border-2 border-base-300 p-4 transition-colors hover:border-steel-1 has-checked:border-volt-d has-checked:bg-volt/10">
+                  <%= form.radio_button :tipo, valor, class: "sr-only", required: true,
+                        checked: seleccionado == valor,
+                        data: { objetivo_target: "tipo", action: "change->objetivo#calcular" } %>
+                  <span class="flex items-start justify-between">
+                    <span class="flex size-11 items-center justify-center rounded-xl <%= acento %>">
+                      <%= render "shared/icono", nombre: icono, clase: "size-5" %>
+                    </span>
+                    <span class="flex size-5 items-center justify-center rounded-full border-2 border-base-300 text-steel opacity-40 transition-all group-has-[:checked]:border-volt-d group-has-[:checked]:bg-volt group-has-[:checked]:opacity-100">
+                      <%= render "shared/icono", nombre: :check, clase: "size-3" %>
+                    </span>
+                  </span>
+                  <span class="font-display font-bold"><%= nombre %></span>
+                  <span class="text-xs text-steel-3"><%= detalle %></span>
+                </label>
+              <% end %>
+            </div>
+          </fieldset>
 
-        <p class="text-xs text-steel-3">
-          Usamos Mifflin-St Jeor con tu perfil (<%= link_to "editar", edit_perfil_path, class: "link" %>).
-          Cuando llegue el módulo de biometría, el peso se tomará de tu última medición.
+          <label class="form-control max-w-xs">
+            <span class="label-text mb-1 text-xs font-semibold">Peso actual (kg)</span>
+            <%= form.number_field :peso_kg, step: 0.1, min: 20, max: 399, required: true,
+                  placeholder: "70.5", class: "input input-bordered input-lg w-full font-display font-bold",
+                  data: { objetivo_target: "peso", action: "input->objetivo#calcular" } %>
+          </label>
+
+          <p class="text-xs text-steel-3">
+            Usamos Mifflin-St Jeor con tu perfil (<%= link_to "editar", edit_perfil_path, class: "link" %>).
+            Cuando llegue el módulo de biometría, el peso se tomará de tu última medición.
+          </p>
+
+          <div class="flex gap-2">
+            <%= form.submit "Guardar mi objetivo", class: "btn btn-primary btn-wide font-bold" %>
+            <%= link_to "Cancelar", objetivo_path, class: "btn btn-ghost" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="gradient-hero animate-fade-up fade-delay-1 relative overflow-hidden rounded-2xl p-6 shadow-md lg:sticky lg:top-24">
+      <div class="trama-puntos absolute inset-0"></div>
+      <div class="relative flex flex-col gap-1">
+        <p class="eyebrow text-volt">Vista previa</p>
+        <p class="mt-3 text-xs uppercase tracking-widest text-white/50">Tu objetivo diario</p>
+        <p class="font-display text-5xl font-bold text-volt">
+          <span data-objetivo-target="objetivo">—</span><span class="ml-1 text-lg text-white/60">kcal</span>
         </p>
-
-        <div class="flex gap-2">
-          <%= form.submit "Calcular mi objetivo", class: "btn btn-primary font-bold" %>
-          <%= link_to "Cancelar", objetivo_path, class: "btn btn-ghost" %>
-        </div>
-      <% end %>
+        <p class="mt-1 text-sm text-white/70" data-objetivo-target="detalle">Elige tu meta e ingresa tu peso</p>
+        <div class="divider-volt my-4"></div>
+        <p class="text-xs uppercase tracking-widest text-white/50">TDEE (mantenimiento)</p>
+        <p class="font-display text-2xl font-bold text-white" data-objetivo-target="tdee">—</p>
+        <p class="mt-4 text-xs text-white/40">
+          Estimación en vivo con tu perfil. El valor definitivo se calcula y guarda en el servidor.
+        </p>
+      </div>
     </div>
   </div>
 </div>

@@ -15,8 +15,12 @@ module ObjetivoCalorico
   def self.kcal(tdee:, tipo:, somatotipo: nil)
     case tipo
     when "deficit" then tdee - DEFICIT
-    when "superavit" then tdee + SUPERAVIT_POR_SOMATOTIPO.fetch(somatotipo, SUPERAVIT_DEFAULT)
+    when "superavit" then tdee + superavit_para(somatotipo)
     else tdee
     end
+  end
+
+  def self.superavit_para(somatotipo)
+    SUPERAVIT_POR_SOMATOTIPO.fetch(somatotipo, SUPERAVIT_DEFAULT)
   end
 end
