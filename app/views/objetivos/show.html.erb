@@ -1,0 +1,117 @@
+<% content_for :title, "Nutrición — Advance Fitness" %>
+
+<%= render "shared/encabezado",
+      eyebrow: "Nutrición",
+      titulo: "Mi objetivo calórico",
+      descripcion: "Registra lo que consumes y mira cuánto te falta para tu meta del día.",
+      accion: (@objetivo ? link_to("Cambiar objetivo", new_objetivo_path, class: "btn btn-outline btn-sm text-white hover:btn-primary") : nil) %>
+
+<div class="mx-auto -mt-8 w-full max-w-4xl px-4 pb-12">
+  <% if @objetivo %>
+    <% consumidas = @registro_hoy&.kcal_consumidas.to_i %>
+    <% restantes = @objetivo.kcal_restantes(consumidas) %>
+    <% progreso = @objetivo.objetivo_kcal.positive? ? ((consumidas * 100.0) / @objetivo.objetivo_kcal).clamp(0, 100).round : 0 %>
+
+    <div class="grid gap-4 sm:grid-cols-3">
+      <div class="animate-fade-up">
+        <%= render "shared/metric_card",
+              titulo: "Objetivo diario",
+              valor: "#{number_with_delimiter(@objetivo.objetivo_kcal, delimiter: ".")} kcal",
+              descripcion: "TDEE #{number_with_delimiter(@objetivo.tdee_kcal, delimiter: ".")} kcal · peso #{@objetivo.peso_kg.to_f} kg",
+              badge: @objetivo.nombre,
+              icono: :fuego,
+              acento: "bg-volt/15 text-volt-d" %>
+      </div>
+      <div class="animate-fade-up fade-delay-1">
+        <%= render "shared/metric_card",
+              titulo: "Consumido hoy",
+              valor: "#{number_with_delimiter(consumidas, delimiter: ".")} kcal",
+              descripcion: @registro_hoy ? "Registrado el #{l @registro_hoy.updated_at, format: :short}" : "Aún sin registro hoy",
+              icono: :actividad,
+              acento: "bg-ocean/15 text-ocean" %>
+      </div>
+      <div class="animate-fade-up fade-delay-2 card card-hover border border-base-300 bg-base-100 shadow-sm">
+        <div class="card-body gap-1.5">
+          <div class="flex items-start justify-between">
+            <h2 class="eyebrow text-steel-3"><%= restantes.negative? ? "Excedente" : "Te faltan" %></h2>
+            <span class="flex size-9 items-center justify-center rounded-xl <%= restantes.negative? ? "bg-pulse/15 text-pulse" : "bg-volt/15 text-volt-d" %>">
+              <%= render "shared/icono", nombre: restantes.negative? ? :alerta : :rayo, clase: "size-4.5" %>
+            </span>
+          </div>
+          <span class="font-display text-4xl font-bold tracking-tight <%= "text-pulse" if restantes.negative? %>" id="kcal-restantes">
+            <%= number_with_delimiter(restantes.abs, delimiter: ".") %> kcal
+          </span>
+          <progress class="progress <%= restantes.negative? ? "progress-error" : "progress-primary" %> w-full" value="<%= progreso %>" max="100"></progress>
+          <p class="text-sm text-steel-5">
+            <%= restantes.negative? ? "Superaste tu objetivo de hoy" : "#{progreso}% de tu objetivo consumido" %>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 grid items-start gap-6 md:grid-cols-2">
+      <div class="card animate-fade-up border-2 border-volt/50 bg-base-100 shadow-md">
+        <div class="card-body">
+          <h2 class="card-title text-base">
+            <span class="flex size-7 items-center justify-center rounded-lg bg-volt/15 text-volt-d">
+              <%= render "shared/icono", nombre: :fuego, clase: "size-4" %>
+            </span>
+            Registrar consumo de hoy
+          </h2>
+          <%= form_with model: RegistroCaloria.new, url: registros_calorias_path, class: "flex items-end gap-3" do |form| %>
+            <label class="form-control flex-1">
+              <span class="label-text mb-1 text-xs font-semibold">Calorías consumidas (total del día)</span>
+              <%= form.number_field :kcal_consumidas, min: 0, step: 10, required: true,
+                    value: @registro_hoy&.kcal_consumidas, placeholder: "1800", class: "input input-bordered w-full" %>
+            </label>
+            <%= form.submit @registro_hoy ? "Actualizar" : "Registrar", class: "btn btn-primary font-bold" %>
+          <% end %>
+          <p class="text-xs text-steel-3">Un registro por día: volver a enviar reemplaza el total.</p>
+        </div>
+      </div>
+
+      <div class="card animate-fade-up fade-delay-1 border border-base-300 bg-base-100 shadow-md">
+        <div class="card-body">
+          <h2 class="card-title text-base">
+            <span class="flex size-7 items-center justify-center rounded-lg bg-base-200 text-steel-5">
+              <%= render "shared/icono", nombre: :calendario, clase: "size-4" %>
+            </span>
+            Últimos días
+          </h2>
+          <% if @registros.any? %>
+            <ul class="flex flex-col divide-y divide-base-200 text-sm">
+              <% @registros.each do |registro| %>
+                <% delta = @objetivo.kcal_restantes(registro.kcal_consumidas) %>
+                <li class="flex items-center justify-between py-2">
+                  <span class="text-steel-5"><%= l registro.fecha, format: :long %></span>
+                  <span class="font-display font-bold"><%= number_with_delimiter(registro.kcal_consumidas, delimiter: ".") %> kcal</span>
+                  <% if delta.negative? %>
+                    <span class="badge badge-sm badge-error">+<%= number_with_delimiter(delta.abs, delimiter: ".") %></span>
+                  <% else %>
+                    <span class="badge badge-sm badge-success">en meta</span>
+                  <% end %>
+                </li>
+              <% end %>
+            </ul>
+          <% else %>
+            <p class="text-sm text-steel-3">Aún no registras calorías. ¡Empieza hoy!</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% else %>
+    <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
+      <div class="card-body items-center gap-3 py-12 text-center">
+        <span class="flex size-14 items-center justify-center rounded-2xl bg-volt/15 text-volt-d">
+          <%= render "shared/icono", nombre: :fuego, clase: "size-7" %>
+        </span>
+        <h2 class="font-display text-xl font-bold">Aún no tienes objetivo calórico</h2>
+        <p class="max-w-md text-sm text-steel-5">
+          Elige tu meta (bajar de peso, mantenerte o ganar masa) y calculamos tu objetivo
+          diario de calorías con la fórmula Mifflin-St Jeor.
+        </p>
+        <%= link_to "Fijar mi objetivo", new_objetivo_path, class: "btn btn-primary font-bold" %>
+      </div>
+    </div>
+  <% end %>
+</div>

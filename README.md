@@ -64,8 +64,8 @@ app/
 |---|---|---|
 | 1 | Base Rails & Auth | ✅ Completa |
 | 2 | Membresías & Accesos | ✅ Completa |
-| 3 | Biometría & Progreso | Pendiente |
-| 4 | Nutrición & Objetivos | Pendiente |
+| 3 | Biometría & Progreso | Aplazada (ver nota SDD §11) |
+| 4 | Nutrición & Objetivos | ✅ Completa |
 | 5 | Planes & IA | Pendiente |
 | 6 | Comunidad & Cierre | Pendiente |
 

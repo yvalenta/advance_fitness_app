@@ -61,16 +61,26 @@
             acento: "bg-ocean/15 text-ocean",
             bloqueada: true %>
     </div>
-    <div class="animate-fade-up fade-delay-2">
-      <%= render "shared/metric_card",
-            titulo: "Calorías",
-            valor: "—",
-            descripcion: "Objetivo diario y consumo",
-            badge: "Disponible en Fase 4",
-            icono: :fuego,
-            acento: "bg-pulse/15 text-pulse",
-            bloqueada: true %>
-    </div>
+    <%= link_to objetivo_path, class: "animate-fade-up fade-delay-2" do %>
+      <% if @objetivo %>
+        <% restantes = @objetivo.kcal_restantes(@registro_hoy&.kcal_consumidas.to_i) %>
+        <%= render "shared/metric_card",
+              titulo: "Calorías",
+              valor: "#{number_with_delimiter(restantes.abs, delimiter: ".")} kcal",
+              descripcion: restantes.negative? ? "Excedente sobre tu objetivo de hoy" : "Restantes de tu objetivo de hoy",
+              badge: @objetivo.nombre,
+              icono: :fuego,
+              acento: restantes.negative? ? "bg-pulse/15 text-pulse" : "bg-volt/15 text-volt-d" %>
+      <% else %>
+        <%= render "shared/metric_card",
+              titulo: "Calorías",
+              valor: "—",
+              descripcion: "Fija tu objetivo: déficit, mantenimiento o superávit",
+              badge: "Empezar ahora",
+              icono: :fuego,
+              acento: "bg-pulse/15 text-pulse" %>
+      <% end %>
+    <% end %>
   </div>
 
   <div class="animate-fade-up fade-delay-3 mt-8 grid gap-4 sm:grid-cols-3">

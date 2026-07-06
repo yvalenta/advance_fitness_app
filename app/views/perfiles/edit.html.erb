@@ -1,0 +1,61 @@
+<% content_for :title, "Mi perfil — Advance Fitness" %>
+
+<%= render "shared/encabezado",
+      eyebrow: "Mi cuenta",
+      titulo: "Completar perfil",
+      descripcion: "Estos datos alimentan el cálculo de tu gasto calórico (Mifflin-St Jeor)." %>
+
+<div class="mx-auto -mt-8 w-full max-w-2xl px-4 pb-12">
+  <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
+    <div class="card-body">
+      <% if @user.errors.any? %>
+        <div role="alert" class="alert alert-error text-sm">
+          <%= render "shared/icono", nombre: :alerta, clase: "size-5 shrink-0" %>
+          <span><%= @user.errors.full_messages.to_sentence %></span>
+        </div>
+      <% end %>
+
+      <%= form_with model: @user, url: perfil_path, method: :patch, class: "flex flex-col gap-4" do |form| %>
+        <label class="form-control">
+          <span class="label-text mb-1 text-xs font-semibold">Nombre completo</span>
+          <%= form.text_field :nombre, required: true, class: "input input-bordered w-full" %>
+        </label>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="form-control">
+            <span class="label-text mb-1 text-xs font-semibold">Fecha de nacimiento</span>
+            <%= form.date_field :fecha_nacimiento, required: true, max: Date.current, class: "input input-bordered w-full" %>
+          </label>
+          <label class="form-control">
+            <span class="label-text mb-1 text-xs font-semibold">Sexo</span>
+            <%= form.select :sexo, options_for_select([ [ "Hombre", "M" ], [ "Mujer", "F" ] ], @user.sexo),
+                  { prompt: "Selecciona" }, { class: "select select-bordered w-full", required: true } %>
+          </label>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="form-control">
+            <span class="label-text mb-1 text-xs font-semibold">Talla (cm)</span>
+            <%= form.number_field :talla_cm, step: 0.5, min: 100, max: 250, required: true,
+                  placeholder: "175", class: "input input-bordered w-full" %>
+          </label>
+          <label class="form-control">
+            <span class="label-text mb-1 text-xs font-semibold">Nivel de actividad</span>
+            <%= form.select :nivel_actividad,
+                  options_for_select(User::NIVELES_ACTIVIDAD.map { |factor, nombre| [ nombre, factor ] }, @user.nivel_actividad&.to_f),
+                  { prompt: "Selecciona" }, { class: "select select-bordered w-full", required: true } %>
+          </label>
+        </div>
+
+        <p class="text-xs text-steel-3">
+          Tu edad se calcula a partir de la fecha de nacimiento; no se almacena.
+        </p>
+
+        <div class="flex gap-2 pt-2">
+          <%= form.submit "Guardar perfil", class: "btn btn-primary font-bold" %>
+          <%= link_to "Volver", root_path, class: "btn btn-ghost" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

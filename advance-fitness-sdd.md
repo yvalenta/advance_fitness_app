@@ -348,6 +348,7 @@ Schema en **PostgreSQL** gestionado con **migraciones ActiveRecord** (snake_case
 | `id` | `bigint` PK | — |
 | `user_id` | `bigint` | FK → `users` |
 | `tipo` | `string` | enum: `deficit` · `superavit` · `mantenimiento` |
+| `peso_kg` | `decimal(5,2)` | Peso usado en el cálculo (snapshot del input; desde la Fase 3 se precarga de la última medición) |
 | `tdee_kcal` | `integer` | TDEE calculado al crear el objetivo (snapshot de inputs) |
 | `objetivo_kcal` | `integer` | `deficit: tdee−500` · `superavit: tdee+300..500` |
 | `activo` | `boolean` | Solo un objetivo activo por usuario (índice unique parcial) |
@@ -543,6 +544,8 @@ Rutas RESTful de Rails; los nombres siguen el dominio en español. Las de staff 
 | 4 | Nutrición & Objetivos | ~1 semana | Services TDEE, objetivos déficit/superávit, registro diario de calorías | Al fijar "bajar de peso" veo mi objetivo kcal y el faltante del día se actualiza al registrar consumo |
 | 5 | Planes & IA | ~1.5 semanas | Catálogo de planes, suscripciones, `GenerarPlanJob` (Claude), panel de aprobación del entrenador | Un miembro premium recibe un plan generado por IA solo después de la aprobación del entrenador |
 | 6 | Comunidad & Cierre | ~1 semana | Blog, novedades, pulido responsive, checklist MVP completo | Un miembro lee posts y novedades publicadas; todo el checklist §15 en verde |
+
+> **Nota (julio 2026):** la Fase 3 se **aplaza** y la Fase 4 se adelanta. Mientras no existan mediciones, los inputs del TDEE se capturan así: fecha de nacimiento, sexo, talla y nivel de actividad en un formulario de **"Completar perfil"** (columnas ya existentes en `users`), y el **peso** como snapshot en `objetivos_nutricionales.peso_kg` al fijar el objetivo. Cuando la Fase 3 llegue, el peso se precargará de la última medición y la recalibración seguirá el Flujo C.
 
 ---
 

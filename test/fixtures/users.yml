@@ -6,6 +6,11 @@ one:
   nombre: Usuario Uno
   rol: miembro
   fecha_ingreso: <%= Date.current %>
+  # Perfil nutricional completo (Fase 4): edad 30 estable para los tests
+  fecha_nacimiento: <%= Date.current - 30.years %>
+  sexo: M
+  talla_cm: 175.0
+  nivel_actividad: 1.6
 
 two:
   email_address: two@example.com

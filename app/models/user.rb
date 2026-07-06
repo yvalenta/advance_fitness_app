@@ -2,10 +2,22 @@ class User < ApplicationRecord
   ROLES = %w[miembro entrenador admin].freeze
   SOMATOTIPOS = %w[ectomorfo mesomorfo endomorfo].freeze
 
+  # Factores de actividad para el TDEE (SDD §07: 1.2–1.9). La columna es
+  # decimal(2,1), por eso los factores clásicos van redondeados a 1 decimal.
+  NIVELES_ACTIVIDAD = {
+    1.2 => "Sedentario (poco o nada de ejercicio)",
+    1.4 => "Ligero (1–3 días por semana)",
+    1.6 => "Moderado (3–5 días por semana)",
+    1.8 => "Intenso (6–7 días por semana)",
+    1.9 => "Atleta (dos sesiones diarias)"
+  }.freeze
+
   has_secure_password
   has_many :sessions, dependent: :destroy
   has_one :membresia, dependent: :destroy
   has_many :accesos, dependent: :destroy
+  has_many :objetivos_nutricionales, dependent: :destroy
+  has_many :registros_calorias, dependent: :destroy
 
   normalizes :email_address, with: ->(e) { e.strip.downcase }
 
@@ -18,6 +30,21 @@ class User < ApplicationRecord
   def staff? = rol.in?(%w[entrenador admin])
   def admin? = rol == "admin"
   def entrenador? = rol == "entrenador"
+
+  def objetivo_activo = objetivos_nutricionales.find_by(activo: true)
+
+  # La edad se deriva de la fecha de nacimiento, nunca se guarda (SDD §07)
+  def edad
+    return unless fecha_nacimiento
+
+    hoy = Date.current
+    hoy.year - fecha_nacimiento.year - (fecha_nacimiento.change(year: hoy.year) > hoy ? 1 : 0)
+  end
+
+  # Datos mínimos para calcular TDEE (Mifflin-St Jeor + factor de actividad)
+  def perfil_nutricional_completo?
+    fecha_nacimiento.present? && sexo.present? && talla_cm.present? && nivel_actividad.present?
+  end
 
   # Login con Google: encuentra o crea el usuario por email verificado.
   # Los usuarios creados vía OAuth reciben un password aleatorio (pueden

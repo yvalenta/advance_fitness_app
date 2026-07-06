@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_05_221005) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_06_150002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -37,6 +37,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_05_221005) do
     t.index ["user_id"], name: "index_membresias_on_user_id", unique: true
   end
 
+  create_table "objetivos_nutricionales", force: :cascade do |t|
+    t.boolean "activo", default: true, null: false
+    t.datetime "created_at", null: false
+    t.integer "objetivo_kcal", null: false
+    t.decimal "peso_kg", precision: 5, scale: 2, null: false
+    t.integer "tdee_kcal", null: false
+    t.string "tipo", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["user_id"], name: "index_objetivos_nutricionales_on_user_id"
+    t.index ["user_id"], name: "index_objetivos_nutricionales_un_activo_por_user", unique: true, where: "activo"
+  end
+
   create_table "pagos", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.date "fecha_pago", null: false
@@ -49,6 +62,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_05_221005) do
     t.datetime "updated_at", null: false
     t.index ["membresia_id"], name: "index_pagos_on_membresia_id"
     t.index ["registrado_por_id"], name: "index_pagos_on_registrado_por_id"
+  end
+
+  create_table "registros_calorias", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.date "fecha", null: false
+    t.integer "kcal_consumidas", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["user_id", "fecha"], name: "index_registros_calorias_on_user_id_and_fecha", unique: true
+    t.index ["user_id"], name: "index_registros_calorias_on_user_id"
   end
 
   create_table "sessions", force: :cascade do |t|
@@ -79,7 +102,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_05_221005) do
 
   add_foreign_key "accesos", "users"
   add_foreign_key "membresias", "users"
+  add_foreign_key "objetivos_nutricionales", "users"
   add_foreign_key "pagos", "membresias"
   add_foreign_key "pagos", "users", column: "registrado_por_id"
+  add_foreign_key "registros_calorias", "users"
   add_foreign_key "sessions", "users"
 end

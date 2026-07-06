@@ -10,6 +10,11 @@ Rails.application.routes.draw do
   # Defines the root path route ("/")
   root "dashboard#show"
 
+  # Nutrición y objetivos (SDD §09, Fase 4)
+  resource :perfil, only: %i[ edit update ], controller: "perfiles"
+  resource :objetivo, only: %i[ show new create ], controller: "objetivos"
+  resources :registros_calorias, only: :create
+
   # Panel de administración (SDD §09) — protegido por Pundit, no solo por el namespace
   namespace :admin do
     resources :users, only: %i[ index show ]
