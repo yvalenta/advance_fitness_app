@@ -1,5 +1,5 @@
 # Genera con IA el plan personalizado de un miembro premium (SDD flujo B).
-# Corre en Solid Queue: el request nunca espera a Claude. Revalida la
+# Corre en Solid Queue: el request nunca espera a la IA. Revalida la
 # suscripción EN LA BASE (no confía en el request) antes de llamar a la API.
 class GenerarPlanJob < ApplicationJob
   queue_as :default

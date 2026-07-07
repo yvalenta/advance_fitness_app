@@ -16,7 +16,7 @@ Aplicación web integral de gestión de gimnasio: membresías y control de acces
 | DaisyUI | 5 | Componentes UI CSS-only (vendored, sin Node) — tema `advance` |
 | Auth nativa Rails 8 + Pundit | — | Autenticación y autorización por rol |
 | Solid Queue / Cache / Cable | — | Jobs, cache y websockets sobre Postgres (sin Redis) |
-| Claude API | — | Generación de rutinas y planes nutricionales (`GenerarPlanJob`) |
+| IA multi-proveedor (Gemini · Claude) | — | Generación de rutinas y planes nutricionales (`GenerarPlanJob`); proveedor por `IA_PROVEEDOR`, Gemini por defecto |
 | Kamal 2 + Thruster | — | Despliegue (Docker) |
 
 ## Requisitos

@@ -11,7 +11,7 @@
 - Frontend: Hotwire (Turbo + Stimulus) + importmap — **sin Node, sin package.json**. Estilos: `tailwindcss-rails` v4, tokens en `@theme` (`app/assets/tailwind/application.css`).
 - Auth nativa de Rails 8 (`has_secure_password` + sesiones); Google OAuth como segundo método. Autorización: **Pundit** (una policy por modelo, `verify_authorized`).
 - Background/cache/cable: **Solid Queue · Solid Cache · Solid Cable** sobre Postgres — **sin Redis**.
-- IA: API de Claude solo desde `GenerarPlanJob` (server-side). **Sin LangChain.**
+- IA: capa multi-proveedor propia (`GeneradorPlanIa` + adaptadores en `app/services/ia/` — Gemini activo, Claude disponible, `ENV["IA_PROVEEDOR"]`) solo desde `GenerarPlanJob` (server-side). **Sin LangChain.**
 - Deploy: Kamal 2 + Thruster (`Dockerfile` de producción).
 
 ## Entorno local — dip, siempre

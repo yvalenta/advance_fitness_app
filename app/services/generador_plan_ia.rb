@@ -1,14 +1,15 @@
-require "net/http"
-
-# Única integración con IA del MVP (SDD §04): una llamada estructurada a la
-# API de Claude que convierte el perfil + objetivo del miembro en un JSON de
-# rutina semanal y plan nutricional. Sin LangChain: Net::HTTP y un prompt
-# versionado en el repo. La API key vive en credentials/ENV, jamás en vistas.
+# Única integración con IA del MVP (SDD §04): una llamada estructurada que
+# convierte el perfil + objetivo del miembro en un JSON de rutina semanal y
+# plan nutricional. Sin LangChain: el prompt y el contrato JSON viven aquí,
+# versionados en el repo; la llamada HTTP la resuelve un adaptador
+# intercambiable (app/services/ia/) elegido por ENV["IA_PROVEEDOR"].
+# Las API keys viven en credentials/ENV, jamás en vistas.
 module GeneradorPlanIa
-  ENDPOINT = URI("https://api.anthropic.com/v1/messages").freeze
-  MODELO = "claude-sonnet-5".freeze
-  VERSION_API = "2023-06-01".freeze
-  MAX_TOKENS = 4096
+  PROVEEDORES = {
+    "gemini" => Ia::ProveedorGemini,
+    "claude" => Ia::ProveedorClaude
+  }.freeze
+  PROVEEDOR_DEFAULT = "gemini".freeze
 
   SYSTEM_PROMPT = <<~PROMPT.freeze
     Eres un entrenador personal y nutricionista de un gimnasio en Colombia.
@@ -37,8 +38,15 @@ module GeneradorPlanIa
 
   # perfil: hash plano con los datos del miembro (sin objetos ActiveRecord)
   def self.generar(perfil)
-    respuesta = llamar_api(construir_prompt(perfil))
+    respuesta = proveedor.completar(system: SYSTEM_PROMPT, prompt: construir_prompt(perfil))
     parsear(respuesta)
+  end
+
+  def self.proveedor
+    nombre = ENV["IA_PROVEEDOR"].presence || PROVEEDOR_DEFAULT
+    PROVEEDORES.fetch(nombre.downcase) do
+      raise ArgumentError, "Proveedor de IA desconocido: #{nombre} (usa #{PROVEEDORES.keys.join(' | ')})"
+    end
   end
 
   def self.construir_prompt(perfil)
@@ -52,8 +60,8 @@ module GeneradorPlanIa
     PROMPT
   end
 
-  # La respuesta de Claude puede venir envuelta en fences; se limpia y valida
-  # que existan las dos claves del contrato antes de aceptarla.
+  # La respuesta puede venir envuelta en fences; se limpia y valida que
+  # existan las dos claves del contrato antes de aceptarla.
   def self.parsear(texto)
     json = texto.strip.sub(/\A```(?:json)?\s*/, "").sub(/\s*```\z/, "")
     datos = JSON.parse(json)
@@ -62,32 +70,4 @@ module GeneradorPlanIa
 
     { rutina: datos["rutina"], plan_nutricional: datos["plan_nutricional"] }
   end
-
-  def self.llamar_api(prompt)
-    peticion = Net::HTTP::Post.new(ENDPOINT)
-    peticion["x-api-key"] = api_key
-    peticion["anthropic-version"] = VERSION_API
-    peticion["content-type"] = "application/json"
-    peticion.body = {
-      model: MODELO,
-      max_tokens: MAX_TOKENS,
-      system: SYSTEM_PROMPT,
-      messages: [ { role: "user", content: prompt } ]
-    }.to_json
-
-    respuesta = Net::HTTP.start(ENDPOINT.host, ENDPOINT.port, use_ssl: true, read_timeout: 120) do |http|
-      http.request(peticion)
-    end
-    raise "Claude API #{respuesta.code}: #{respuesta.body.to_s.truncate(300)}" unless respuesta.is_a?(Net::HTTPSuccess)
-
-    JSON.parse(respuesta.body).dig("content", 0, "text").to_s
-  end
-  private_class_method :llamar_api
-
-  def self.api_key
-    ENV["ANTHROPIC_API_KEY"].presence ||
-      Rails.application.credentials.anthropic_api_key ||
-      raise("Falta ANTHROPIC_API_KEY (ENV o credentials)")
-  end
-  private_class_method :api_key
 end

@@ -23,7 +23,7 @@
 
 **Advance Fitness** es una aplicación web para gestionar el ciclo completo de un gimnasio: alta y renovación de membresías, control de accesos y horarios, seguimiento biométrico con estadísticas de progreso, calculadora nutricional (déficit / superávit calórico), monetización por planes (Free vs. Personalizado) y una capa de comunidad (blog + novedades).
 
-El sistema es un **monolito Rails 8.1 server-rendered**: HTML generado en el servidor con ERB, interactividad con Hotwire (Turbo + Stimulus, sin build de JavaScript gracias a importmap), estilos con Tailwind CSS y PostgreSQL como única base de datos. La autenticación es la **nativa de Rails 8** (`has_secure_password` + sesiones), la autorización por rol la resuelve **Pundit**, y los trabajos en segundo plano (generación de planes con IA vía API de Claude) corren en **Solid Queue** sobre el mismo Postgres — sin Redis, sin servicios externos. El despliegue es autocontenido con **Kamal + Thruster** (Docker).
+El sistema es un **monolito Rails 8.1 server-rendered**: HTML generado en el servidor con ERB, interactividad con Hotwire (Turbo + Stimulus, sin build de JavaScript gracias a importmap), estilos con Tailwind CSS y PostgreSQL como única base de datos. La autenticación es la **nativa de Rails 8** (`has_secure_password` + sesiones), la autorización por rol la resuelve **Pundit**, y los trabajos en segundo plano (generación de planes con IA vía una capa multi-proveedor — Gemini activo, Claude disponible) corren en **Solid Queue** sobre el mismo Postgres — sin Redis, sin servicios externos. El despliegue es autocontenido con **Kamal + Thruster** (Docker).
 
 > **Principio rector:** un solo framework, un solo lenguaje, una sola base de datos. Todo lo que requiere confianza (identidad, permisos, pagos, IA con API keys) vive en el servidor Rails; el navegador solo recibe HTML y pequeñas dosis de Stimulus.
 
@@ -129,7 +129,7 @@ Monolito Rails con **cero dependencias de Node** (importmap + binario standalone
 | Solid Cache | — | Caché de fragmentos | Sobre Postgres; blog/novedades, catálogo de planes y métricas del dashboard (expiración corta) |
 | Solid Cable + Turbo Streams | — | Tiempo real | Sobre Postgres; notificación al aprobarse un plan, check-in panel del admin en vivo |
 | Action Text | — | Contenido rich del blog | Editor Trix + Active Storage (posts y novedades) |
-| Claude API (`claude-sonnet-5`) | — | IA generativa | Llamada HTTP desde el job; salida JSON estructurada; API key en credentials/ENV |
+| Capa de IA multi-proveedor | — | IA generativa | `GeneradorPlanIa` + adaptadores intercambiables (`Ia::ProveedorGemini` activo, `Ia::ProveedorClaude` disponible) elegidos por `IA_PROVEEDOR`; llamada HTTP desde el job; salida JSON estructurada; API keys en credentials/ENV |
 | Minitest + Capybara | — | Tests | Unit, integration y system tests en cada fase |
 | RuboCop (omakase) + Brakeman + bundler-audit | — | Calidad y seguridad | `dip rubocop` · `dip brakeman`; corren también en CI (`.github/workflows`) |
 | dip + Docker Compose | 8.x | Entorno local | `dip provision` levanta todo; ver §13 |
@@ -140,11 +140,11 @@ Monolito Rails con **cero dependencias de Node** (importmap + binario standalone
 
 Las versiones 1.x delegaban identidad, permisos (RLS) y cómputo (Edge Functions) a Supabase, con una SPA React consumiendo la Data API. La revisión 2.0 lo reemplaza por un monolito Rails por tres razones. Primera: el dominio es **fuertemente server-side** — roles, pagos, membresías, aprobaciones de entrenador — y en Rails eso son modelos, policies y jobs en un solo lugar, testeables con minitest, sin repartir la lógica entre cliente TS, policies SQL y funciones Deno. Segunda: **sin vendor lock-in ni límites de plan free**: auth, jobs, cache y websockets son parte del framework (Rails 8 + Solid stack) y corren en cualquier VPS con Docker vía Kamal. Tercera: **menos JavaScript** — Hotwire cubre la interactividad requerida (formularios, tabs, gráficas server-rendered) sin build step ni Node, lo que reduce superficie de mantenimiento.
 
-**Regla de oro:** el navegador recibe HTML. Si una interacción se puede resolver con Turbo (frames/streams) se resuelve ahí; Stimulus solo para comportamiento puntual (tabs, contadores). Si algo requiere secretos o confianza (API key de Claude, validación de compra), vive en el servidor — controller, service o job.
+**Regla de oro:** el navegador recibe HTML. Si una interacción se puede resolver con Turbo (frames/streams) se resuelve ahí; Stimulus solo para comportamiento puntual (tabs, contadores). Si algo requiere secretos o confianza (API keys de IA, validación de compra), vive en el servidor — controller, service o job.
 
 ### ¿Por qué LangChain no?
 
-El único flujo de IA del MVP es una llamada única y estructurada a Claude (biometría + objetivo → JSON de rutina y dieta) desde `GenerarPlanJob`. No hay cadenas multi-paso, ni RAG, ni memoria conversacional que justifiquen orquestación. Una clase Ruby con `Net::HTTP`/`faraday` y un prompt versionado en el repo es más simple, más barata y más fácil de depurar. Si en fases futuras aparece un coach conversacional, se reevalúa.
+El único flujo de IA del MVP es una llamada única y estructurada al proveedor configurado (biometría + objetivo → JSON de rutina y dieta) desde `GenerarPlanJob`. No hay cadenas multi-paso, ni RAG, ni memoria conversacional que justifiquen orquestación. Una clase Ruby con `Net::HTTP`/`faraday` y un prompt versionado en el repo es más simple, más barata y más fácil de depurar. La independencia de proveedor se logra con adaptadores propios (`app/services/ia/`): el prompt y el contrato JSON son compartidos y cada adaptador solo traduce la llamada HTTP — hoy **Gemini** (activo) y **Claude**; añadir otro proveedor es un archivo nuevo, elegido por `ENV["IA_PROVEEDOR"]`. Si en fases futuras aparece un coach conversacional, se reevalúa.
 
 ---
 
@@ -170,7 +170,7 @@ Monolito Rails clásico (MVC) con dos capas de apoyo: **services** (cálculo pur
 │  + Stimulus    │           │      │                                  │
 └───────────────┘           │  Models (AR) ── Services (IMC/TDEE)     │
                             │      │                                  │
-                            │  Solid Queue ── GenerarPlanJob ─────────┼──→ Claude API
+                            │  Solid Queue ── GenerarPlanJob ─────────┼──→ IA (Gemini │ Claude)
                             └──────┼──────────────────────────────────┘
                                    ▼
                             ┌─────────────┐
@@ -186,7 +186,7 @@ Monolito Rails clásico (MVC) con dos capas de apoyo: **services** (cálculo pur
 | Pundit como única frontera de autorización | Ocultar un link en la vista es UX; el `authorize` del controller y la policy son la seguridad. Toda acción de controller pasa por Pundit (`verify_authorized`). |
 | Controllers delgados | Un controller orquesta: autentica, autoriza, delega a modelo/servicio/job, responde. Nada de reglas de negocio inline. |
 | Cálculos derivados no se persisten | IMC es columna generada en Postgres; TDEE, déficit y propensión se calculan en services. Solo se guardan los inputs. |
-| IA en jobs, nunca en el request | `GenerarPlanJob` corre en Solid Queue: el request del usuario no espera a Claude. La API key vive en credentials/ENV, jamás en el cliente. |
+| IA en jobs, nunca en el request | `GenerarPlanJob` corre en Solid Queue: el request del usuario no espera a la IA. Las API keys viven en credentials/ENV, jamás en el cliente. |
 | Todo comando local pasa por dip | `dip rails …`, `dip test`, `dip rubocop`, `dip psql`. Nadie necesita Ruby ni Postgres instalados en el host. |
 | Tests en cada fase | Cada fase entrega sus models/policies/controllers con tests minitest verdes; los system tests cubren los flujos del §10. |
 
@@ -457,8 +457,8 @@ El historial financiero (pagos) es inmutable a propósito: se corrige con un reg
 |---|---|
 | Strong parameters | Ningún mass-assignment sin `params.expect/permit`; `rol` jamás es asignable desde formularios. |
 | CSRF / XSS / SQLi | Protecciones por defecto de Rails: token CSRF, escape de ERB, queries parametrizadas de ActiveRecord. |
-| API key de Claude | `Rails.application.credentials.anthropic_api_key` (o ENV en producción vía Kamal secrets). Jamás llega a una vista. |
-| Validación server-side del upgrade | `GenerarPlanJob` verifica en la base (no en el request) que el usuario tenga suscripción `personalizado` activa antes de llamar a Claude. |
+| API keys de IA | `GEMINI_API_KEY` / `ANTHROPIC_API_KEY` en ENV o `Rails.application.credentials` (`gemini_api_key` / `anthropic_api_key`; en producción vía Kamal secrets). Jamás llegan a una vista. |
+| Validación server-side del upgrade | `GenerarPlanJob` verifica en la base (no en el request) que el usuario tenga suscripción `personalizado` activa antes de llamar a la IA. |
 | Auditoría estática | `dip brakeman` y `bundler-audit` en cada fase y en CI; cero hallazgos altos para cerrar una fase. |
 
 ---
@@ -509,7 +509,7 @@ Rutas RESTful de Rails; los nombres siguen el dominio en español. Las de staff 
 |---|---|---|
 | 1 | Ver oferta | El miembro abre "Mejorar plan": comparación Free vs. Personalizado desde `planes.beneficios`. |
 | 2 | Pagar en recepción | MVP sin pasarela: el admin registra el pago y crea la `suscripcion` al plan personalizado. |
-| 3 | Generar con IA | Al crearse la suscripción se encola `GenerarPlanJob`: revalida la suscripción, arma el prompt con biometría reciente, somatotipo, objetivo y restricciones, y pide a Claude un JSON de rutina semanal + plan nutricional. |
+| 3 | Generar con IA | Al crearse la suscripción se encola `GenerarPlanJob`: revalida la suscripción, arma el prompt con biometría reciente, somatotipo, objetivo y restricciones, y pide al proveedor de IA configurado un JSON de rutina semanal + plan nutricional. |
 | 4 | Revisión del entrenador | El plan queda en `borrador`. El entrenador lo revisa en su panel, ajusta el JSONB si hace falta y lo aprueba. |
 | 5 | Publicación | Al pasar a `aprobado`, la policy lo hace visible para el miembro, que lo ve en "Mi plan" con rutina por día y comidas con macros. |
 
@@ -542,7 +542,7 @@ Rutas RESTful de Rails; los nombres siguen el dominio en español. Las de staff 
 | 2 | Membresías & Accesos | ~1.5 semanas | Modelos membresías/pagos/accesos + policies, panel admin, check-in con validación de horario, `VencerMembresiasJob` | El admin da de alta una membresía, registra un pago y el check-in valida estado y horario; tests de policies verdes |
 | 3 | Biometría & Progreso | ~1.5 semanas | Mediciones (IMC generado), somatotipo, wizard de onboarding, gráficas SVG mensuales | Registro 3 mediciones y veo la gráfica con clasificación OMS y propensión correctas |
 | 4 | Nutrición & Objetivos | ~1 semana | Services TDEE, objetivos déficit/superávit, registro diario de calorías | Al fijar "bajar de peso" veo mi objetivo kcal y el faltante del día se actualiza al registrar consumo |
-| 5 | Planes & IA | ~1.5 semanas | Catálogo de planes, suscripciones, `GenerarPlanJob` (Claude), panel de aprobación del entrenador | Un miembro premium recibe un plan generado por IA solo después de la aprobación del entrenador |
+| 5 | Planes & IA | ~1.5 semanas | Catálogo de planes, suscripciones, `GenerarPlanJob` (IA multi-proveedor), panel de aprobación del entrenador | Un miembro premium recibe un plan generado por IA solo después de la aprobación del entrenador |
 | 6 | Comunidad & Cierre | ~1 semana | Blog, novedades, pulido responsive, checklist MVP completo | Un miembro lee posts y novedades publicadas; todo el checklist §15 en verde |
 
 > **Nota (julio 2026):** la Fase 3 se **aplaza** y la Fase 4 se adelanta. Mientras no existan mediciones, los inputs del TDEE se capturan así: fecha de nacimiento, sexo, talla y nivel de actividad en un formulario de **"Completar perfil"** (columnas ya existentes en `users`), y el **peso** como snapshot en `objetivos_nutricionales.peso_kg` al fijar el objetivo. Cuando la Fase 3 llegue, el peso se precargará de la última medición y la recalibración seguirá el Flujo C.
@@ -565,7 +565,7 @@ Estas decisiones están cerradas. Reabrirlas durante el MVP genera deuda técnic
 | Background / cache / websockets | Solid Queue · Solid Cache · Solid Cable | Todo sobre Postgres; **sin Redis ni servicios extra** |
 | Autenticación | Nativa Rails 8 (`has_secure_password` + sesiones) · Google OAuth como segundo método | Sin dependencia de BaaS; el generador oficial es auditable |
 | Autorización | Pundit, una policy por modelo, `verify_authorized` global | El servidor decide permisos; las vistas solo ocultan UX |
-| IA | Claude API desde `GenerarPlanJob` (Solid Queue), salida JSON estructurada | API key server-side; humano (entrenador) aprueba antes de publicar |
+| IA | Capa multi-proveedor (`GeneradorPlanIa` + adaptadores Gemini/Claude, `IA_PROVEEDOR`) desde `GenerarPlanJob` (Solid Queue), salida JSON estructurada | API keys server-side; humano (entrenador) aprueba antes de publicar |
 | Orquestación IA | Llamada HTTP directa, sin LangChain | Un solo paso de IA no justifica un framework de orquestación |
 | Contenido del blog | Action Text (Trix + Active Storage) | Editor rich nativo de Rails; sin parser Markdown que mantener |
 | Tiempo real | Turbo Streams sobre Solid Cable | Aprobación de plan y check-ins en vivo sin polling ni Redis |
@@ -680,7 +680,7 @@ El sistema está listo para uso real cuando todos estos puntos estén en verde.
 | Renovar membresía registra el pago y extiende el vencimiento (transacción) | Un miembro no puede leer datos de otro (tests de policy con dos usuarios) |
 | El check-in valida estado y horario, y clasifica reingresos | `rol` no es asignable por mass-assignment (test explícito) |
 | La medición calcula IMC (columna generada), clasificación OMS y propensión | Brakeman y bundler-audit sin hallazgos altos |
-| Las gráficas muestran el progreso mensual con deltas correctos | La API key de Claude no aparece en código ni en vistas (solo credentials/ENV) |
+| Las gráficas muestran el progreso mensual con deltas correctos | Las API keys de IA no aparecen en código ni en vistas (solo credentials/ENV) |
 | Déficit y superávit se calculan con Mifflin-St Jeor + factor de actividad | `GenerarPlanJob` rechaza usuarios sin suscripción premium activa |
 | El plan free muestra guías según el objetivo elegido | Sin N+1 en dashboards y paneles (verificado con logs) |
 | El plan IA solo es visible tras aprobación del entrenador | Responsive en móvil 375px, tablet y desktop |
