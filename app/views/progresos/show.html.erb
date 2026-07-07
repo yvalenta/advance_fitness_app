@@ -52,7 +52,7 @@
           <% curva = GraficaSvg.camino_suave(puntos) %>
           <% base = 230 - GraficaSvg::MARGEN %>
           <div class="relative" data-controller="grafica"
-               data-action="mousemove->grafica#mostrar mouseleave->grafica#ocultar">
+               data-action="mousemove->grafica#mostrar mouseleave->grafica#ocultar click->grafica#seleccionar">
             <svg viewBox="0 0 560 230" class="mt-1 w-full" role="img" aria-label="Tendencia de peso">
               <defs>
                 <linearGradient id="grad-peso" x1="0" y1="0" x2="0" y2="1">
@@ -73,7 +73,8 @@
               <% puntos.each_with_index do |(x, y), indice| %>
                 <circle class="grafica-punto" style="animation-delay: <%= 500 + (indice * 90) %>ms"
                         cx="<%= x %>" cy="<%= y %>" r="5" fill="var(--color-ocean)" stroke="white" stroke-width="2"
-                        data-etiqueta="<%= valores[indice] %> kg · <%= l @pesos[indice].first %>"/>
+                        data-indice="<%= indice %>"
+                        data-etiqueta="<%= valores[indice] %> kg · <%= l @pesos[indice].first %> — ver detalle"/>
               <% end %>
               <text x="<%= GraficaSvg::MARGEN %>" y="<%= GraficaSvg::MARGEN - 2 %>" class="fill-steel-3" font-size="10"><%= valores.max %> kg</text>
               <text x="<%= GraficaSvg::MARGEN %>" y="228" class="fill-steel-3" font-size="10"><%= l @pesos.first.first %></text>
@@ -81,8 +82,30 @@
             </svg>
             <div class="pointer-events-none absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-steel px-2.5 py-1 text-xs font-semibold text-volt shadow-lg"
                  hidden data-grafica-target="tooltip"></div>
+
+            <%# Detalle por punto: el objetivo que originó ese peso %>
+            <% @objetivos_historial.each_with_index do |objetivo, indice| %>
+              <div hidden data-grafica-target="detalle" data-indice="<%= indice %>"
+                   class="animate-fade-up mt-2 rounded-xl border border-ocean/30 bg-ocean/5 p-3 text-sm">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <p class="font-semibold">Objetivo fijado el <%= l objetivo.created_at.to_date, format: :long %></p>
+                  <span class="badge badge-sm badge-info"><%= objetivo.nombre %></span>
+                </div>
+                <p class="mt-1 text-steel-5">
+                  Peso <strong><%= objetivo.peso_kg.to_f %> kg</strong> ·
+                  TDEE <strong><%= number_with_delimiter(objetivo.tdee_kcal, delimiter: ".") %> kcal</strong> ·
+                  objetivo diario <strong><%= number_with_delimiter(objetivo.objetivo_kcal, delimiter: ".") %> kcal</strong>
+                </p>
+                <p class="mt-1 text-xs text-steel-3">
+                  Este snapshot alimentó tus cálculos de nutrición desde esa fecha.
+                  <% if objetivo.activo? %>
+                    <%= link_to "Actualizar objetivo →", new_objetivo_path, class: "link font-semibold" %>
+                  <% end %>
+                </p>
+              </div>
+            <% end %>
           </div>
-          <p class="text-xs text-steel-3">Cada punto es el peso con el que fijaste un objetivo.</p>
+          <p class="text-xs text-steel-3">Cada punto es el peso con el que fijaste un objetivo. Haz click para ver su detalle.</p>
         <% else %>
           <div class="flex flex-col items-center gap-2 rounded-xl bg-base-200 py-10 text-center">
             <%= render "shared/icono", nombre: :actividad, clase: "size-8 text-steel-1" %>
@@ -113,7 +136,7 @@
           <% ranura = (560 - (2 * GraficaSvg::MARGEN)).fdiv(@calorias.size) %>
           <% y_objetivo = GraficaSvg.y_para(@objetivo.objetivo_kcal, alto: 230, min: 0, max: tope) %>
           <div class="relative" data-controller="grafica"
-               data-action="mousemove->grafica#mostrar mouseleave->grafica#ocultar">
+               data-action="mousemove->grafica#mostrar mouseleave->grafica#ocultar click->grafica#seleccionar">
             <svg viewBox="0 0 560 230" class="mt-1 w-full" role="img" aria-label="Calorías diarias contra el objetivo">
               <% @calorias.each_with_index do |(fecha, kcal), indice| %>
                 <% x = GraficaSvg::MARGEN + (indice * ranura) + (ranura * 0.15) %>
@@ -123,10 +146,12 @@
                         x="<%= x.round(1) %>" y="<%= y %>" width="<%= (ranura * 0.7).round(1) %>" height="<%= (base - y).round(1) %>"
                         rx="4" fill="var(--color-<%= kcal <= @objetivo.objetivo_kcal ? "volt" : "pulse" %>)"
                         fill-opacity="<%= kcal <= @objetivo.objetivo_kcal ? 0.95 : 0.8 %>"
-                        data-etiqueta="<%= number_with_delimiter(kcal, delimiter: ".") %> kcal · <%= l fecha, format: "%d %b" %>"/>
+                        data-indice="<%= indice %>"
+                        data-etiqueta="<%= number_with_delimiter(kcal, delimiter: ".") %> kcal · <%= l fecha, format: "%d %b" %> — ver detalle"/>
                 <% else %>
-                  <rect x="<%= x.round(1) %>" y="<%= base - 3 %>" width="<%= (ranura * 0.7).round(1) %>" height="3"
+                  <rect class="grafica-barra" x="<%= x.round(1) %>" y="<%= base - 3 %>" width="<%= (ranura * 0.7).round(1) %>" height="3"
                         rx="1.5" fill="var(--color-steel-1)"
+                        data-indice="<%= indice %>"
                         data-etiqueta="Sin registro · <%= l fecha, format: "%d %b" %>"/>
                 <% end %>
               <% end %>
@@ -138,6 +163,41 @@
             </svg>
             <div class="pointer-events-none absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-steel px-2.5 py-1 text-xs font-semibold text-volt shadow-lg"
                  hidden data-grafica-target="tooltip"></div>
+
+            <%# Detalle por día: el registro contra su objetivo %>
+            <% @calorias.each_with_index do |(fecha, kcal), indice| %>
+              <% delta = kcal ? @objetivo.kcal_restantes(kcal) : nil %>
+              <div hidden data-grafica-target="detalle" data-indice="<%= indice %>"
+                   class="animate-fade-up mt-2 rounded-xl border p-3 text-sm <%= kcal.nil? ? "border-base-300 bg-base-200" : delta.negative? ? "border-pulse/30 bg-pulse/5" : "border-volt/40 bg-volt/10" %>">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <p class="font-semibold"><%= l fecha, format: :long %></p>
+                  <% if kcal.nil? %>
+                    <span class="badge badge-sm badge-ghost">sin registro</span>
+                  <% elsif delta.negative? %>
+                    <span class="badge badge-sm badge-error">excedido +<%= number_with_delimiter(delta.abs, delimiter: ".") %> kcal</span>
+                  <% else %>
+                    <span class="badge badge-sm badge-success">en meta · <%= number_with_delimiter(delta, delimiter: ".") %> kcal libres</span>
+                  <% end %>
+                </div>
+                <% if kcal %>
+                  <p class="mt-1 text-steel-5">
+                    Registraste <strong><%= number_with_delimiter(kcal, delimiter: ".") %> kcal</strong>
+                    de un objetivo de <strong><%= number_with_delimiter(@objetivo.objetivo_kcal, delimiter: ".") %> kcal</strong>.
+                  </p>
+                  <p class="mt-1 text-xs text-steel-3">
+                    Fuente: tu registro diario de calorías.
+                    <% if fecha == Date.current %>
+                      <%= link_to "Corregir el de hoy →", objetivo_path, class: "link font-semibold" %>
+                    <% end %>
+                  </p>
+                <% else %>
+                  <p class="mt-1 text-xs text-steel-3">
+                    No registraste calorías este día<% if fecha == Date.current %> —
+                    <%= link_to "registra tu consumo de hoy →", objetivo_path, class: "link font-semibold" %><% end %>.
+                  </p>
+                <% end %>
+              </div>
+            <% end %>
           </div>
           <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-steel-5">
             <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-volt"></span>En meta</span>
@@ -169,20 +229,22 @@
           </span>
           Asistencia — últimas 8 semanas
         </h2>
-        <% if @asistencia.sum(&:last).positive? %>
-          <% tope = [ @asistencia.map(&:last).max, 1 ].max * 1.3 %>
+        <% if @asistencia.sum { |_, accesos| accesos.size }.positive? %>
+          <% tope = [ @asistencia.map { |_, accesos| accesos.size }.max, 1 ].max * 1.3 %>
           <% base = 150 - GraficaSvg::MARGEN %>
           <% ranura = (1000 - (2 * GraficaSvg::MARGEN)).fdiv(@asistencia.size) %>
           <div class="relative" data-controller="grafica"
-               data-action="mousemove->grafica#mostrar mouseleave->grafica#ocultar">
+               data-action="mousemove->grafica#mostrar mouseleave->grafica#ocultar click->grafica#seleccionar">
             <svg viewBox="0 0 1000 150" class="mt-1 w-full" role="img" aria-label="Visitas al gimnasio por semana">
-              <% @asistencia.each_with_index do |(semana, visitas), indice| %>
+              <% @asistencia.each_with_index do |(semana, accesos), indice| %>
+                <% visitas = accesos.size %>
                 <% x = GraficaSvg::MARGEN + (indice * ranura) + (ranura * 0.28) %>
                 <% y = visitas.positive? ? GraficaSvg.y_para(visitas, alto: 150, min: 0, max: tope) : base - 3 %>
                 <rect class="grafica-barra" style="animation-delay: <%= indice * 60 %>ms"
                       x="<%= x.round(1) %>" y="<%= y %>" width="<%= (ranura * 0.44).round(1) %>" height="<%= (base - y).round(1) %>"
                       rx="5" fill="var(--color-<%= visitas.positive? ? "volt" : "steel-1" %>)"
-                      data-etiqueta="<%= visitas %> <%= "visita".pluralize(visitas) %> · semana del <%= l semana, format: "%d %b" %>"/>
+                      data-indice="<%= indice %>"
+                      data-etiqueta="<%= visitas %> <%= "visita".pluralize(visitas) %> · semana del <%= l semana, format: "%d %b" %> — ver detalle"/>
                 <% if visitas.positive? %>
                   <text x="<%= (x + (ranura * 0.22)).round(1) %>" y="<%= y - 7 %>" text-anchor="middle"
                         class="fill-steel-5" font-size="12" font-weight="bold"><%= visitas %></text>
@@ -194,6 +256,36 @@
             </svg>
             <div class="pointer-events-none absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-steel px-2.5 py-1 text-xs font-semibold text-volt shadow-lg"
                  hidden data-grafica-target="tooltip"></div>
+
+            <%# Detalle por semana: los check-ins que suman la barra %>
+            <% @asistencia.each_with_index do |(semana, accesos), indice| %>
+              <div hidden data-grafica-target="detalle" data-indice="<%= indice %>"
+                   class="animate-fade-up mt-2 rounded-xl border p-3 text-sm <%= accesos.any? ? "border-volt/40 bg-volt/10" : "border-base-300 bg-base-200" %>">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <p class="font-semibold">Semana del <%= l semana, format: :long %></p>
+                  <span class="badge badge-sm <%= accesos.any? ? "badge-success" : "badge-ghost" %>">
+                    <%= accesos.size %> <%= "visita".pluralize(accesos.size) %>
+                  </span>
+                </div>
+                <% if accesos.any? %>
+                  <ul class="mt-2 flex flex-col gap-1.5">
+                    <% accesos.each do |acceso| %>
+                      <li class="flex flex-wrap items-center gap-2 text-steel-5">
+                        <%= render "shared/icono", nombre: :rayo, clase: "size-3.5 text-volt-d" %>
+                        <%= l acceso.fecha_hora, format: :short %>
+                        <%= badge_estado(acceso.tipo) %>
+                        <% unless acceso.dentro_de_horario? %>
+                          <span class="badge badge-sm badge-error">fuera de horario</span>
+                        <% end %>
+                      </li>
+                    <% end %>
+                  </ul>
+                  <p class="mt-1.5 text-xs text-steel-3">Fuente: check-ins registrados en recepción.</p>
+                <% else %>
+                  <p class="mt-1 text-xs text-steel-3">Sin visitas esta semana.</p>
+                <% end %>
+              </div>
+            <% end %>
           </div>
         <% else %>
           <div class="flex flex-col items-center gap-2 rounded-xl bg-base-200 py-10 text-center">

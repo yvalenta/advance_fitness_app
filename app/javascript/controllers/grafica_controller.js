@@ -1,9 +1,11 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Tooltip flotante para las gráficas SVG: cualquier elemento con
-// data-etiqueta dentro del contenedor lo muestra al pasar el mouse.
+// Interactividad de las gráficas SVG:
+// - tooltip flotante sobre elementos con data-etiqueta
+// - click/tap en un punto o barra (data-indice) abre su panel de detalle
+//   con la referencia de la métrica; repetir el click lo cierra
 export default class extends Controller {
-  static targets = ["tooltip"]
+  static targets = ["tooltip", "detalle"]
 
   mostrar(event) {
     const punto = event.target.closest("[data-etiqueta]")
@@ -18,5 +20,22 @@ export default class extends Controller {
 
   ocultar() {
     this.tooltipTarget.hidden = true
+  }
+
+  seleccionar(event) {
+    const elemento = event.target.closest("[data-indice]")
+    if (!elemento) return
+
+    const indice = elemento.dataset.indice
+    const cerrar = this.seleccionado === indice
+    this.seleccionado = cerrar ? null : indice
+
+    this.element.querySelectorAll(".grafica-seleccionada")
+      .forEach((marcado) => marcado.classList.remove("grafica-seleccionada"))
+    if (!cerrar) elemento.classList.add("grafica-seleccionada")
+
+    this.detalleTargets.forEach((detalle) => {
+      detalle.hidden = cerrar || detalle.dataset.indice !== indice
+    })
   }
 }

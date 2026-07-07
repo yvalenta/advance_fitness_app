@@ -23,6 +23,11 @@ class ProgresosControllerTest < ActionDispatch::IntegrationTest
     assert_select "svg[aria-label='Calorías diarias contra el objetivo']"
     assert_select "svg[aria-label='Visitas al gimnasio por semana']"
     assert_match "1 de 1 días registrados en meta", response.body
+
+    # Drill-down: cada punto/barra tiene su panel de detalle con la fuente
+    assert_select "div[data-grafica-target=detalle]", 2 + 14 + 8   # objetivos + días + semanas
+    assert_match "Este snapshot alimentó tus cálculos", response.body
+    assert_match "Fuente: tu registro diario de calorías", response.body
   end
 
   test "sin datos muestra estados vacíos con CTA" do

@@ -149,6 +149,14 @@
     transform-origin: bottom;
     animation: crecer-barra 0.5s ease both;
     transition: filter 0.15s ease;
+    cursor: pointer;
+  }
+
+  /* Punto/barra seleccionado: contorno steel mientras su detalle está abierto */
+  .grafica-seleccionada {
+    stroke: var(--color-steel);
+    stroke-width: 2.5px;
+    filter: brightness(1.05);
   }
 
   .grafica-barra:hover {
