@@ -49,33 +49,97 @@
     </div>
   </div>
 
-  <div class="card border border-base-300 bg-base-100 shadow-md">
+  <% comidas = Array(nutricion["comidas"]) %>
+  <% proteinas = comidas.sum { |c| c["proteinas_g"].to_i } %>
+  <% carbohidratos = comidas.sum { |c| c["carbohidratos_g"].to_i } %>
+  <% grasas = comidas.sum { |c| c["grasas_g"].to_i } %>
+  <% kcal_macros = (proteinas * 4) + (carbohidratos * 4) + (grasas * 9) %>
+  <% pct = ->(kcal) { kcal_macros.positive? ? ((kcal * 100.0) / kcal_macros).round : 0 } %>
+  <% objetivo_dia = nutricion["kcal_diarias"].to_i %>
+  <% objetivo_dia = comidas.sum { |c| c["kcal"].to_i } if objetivo_dia.zero? %>
+  <% propio = plan.user_id == Current.user.id %>
+
+  <div class="card border border-base-300 bg-base-100 shadow-md"
+       data-controller="plan-nutricional"
+       data-plan-nutricional-objetivo-value="<%= objetivo_dia %>">
     <div class="card-body">
       <h2 class="card-title text-base">
         <span class="flex size-7 items-center justify-center rounded-lg bg-pulse/15 text-pulse">
           <%= render "shared/icono", nombre: :fuego, clase: "size-4" %>
         </span>
         Plan nutricional
-        <% if nutricion["kcal_diarias"].present? %>
-          <span class="badge badge-ghost badge-sm ml-auto"><%= number_with_delimiter(nutricion["kcal_diarias"], delimiter: ".") %> kcal/día</span>
-        <% end %>
+        <span class="badge badge-ghost badge-sm ml-auto"><%= number_with_delimiter(objetivo_dia, delimiter: ".") %> kcal/día</span>
       </h2>
-      <div class="grid gap-3 sm:grid-cols-2">
-        <% Array(nutricion["comidas"]).each do |comida| %>
-          <div class="rounded-xl border border-base-300 p-4">
-            <div class="flex items-center justify-between">
+
+      <%# Distribución de macros del día — se despliega al cargar %>
+      <div class="mt-1">
+        <div class="flex h-3 w-full overflow-hidden rounded-full bg-base-200">
+          <div class="bg-volt transition-[width] duration-700 ease-out" style="width: 0%"
+               data-plan-nutricional-target="segmento" data-pct="<%= pct.call(proteinas * 4) %>"></div>
+          <div class="bg-ocean transition-[width] duration-700 ease-out delay-150" style="width: 0%"
+               data-plan-nutricional-target="segmento" data-pct="<%= pct.call(carbohidratos * 4) %>"></div>
+          <div class="bg-warning transition-[width] duration-700 ease-out delay-300" style="width: 0%"
+               data-plan-nutricional-target="segmento" data-pct="<%= pct.call(grasas * 9) %>"></div>
+        </div>
+        <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-steel-5">
+          <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-volt"></span>Proteína <%= proteinas %>g · <%= pct.call(proteinas * 4) %>%</span>
+          <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-ocean"></span>Carbohidratos <%= carbohidratos %>g · <%= pct.call(carbohidratos * 4) %>%</span>
+          <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-warning"></span>Grasas <%= grasas %>g · <%= pct.call(grasas * 9) %>%</span>
+        </div>
+      </div>
+
+      <%# Progreso del día: marca comidas y mira el acumulado %>
+      <div class="mt-3 rounded-xl bg-base-200 p-4">
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+          <p class="text-sm text-steel-5">
+            Comido del plan:
+            <span class="font-display text-2xl font-bold text-base-content" data-plan-nutricional-target="consumidas" data-actual="0">0</span>
+            <span class="text-steel-3">/ <%= number_with_delimiter(objetivo_dia, delimiter: ".") %> kcal</span>
+          </p>
+          <span class="badge badge-success gap-1 font-semibold" hidden data-plan-nutricional-target="estado">
+            <%= render "shared/icono", nombre: :check, clase: "size-3" %>
+            ¡Plan del día completo!
+          </span>
+        </div>
+        <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-base-300">
+          <div class="h-full rounded-full bg-volt transition-[width] duration-500 ease-out" style="width: 0%"
+               data-plan-nutricional-target="barra"></div>
+        </div>
+      </div>
+
+      <div class="mt-3 grid gap-3 sm:grid-cols-2">
+        <% comidas.each do |comida| %>
+          <label class="group card-hover relative cursor-pointer rounded-xl border-2 border-base-300 p-4 transition-colors has-checked:border-volt-d has-checked:bg-volt/10">
+            <input type="checkbox" class="sr-only" data-kcal="<%= comida["kcal"].to_i %>"
+                   data-plan-nutricional-target="comida" data-action="change->plan-nutricional#actualizar">
+            <div class="flex items-center justify-between gap-2">
               <h3 class="font-semibold"><%= comida["nombre"] %></h3>
-              <span class="font-display text-sm font-bold text-volt-d"><%= comida["kcal"] %> kcal</span>
+              <div class="flex items-center gap-2">
+                <span class="font-display text-sm font-bold text-volt-d"><%= comida["kcal"] %> kcal</span>
+                <span class="flex size-5 items-center justify-center rounded-full border-2 border-base-300 text-steel opacity-40 transition-all group-has-[:checked]:border-volt-d group-has-[:checked]:bg-volt group-has-[:checked]:opacity-100">
+                  <%= render "shared/icono", nombre: :check, clase: "size-3" %>
+                </span>
+              </div>
             </div>
-            <p class="mt-1 text-sm text-steel-5"><%= comida["descripcion"] %></p>
+            <p class="mt-1 text-sm text-steel-5 transition-opacity group-has-[:checked]:opacity-60"><%= comida["descripcion"] %></p>
             <div class="mt-2 flex gap-2 text-xs">
               <span class="badge badge-ghost badge-sm">P <%= comida["proteinas_g"] %>g</span>
               <span class="badge badge-ghost badge-sm">C <%= comida["carbohidratos_g"] %>g</span>
               <span class="badge badge-ghost badge-sm">G <%= comida["grasas_g"] %>g</span>
             </div>
-          </div>
+          </label>
         <% end %>
       </div>
+
+      <% if propio %>
+        <%= form_with url: registros_calorias_path, class: "mt-2 flex flex-col gap-1" do %>
+          <input type="hidden" name="registro_caloria[kcal_consumidas]" value="0" data-plan-nutricional-target="kcalInput">
+          <button type="submit" class="btn btn-primary font-bold" disabled data-plan-nutricional-target="boton">
+            Marca lo que comiste hoy
+          </button>
+          <p class="text-center text-xs text-steel-3">Reemplaza tu registro de calorías de hoy con el total marcado.</p>
+        <% end %>
+      <% end %>
     </div>
   </div>
 </div>

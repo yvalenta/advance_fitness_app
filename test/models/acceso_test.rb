@@ -2,7 +2,8 @@ require "test_helper"
 
 class AccesoTest < ActiveSupport::TestCase
   test "primer acceso dentro del período es checkin" do
-    acceso = Acceso.registrar_para(users(:one), membresias(:activa_one))
+    # Hora fija dentro de la franja 06:00–22:00 (el test no depende del reloj)
+    acceso = Acceso.registrar_para(users(:one), membresias(:activa_one), ahora: Time.current.change(hour: 10))
     assert_equal "checkin", acceso.tipo
     assert acceso.dentro_de_horario?
   end
