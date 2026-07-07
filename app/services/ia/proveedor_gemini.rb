@@ -4,10 +4,12 @@ require "net/http"
 # fuerza al modelo a responder JSON válido, sin fences.
 module Ia
   module ProveedorGemini
-    # .presence: docker-compose exporta la variable como "" cuando no está en .env
-    MODELO = (ENV["GEMINI_MODELO"].presence || "gemini-2.5-flash").freeze
+    # .presence: docker-compose exporta la variable como "" cuando no está en .env.
+    # flash-lite: los modelos con thinking gastan el maxOutputTokens en razonar
+    # y truncan el JSON; los "latest" sufren picos de demanda (503).
+    MODELO = (ENV["GEMINI_MODELO"].presence || "gemini-2.5-flash-lite").freeze
     ENDPOINT = URI("https://generativelanguage.googleapis.com/v1beta/models/#{MODELO}:generateContent").freeze
-    MAX_TOKENS = 8192
+    MAX_TOKENS = 16_384
 
     def self.completar(system:, prompt:)
       peticion = Net::HTTP::Post.new(ENDPOINT)
