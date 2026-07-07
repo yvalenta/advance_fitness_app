@@ -22,6 +22,16 @@ class GraficaSvgTest < ActiveSupport::TestCase
     assert_empty GraficaSvg.puntos([], ancho: 600, alto: 200)
   end
 
+  test "camino_suave genera un path Bézier que pasa por los extremos" do
+    puntos = GraficaSvg.puntos([ 70, 75, 72 ], ancho: 600, alto: 200)
+    camino = GraficaSvg.camino_suave(puntos)
+
+    assert camino.start_with?("M #{puntos.first[0]},#{puntos.first[1]}")
+    assert camino.end_with?("#{puntos.last[0]},#{puntos.last[1]}")
+    assert_equal 2, camino.scan(" C ").size   # un segmento cúbico por tramo
+    assert_equal "", GraficaSvg.camino_suave([])
+  end
+
   test "y_para respeta un rango explícito (barras desde cero)" do
     base = GraficaSvg.y_para(0, alto: 200, min: 0, max: 100)
     tope = GraficaSvg.y_para(100, alto: 200, min: 0, max: 100)
