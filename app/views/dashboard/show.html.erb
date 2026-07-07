@@ -51,16 +51,15 @@
       </div>
     </div>
 
-    <div class="animate-fade-up fade-delay-1">
+    <%= link_to progreso_path, class: "animate-fade-up fade-delay-1" do %>
       <%= render "shared/metric_card",
-            titulo: "Biometría",
-            valor: "—",
-            descripcion: "Peso, IMC y progreso mensual",
-            badge: "Disponible en Fase 3",
+            titulo: "Progreso",
+            valor: @objetivo ? "#{@objetivo.peso_kg.to_f} kg" : "—",
+            descripcion: "Peso, calorías y asistencia por semana",
+            badge: "Ver gráficas",
             icono: :actividad,
-            acento: "bg-ocean/15 text-ocean",
-            bloqueada: true %>
-    </div>
+            acento: "bg-ocean/15 text-ocean" %>
+    <% end %>
     <%= link_to objetivo_path, class: "animate-fade-up fade-delay-2" do %>
       <% if @objetivo %>
         <% restantes = @objetivo.kcal_restantes(@registro_hoy&.kcal_consumidas.to_i) %>

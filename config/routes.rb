@@ -15,6 +15,9 @@ Rails.application.routes.draw do
   resource :objetivo, only: %i[ show new create ], controller: "objetivos"
   resources :registros_calorias, only: :create
 
+  # Progreso (SDD §09 — mitad adelantada de la Fase 3, ver nota §11)
+  resource :progreso, only: :show, controller: "progresos"
+
   # Planes y monetización (SDD §09, Fase 5)
   get "mi_plan", to: "planes_personalizados#show", as: :mi_plan
   get "upgrade", to: "planes#index", as: :upgrade
