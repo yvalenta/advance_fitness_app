@@ -43,6 +43,9 @@ El sistema es un **monolito Rails 8.1 server-rendered**: HTML generado en el ser
 | Calculadora biométrica: peso, edad, talla → IMC, estado de peso, propensión a sobrepeso, somatotipo | Wearables / integración con Apple Health o Google Fit |
 | Gráficas de progreso mensual (peso, IMC) | Chat en vivo entrenador ↔ miembro |
 | Tabla de calorías: consumo diario, déficit y superávit calórico (TDEE) | Marketplace de suplementos |
+| Catálogo de alimentos (kcal/macros por porción) y gustos del miembro: le gusta · lo tolera · no le gusta | Base de datos nutricional exhaustiva (se cura un seed colombiano, no se integra USDA/BEDCA) |
+| Armador de comidas: componer el día con alimentos y porciones, kcal en vivo, y registrarlo como consumo | Escáner de código de barras de productos |
+| Recetas generadas por IA en cada comida del plan premium, respetando los gustos | Fotos de comidas / registro por imagen |
 | Plan Free: rutinas y guías básicas para subir o bajar de peso | Notificaciones push |
 | Upgrade a Plan Personalizado: rutina + plan nutricional generados con IA y aprobados por entrenador | Editor WYSIWYG avanzado para el blog |
 | Blog y panel de novedades del gimnasio | Comentarios y reacciones en el blog |
@@ -92,6 +95,10 @@ Fórmulas estándar utilizadas (implementadas como POROs en `app/services`, puro
 | Registro de calorías consumidas | Registro diario simple: fecha + kcal totales | `registros_calorias` |
 | Déficit calórico (bajar de peso) | Objetivo = `TDEE − 500 kcal`; la app muestra cuántas kcal faltan por quemar hoy | `objetivos_nutricionales` |
 | Superávit calórico (masa muscular) | Objetivo = `TDEE + 300–500 kcal` según somatotipo | `objetivos_nutricionales` |
+| Catálogo de alimentos | Seed curado de ~120–150 alimentos comunes en Colombia con kcal/macros por porción; CRUD del admin para mantenerlo | `alimentos` |
+| Gustos del miembro | Selector interactivo por categorías: cada alimento se califica `le_gusta` · `lo_tolera` · `no_le_gusta`; editable siempre en "Mis gustos" | `preferencias_alimentarias` |
+| Armador de comidas | El miembro compone desayuno/almuerzo/cena/snacks con alimentos y porciones, ve kcal y macros en vivo contra su objetivo, y al guardar el día queda registrado como su consumo | `registro_alimentos`, `registros_calorias` |
+| Recetas personalizadas | Cada comida del plan premium trae receta generada por IA (ingredientes con cantidades + preparación) que usa los `le_gusta` y excluye los `no_le_gusta` | `planes_personalizados.plan_nutricional` |
 
 ### Módulo D — Planes y Monetización
 
@@ -360,7 +367,44 @@ Schema en **PostgreSQL** gestionado con **migraciones ActiveRecord** (snake_case
 | `id` | `bigint` PK | — |
 | `user_id` | `bigint` | FK → `users` |
 | `fecha` | `date` | Índice unique `user_id + fecha` |
-| `kcal_consumidas` | `integer` | Input diario del miembro |
+| `kcal_consumidas` | `integer` | Input diario del miembro; si el día se armó con el armador, se recalcula desde `registro_alimentos` al guardar |
+
+### `alimentos` — catálogo nutricional
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `bigint` PK | — |
+| `nombre` | `string` | Unique (p. ej. "Arepa de maíz", "Pechuga de pollo") |
+| `categoria` | `string` | enum: `proteina` · `carbohidrato` · `grasa` · `fruta_verdura` · `lacteo` · `bebida` · `snack` |
+| `porcion` | `string` | Porción de referencia legible: "1 unidad mediana (75 g)", "1 taza cocida (150 g)" |
+| `kcal` | `integer` | Por porción |
+| `proteinas_g` / `carbohidratos_g` / `grasas_g` | `decimal(5,1)` | Macros por porción |
+| `activo` | `boolean` | El admin retira alimentos sin borrar historial |
+
+> Se puebla con un **seed curado de ~120–150 alimentos colombianos** (`db/seeds.rb`); el admin lo mantiene vía CRUD. No se integra ninguna base externa en el MVP.
+
+### `preferencias_alimentarias` — gustos del miembro
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `bigint` PK | — |
+| `user_id` | `bigint` | FK → `users` |
+| `alimento_id` | `bigint` | FK → `alimentos` |
+| `calificacion` | `string` | enum: `le_gusta` · `lo_tolera` · `no_le_gusta` |
+
+> Índice unique `user_id + alimento_id`. Un alimento sin fila = sin calificar (neutral). La IA usa los `le_gusta`, evita los `no_le_gusta` y solo recurre a `lo_tolera` si hace falta nutricionalmente.
+
+### `registro_alimentos` — items del armador de comidas
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `bigint` PK | — |
+| `registro_caloria_id` | `bigint` | FK → `registros_calorias` (el día) |
+| `alimento_id` | `bigint` | FK → `alimentos` |
+| `comida` | `string` | enum: `desayuno` · `almuerzo` · `cena` · `snack` |
+| `porciones` | `decimal(4,2)` | Multiplicador de la porción de referencia (0.5, 1, 2…) |
+
+> Las kcal del item **no se persisten** (principio §05: derivados no se guardan): `alimento.kcal × porciones`. Al guardar el día, el total actualiza `registros_calorias.kcal_consumidas`, así las gráficas de `/progreso` siguen funcionando sin cambios.
 
 ### `planes` — catálogo de monetización
 
@@ -389,7 +433,7 @@ Schema en **PostgreSQL** gestionado con **migraciones ActiveRecord** (snake_case
 | `id` | `bigint` PK | — |
 | `user_id` | `bigint` | FK → `users` |
 | `rutina` | `jsonb` | Días → ejercicios → series/reps, generado por IA |
-| `plan_nutricional` | `jsonb` | Comidas → macros → kcal, generado por IA |
+| `plan_nutricional` | `jsonb` | Comidas → macros → kcal, generado por IA; desde la fase de gustos cada comida incluye `receta: { ingredientes: [{alimento, cantidad}], preparacion }` |
 | `generado_por` | `string` | enum: `ia` · `entrenador` |
 | `estado` | `string` | enum: `borrador` · `aprobado` — el miembro solo ve aprobados |
 | `aprobado_por_id` | `bigint` | FK → `users` (entrenador), nil en borrador |
@@ -475,6 +519,9 @@ Rutas RESTful de Rails; los nombres siguen el dominio en español. Las de staff 
 | `/mediciones` | GET/POST | miembro | Historial + nueva medición; `GET /progreso` para las gráficas |
 | `/registros_calorias` | POST/PATCH | miembro | Upsert del registro diario de calorías |
 | `/objetivo` | GET/POST | miembro | Ver y fijar objetivo (déficit/superávit/mantenimiento) |
+| `/gustos` | GET/PATCH | miembro | Selector interactivo por categorías; califica alimentos (le gusta / lo tolera / no le gusta) |
+| `/armador` | GET/POST | miembro | Componer las comidas del día con kcal/macros en vivo; guardar registra el consumo |
+| `/admin/alimentos` | CRUD | admin | Mantenimiento del catálogo nutricional (seed inicial curado) |
 | `/mi_plan` | GET | miembro | Plan free o personalizado aprobado |
 | `/upgrade` | GET | miembro | Comparación Free vs. Personalizado |
 | `/blog` · `/blog/:slug` · `/novedades` | GET | miembro | Comunidad (solo publicados) |
@@ -532,6 +579,16 @@ Rutas RESTful de Rails; los nombres siguen el dominio en español. Las de staff 
 | 3 | Registrar | Crea el `acceso`. Si es el primer acceso tras una renovación de membresía vencida, `tipo: reingreso` — esto alimenta el historial de reingresos. |
 | 4 | Renovar (si aplica) | El admin registra el pago; la renovación extiende el vencimiento dentro de una transacción. |
 
+### Flujo E — Gustos y armador de comidas
+
+| Paso | Acción | Detalle |
+|---|---|---|
+| 1 | Calificar gustos | En `/gustos`, cards de alimentos agrupadas por categoría; un tap cicla 💚 le gusta → 😐 lo tolera → ❌ no le gusta (Stimulus + Turbo, sin recargar). Editable siempre. |
+| 2 | Armar el día | En `/armador`, el miembro agrega alimentos a desayuno/almuerzo/cena/snacks con porciones ajustables. Los 💚 aparecen primero; los ❌ ocultos por defecto. Kcal y macros suman en vivo contra `objetivo_kcal`. |
+| 3 | Registrar | Guardar hace upsert del `registro_caloria` del día + sus `registro_alimentos`, y recalcula `kcal_consumidas`. Las gráficas de `/progreso` y la adherencia se alimentan igual que hoy. |
+| 4 | IA personalizada | `GenerarPlanJob` añade al prompt los gustos del miembro: el plan usa `le_gusta`, excluye `no_le_gusta`, y cada comida trae `receta` (ingredientes con cantidades + preparación). |
+| 5 | Revisión | El entrenador revisa el plan con recetas en su panel igual que en el Flujo B (nada cambia en la aprobación). |
+
 ---
 
 ## 11 — Fases
@@ -543,9 +600,12 @@ Rutas RESTful de Rails; los nombres siguen el dominio en español. Las de staff 
 | 3 | Biometría & Progreso | ~1.5 semanas | Mediciones (IMC generado), somatotipo, wizard de onboarding, gráficas SVG mensuales | Registro 3 mediciones y veo la gráfica con clasificación OMS y propensión correctas |
 | 4 | Nutrición & Objetivos | ~1 semana | Services TDEE, objetivos déficit/superávit, registro diario de calorías | Al fijar "bajar de peso" veo mi objetivo kcal y el faltante del día se actualiza al registrar consumo |
 | 5 | Planes & IA | ~1.5 semanas | Catálogo de planes, suscripciones, `GenerarPlanJob` (IA multi-proveedor), panel de aprobación del entrenador | Un miembro premium recibe un plan generado por IA solo después de la aprobación del entrenador |
-| 6 | Comunidad & Cierre | ~1 semana | Blog, novedades, pulido responsive, checklist MVP completo | Un miembro lee posts y novedades publicadas; todo el checklist §15 en verde |
+| 6 | Nutrición personalizada & Gustos | ~2 semanas | Catálogo `alimentos` (seed colombiano + CRUD admin), calificación de gustos (`/gustos`), armador de comidas con registro del día (`/armador`), gustos + recetas en el prompt de IA, benchmark de modelo Gemini | El miembro califica alimentos y arma su día viendo kcal en vivo; el registro alimenta `/progreso`; el plan IA de un premium no incluye ningún alimento `no_le_gusta` y cada comida trae receta |
+| 7 | Comunidad & Cierre | ~1 semana | Blog, novedades, pulido responsive, checklist MVP completo | Un miembro lee posts y novedades publicadas; todo el checklist §15 en verde |
 
 > **Nota (julio 2026):** la Fase 3 se **aplaza** y la Fase 4 se adelanta. Mientras no existan mediciones, los inputs del TDEE se capturan así: fecha de nacimiento, sexo, talla y nivel de actividad en un formulario de **"Completar perfil"** (columnas ya existentes en `users`), y el **peso** como snapshot en `objetivos_nutricionales.peso_kg` al fijar el objetivo. Cuando la Fase 3 llegue, el peso se precargará de la última medición y la recalibración seguirá el Flujo C.
+>
+> **Nota 3 (julio 2026):** se inserta la **Fase 6 — Nutrición personalizada & Gustos** antes de Comunidad (que pasa a Fase 7). Decisiones cerradas con el cliente: catálogo por **seed curado colombiano** (no base externa); gustos y armador **para todos los miembros** (el plan IA sigue siendo premium); el armador **registra el consumo del día** (reemplaza el input manual de kcal cuando se usa); recetas **dentro del plan premium** (JSONB), no como biblioteca aparte. Durante la fase se hace un **benchmark de modelos Gemini** (`gemini-2.5-flash-lite` actual vs. `gemini-3.1-flash-lite`) con la misma petición real; el ganador queda como default de `GEMINI_MODELO`.
 >
 > **Nota 2:** de la Fase 3 se **adelanta la mitad "Progreso"** (`GET /progreso`, gráficas SVG server-rendered §14) alimentada con los datos que ya existen: tendencia de **peso** desde los snapshots de `objetivos_nutricionales`, **calorías diarias vs. objetivo** desde `registros_calorias` y **asistencia** desde `accesos`. La mitad "Biometría" (tabla `mediciones` con IMC generado, clasificación OMS y wizard de onboarding) sigue aplazada; al llegar, la gráfica de peso pasará a leer de `mediciones`.
 
