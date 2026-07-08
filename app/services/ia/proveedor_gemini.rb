@@ -9,7 +9,10 @@ module Ia
     # flash-lite: los modelos con thinking gastan el maxOutputTokens en razonar
     # y truncan el JSON; los "latest" sufren picos de demanda (503).
     MODELO = (ENV["GEMINI_MODELO"].presence || "gemini-2.5-flash-lite").freeze
-    MODELO_FALLBACK = (ENV["GEMINI_MODELO_FALLBACK"].presence || "gemini-2.0-flash-lite").freeze
+    # Fallback cuando el primario está ocupado (503): misma generación 2.5 (con
+    # cuota en la key), más robusto ante saturación. Solo se usa como respaldo,
+    # así que su costo mayor casi no aplica. Parametrizable por ENV.
+    MODELO_FALLBACK = (ENV["GEMINI_MODELO_FALLBACK"].presence || "gemini-2.5-flash").freeze
     MODELOS = [ MODELO, MODELO_FALLBACK ].uniq.freeze
     MAX_TOKENS = 16_384
 

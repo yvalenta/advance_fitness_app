@@ -1,9 +1,26 @@
+<%# Marca del negocio (SDD §06). Parametrizable: si Negocio.logo_url está %>
+<%# definido, se usa esa imagen; si no, el fisicoculturista vectorial monocromo. %>
 <%# locals: (clase: "h-7 w-7 text-primary") %>
-<%# Placeholder de marca — se reemplaza por image_tag "brand/logo.svg" cuando exista el asset (SDD §06) %>
-<svg viewBox="0 0 32 32" class="<%= local_assigns.fetch(:clase, "h-7 w-7 text-primary") %>" fill="currentColor" aria-hidden="true">
-  <rect x="1" y="11" width="5" height="10" rx="1.5" />
-  <rect x="26" y="11" width="5" height="10" rx="1.5" />
-  <rect x="6" y="13" width="4" height="6" rx="1" />
-  <rect x="22" y="13" width="4" height="6" rx="1" />
-  <rect x="10" y="14.5" width="12" height="3" rx="1.5" />
-</svg>
+<% clase = local_assigns.fetch(:clase, "h-7 w-7 text-primary") %>
+<% if Negocio.logo_url %>
+  <%= image_tag Negocio.logo_url, alt: Negocio.nombre, class: clase %>
+<% else %>
+  <svg viewBox="0 0 64 68" class="<%= clase %>" aria-hidden="true">
+    <%# Fisicoculturista en doble bíceps: cabeza + torso en V (fill), %>
+    <%# brazos flexionados y piernas en base amplia (trazos redondeados). %>
+    <g fill="currentColor">
+      <circle cx="32" cy="8" r="5.5"/>
+      <path d="M22 18 L42 18 L39 31 L36 45 L28 45 L25 31 Z"/>
+    </g>
+    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+      <g stroke-width="7">
+        <path d="M24 21 L11 15 L17 6"/>
+        <path d="M40 21 L53 15 L47 6"/>
+      </g>
+      <g stroke-width="8">
+        <path d="M29 44 L16 64"/>
+        <path d="M35 44 L48 64"/>
+      </g>
+    </g>
+  </svg>
+<% end %>

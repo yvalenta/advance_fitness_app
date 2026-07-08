@@ -4,6 +4,9 @@
 default: &default
   nombre: "Advance Fitness"
   moneda: "COP"
+  # Logo: vacío = usa el fisicoculturista vectorial de marca; o una URL/ruta
+  # (p. ej. "brand/mi-logo.svg" en app/assets/images) para otro negocio.
+  logo_url: ~
   precio_mensualidad: 80000
   precio_personalizado: 350000
   duracion_dias: 30

@@ -6,6 +6,9 @@ module Negocio
 
   def self.nombre = ENV["NEGOCIO_NOMBRE"].presence || DATOS[:nombre]
   def self.moneda = ENV["NEGOCIO_MONEDA"].presence || DATOS[:moneda]
+  # Si se define, el logo se renderiza como imagen (white-label); si no, se usa
+  # el fisicoculturista vectorial de marca (shared/_logo).
+  def self.logo_url = ENV["NEGOCIO_LOGO_URL"].presence || DATOS[:logo_url].presence
   def self.precio_mensualidad = (ENV["PRECIO_MENSUALIDAD"].presence || DATOS[:precio_mensualidad]).to_i
   def self.precio_personalizado = (ENV["PRECIO_PERSONALIZADO"].presence || DATOS[:precio_personalizado]).to_i
   def self.duracion_dias = (ENV["MEMBRESIA_DURACION_DIAS"].presence || DATOS[:duracion_dias]).to_i
