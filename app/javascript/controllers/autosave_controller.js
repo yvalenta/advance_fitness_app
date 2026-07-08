@@ -38,7 +38,7 @@ export default class extends Controller {
       const respuesta = await fetch(card.dataset.url, {
         method: "PATCH",
         headers: this.cabeceras,
-        body: JSON.stringify({ comida: this.camposDe(card) })
+        body: JSON.stringify({ [card.dataset.clave || this.clave]: this.camposDe(card) })
       })
       const datos = await respuesta.json().catch(() => ({}))
 
@@ -63,12 +63,14 @@ export default class extends Controller {
 
   async agregar(event) {
     event.preventDefault()
-    await this.enviarEstructura(this.data.get("crearUrl"), "POST")
+    // La URL de alta puede venir por botón (rutina: una por día) o del controlador.
+    const url = event.currentTarget.dataset.url || this.data.get("crearUrl")
+    await this.enviarEstructura(url, "POST")
   }
 
   async eliminar(event) {
     event.preventDefault()
-    if (!window.confirm("¿Eliminar esta comida del plan?")) return
+    if (!window.confirm("¿Eliminar este elemento del plan?")) return
     const card = event.target.closest("[data-autosave-target='card']")
     await this.enviarEstructura(card.dataset.url, "DELETE")
   }
@@ -91,12 +93,19 @@ export default class extends Controller {
 
   // ── helpers ──────────────────────────────────────────────────────────
 
+  // Genérico: lee todos los inputs del card usando la clave entre corchetes
+  // del name (p. ej. name="comida[kcal]" o name="ejercicio[series]").
   camposDe(card) {
-    const valor = (nombre) => card.querySelector(`[name$="[${nombre}]"]`)?.value
-    return {
-      nombre: valor("nombre"), descripcion: valor("descripcion"), kcal: valor("kcal"),
-      proteinas_g: valor("proteinas_g"), carbohidratos_g: valor("carbohidratos_g"), grasas_g: valor("grasas_g")
-    }
+    const campos = {}
+    card.querySelectorAll("[name*='['][name$=']']").forEach((input) => {
+      const clave = input.name.match(/\[([^\]]+)\]$/)?.[1]
+      if (clave) campos[clave] = input.value
+    })
+    return campos
+  }
+
+  get clave() {
+    return this.data.get("clave") || "comida"
   }
 
   marcar(card, estado, texto) {

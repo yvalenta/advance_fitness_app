@@ -19,6 +19,10 @@ class GestionPlanesControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[name='comida[nombre]'][value=Desayuno]"
     assert_select "textarea[name='comida[descripcion]']", text: /Huevos con arepa/
     assert_match "Historial del miembro", response.body
+    # Editor de rutina (Fase 5.7b): ejercicio editable + enfoque + modal
+    assert_select "input[name='ejercicio[nombre]'][value=?]", "Press banca"
+    assert_select "input[name='dia[enfoque]']"
+    assert_select "dialog[data-modal-ejercicios-target=dialogo]"
   end
 
   test "el admin también puede abrir el editor" do

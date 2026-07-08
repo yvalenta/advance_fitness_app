@@ -81,3 +81,48 @@ Plan.find_or_create_by!(codigo: "personalizado").update!(
     plantilla.grasas_g = grasas
   end
 end
+
+# Plantillas de ejercicios para el editor de rutina (SDD Fase 5.7b). Fuerza,
+# agrupadas por músculo; "otro" para individuales sin categoría.
+# [musculo, nombre, series, repeticiones, descanso_seg]
+[
+  [ "pecho", "Press de banca con barra", 4, "8-10", 90 ],
+  [ "pecho", "Press inclinado con mancuernas", 3, "10-12", 75 ],
+  [ "pecho", "Aperturas con mancuernas", 3, "12-15", 60 ],
+  [ "pecho", "Fondos en paralelas", 3, "8-12", 75 ],
+  [ "espalda", "Dominadas", 4, "6-10", 90 ],
+  [ "espalda", "Remo con barra", 4, "8-10", 90 ],
+  [ "espalda", "Jalón al pecho en polea", 3, "10-12", 75 ],
+  [ "espalda", "Remo con mancuerna a una mano", 3, "10-12", 60 ],
+  [ "pierna", "Sentadilla con barra", 4, "8-10", 120 ],
+  [ "pierna", "Prensa de piernas", 4, "10-12", 90 ],
+  [ "pierna", "Zancadas con mancuernas", 3, "10-12", 75 ],
+  [ "pierna", "Peso muerto rumano", 4, "8-10", 120 ],
+  [ "pierna", "Extensión de cuádriceps", 3, "12-15", 60 ],
+  [ "pierna", "Curl femoral", 3, "12-15", 60 ],
+  [ "hombro", "Press militar con barra", 4, "8-10", 90 ],
+  [ "hombro", "Elevaciones laterales", 4, "12-15", 45 ],
+  [ "hombro", "Pájaros (deltoide posterior)", 3, "12-15", 45 ],
+  [ "hombro", "Press Arnold", 3, "10-12", 75 ],
+  [ "biceps", "Curl con barra", 4, "8-12", 60 ],
+  [ "biceps", "Curl con mancuernas alterno", 3, "10-12", 60 ],
+  [ "biceps", "Curl martillo", 3, "10-12", 60 ],
+  [ "triceps", "Extensiones en polea alta", 4, "10-12", 60 ],
+  [ "triceps", "Press francés", 3, "10-12", 60 ],
+  [ "triceps", "Fondos en banco", 3, "12-15", 60 ],
+  [ "core", "Plancha abdominal", 3, "30-45 s", 45 ],
+  [ "core", "Abdominales crunch", 3, "15-20", 45 ],
+  [ "core", "Elevación de piernas colgado", 3, "12-15", 60 ],
+  [ "core", "Giro ruso con peso", 3, "15-20 por lado", 45 ],
+  [ "gluteo", "Hip thrust con barra", 4, "10-12", 90 ],
+  [ "gluteo", "Patada de glúteo en polea", 3, "12-15", 45 ],
+  [ "gluteo", "Puente de glúteo", 3, "15-20", 45 ],
+  [ "otro", "Antebrazo con barra (curl de muñeca)", 3, "15-20", 45 ],
+  [ "otro", "Encogimiento de trapecio", 3, "12-15", 60 ]
+].each do |musculo, nombre, series, repeticiones, descanso|
+  PlantillaEjercicio.find_or_create_by!(musculo: musculo, nombre: nombre) do |plantilla|
+    plantilla.series = series
+    plantilla.repeticiones = repeticiones
+    plantilla.descanso_seg = descanso
+  end
+end

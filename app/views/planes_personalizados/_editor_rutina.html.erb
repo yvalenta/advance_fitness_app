@@ -1,0 +1,91 @@
+<%# Editor de rutina por día/ejercicio con autosave (SDD Fase 5.7b). %>
+<%# locals: (plan:, plantillas:) %>
+<div class="card border border-base-300 bg-base-100 shadow-md"
+     data-controller="tabs autosave modal-ejercicios"
+     data-autosave-clave="ejercicio"
+     data-modal-ejercicios-crear-url="<%= entrenador_plantillas_ejercicio_path %>">
+  <div class="card-body">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h2 class="card-title text-base">
+        <span class="flex size-7 items-center justify-center rounded-lg bg-volt/15 text-volt-d">
+          <%= render "shared/icono", nombre: :actividad, clase: "size-4" %>
+        </span>
+        Rutina semanal
+      </h2>
+      <span class="text-xs text-steel-3" data-autosave-target="global">Todo guardado ✓</span>
+    </div>
+
+    <div role="tablist" class="tabs tabs-box w-fit max-w-full flex-nowrap overflow-x-auto">
+      <% plan.dias.each do |dia| %>
+        <button type="button" role="tab" class="tab whitespace-nowrap font-semibold capitalize"
+                data-tabs-target="tab" data-action="tabs#seleccionar"><%= dia["dia"] %></button>
+      <% end %>
+    </div>
+
+    <% plan.dias.each_with_index do |dia, di| %>
+      <div data-tabs-target="panel" hidden class="flex flex-col gap-3">
+        <label class="input input-sm input-bordered flex items-center gap-2"
+               data-autosave-target="card" data-clave="dia"
+               data-url="<%= plan_personalizado_dia_path(plan, di) %>">
+          <span class="text-xs font-bold text-steel-3">Enfoque</span>
+          <input type="text" name="dia[enfoque]" value="<%= dia["enfoque"] %>" class="grow"
+                 aria-label="Enfoque del día" data-action="input->autosave#programar">
+          <span class="badge badge-sm gap-1 font-semibold" hidden
+                data-autosave-target="estado" data-action="click->autosave#reintentar"></span>
+        </label>
+
+        <% Array(dia["ejercicios"]).each_with_index do |ejercicio, ei| %>
+          <div class="flex flex-col gap-2 rounded-xl border border-base-300 p-3"
+               data-autosave-target="card"
+               data-url="<%= plan_personalizado_dia_ejercicio_path(plan, di, ei) %>">
+            <div class="flex items-center gap-2">
+              <input type="text" name="ejercicio[nombre]" value="<%= ejercicio["nombre"] %>" required
+                     class="input input-sm input-bordered w-full font-semibold" aria-label="Ejercicio"
+                     data-action="input->autosave#programar">
+              <span class="badge badge-sm shrink-0 gap-1 font-semibold" hidden
+                    data-autosave-target="estado" data-action="click->autosave#reintentar"></span>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <label class="input input-sm input-bordered flex items-center gap-1">
+                <span class="text-xs font-bold text-steel-3">Series</span>
+                <input type="number" name="ejercicio[series]" value="<%= ejercicio["series"] %>" min="0"
+                       class="w-full text-right" aria-label="Series" data-action="input->autosave#programar">
+              </label>
+              <label class="input input-sm input-bordered flex items-center gap-1">
+                <span class="text-xs font-bold text-steel-3">Reps</span>
+                <input type="text" name="ejercicio[repeticiones]" value="<%= ejercicio["repeticiones"] %>"
+                       class="w-full text-right" aria-label="Repeticiones" data-action="input->autosave#programar">
+              </label>
+              <label class="input input-sm input-bordered flex items-center gap-1">
+                <span class="text-xs font-bold text-steel-3">Desc.</span>
+                <input type="number" name="ejercicio[descanso_seg]" value="<%= ejercicio["descanso_seg"] %>" min="0"
+                       class="w-full text-right" aria-label="Descanso (s)" data-action="input->autosave#programar">
+                <span class="text-xs text-steel-3">s</span>
+              </label>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" class="btn btn-ghost btn-xs" data-action="modal-ejercicios#abrir">
+                <%= render "shared/icono", nombre: :busqueda, clase: "size-3.5" %> Plantilla
+              </button>
+              <button type="button" class="btn btn-ghost btn-xs text-steel-5"
+                      data-action="modal-ejercicios#guardarPlantilla" data-musculo="otro">
+                Guardar como plantilla
+              </button>
+              <button type="button" class="btn btn-ghost btn-xs ml-auto text-error"
+                      data-action="autosave#eliminar" aria-label="Eliminar ejercicio">
+                <%= render "shared/icono", nombre: :alerta, clase: "size-3.5" %>
+              </button>
+            </div>
+          </div>
+        <% end %>
+
+        <button type="button" class="btn btn-outline btn-sm w-full border-dashed"
+                data-action="autosave#agregar" data-url="<%= plan_personalizado_dia_ejercicios_path(plan, di) %>">
+          + Agregar ejercicio
+        </button>
+      </div>
+    <% end %>
+
+    <%= render "planes_personalizados/modal_ejercicios", plantillas: plantillas %>
+  </div>
+</div>

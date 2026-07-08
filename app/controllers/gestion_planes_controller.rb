@@ -7,6 +7,7 @@ class GestionPlanesController < ApplicationController
     @plan = PlanPersonalizado.find(params[:id])
     authorize @plan, :editar?
     @plantillas = PlantillaComida.ordenadas
+    @plantillas_ejercicio = PlantillaEjercicio.ordenadas
     @historial = @plan.user.planes_personalizados.order(created_at: :desc)
   end
 

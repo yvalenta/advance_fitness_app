@@ -1,0 +1,13 @@
+press_banca:
+  musculo: pecho
+  nombre: Press de banca con barra
+  series: 4
+  repeticiones: 8-10
+  descanso_seg: 90
+
+sentadilla:
+  musculo: pierna
+  nombre: Sentadilla con barra
+  series: 4
+  repeticiones: 8-10
+  descanso_seg: 120

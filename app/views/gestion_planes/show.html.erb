@@ -46,7 +46,7 @@
       </div>
     <% else %>
       <div class="animate-fade-up">
-        <%= render "planes_personalizados/rutina", rutina: @plan.rutina %>
+        <%= render "planes_personalizados/editor_rutina", plan: @plan, plantillas: @plantillas_ejercicio %>
       </div>
       <div class="animate-fade-up fade-delay-1">
         <%= render "planes_personalizados/editor", plan: @plan, plantillas: @plantillas %>

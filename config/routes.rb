@@ -30,11 +30,16 @@ Rails.application.routes.draw do
       post :regenerar
     end
     resources :comidas, only: %i[ create update destroy ], controller: "gestion_comidas"
+    # Rutina 2D: día (índice) → ejercicios (índice); autosave por URL
+    resources :dias, only: %i[ update ], controller: "gestion_dias" do
+      resources :ejercicios, only: %i[ create update destroy ], controller: "gestion_ejercicios"
+    end
   end
 
   namespace :entrenador do
     resources :borradores, only: %i[ index ], controller: "borradores"
     resources :plantillas_comida, only: %i[ create destroy ], controller: "plantillas_comida"
+    resources :plantillas_ejercicio, only: %i[ create destroy ], controller: "plantillas_ejercicio"
   end
 
   # Panel de administración (SDD §09) — protegido por Pundit, no solo por el namespace

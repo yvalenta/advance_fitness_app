@@ -18,4 +18,5 @@ ActiveSupport::Inflector.inflections(:en) do |inflect|
   inflect.irregular "borrador", "borradores"
   inflect.irregular "aprobacion", "aprobaciones"
   inflect.irregular "plantilla_comida", "plantillas_comida"
+  inflect.irregular "plantilla_ejercicio", "plantillas_ejercicio"
 end

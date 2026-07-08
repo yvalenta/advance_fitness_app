@@ -16,6 +16,52 @@ class PlanPersonalizadoTest < ActiveSupport::TestCase
     PlanPersonalizado.create!(user: users(:one), rutina: RUTINA, plan_nutricional: NUTRICION)
   end
 
+  RUTINA_CON_EJERCICIOS = { "dias" => [
+    { "dia" => "lunes", "enfoque" => "pecho", "ejercicios" => [
+      { "nombre" => "Press banca", "series" => 4, "repeticiones" => "8-10", "descanso_seg" => 90 }
+    ] },
+    { "dia" => "martes", "enfoque" => "espalda", "ejercicios" => [] }
+  ] }.freeze
+
+  def plan_con_rutina
+    PlanPersonalizado.create!(user: users(:one), rutina: RUTINA_CON_EJERCICIOS, plan_nutricional: NUTRICION)
+  end
+
+  test "actualizar_ejercicio! hace merge por índice 2D y sanea números" do
+    plan = plan_con_rutina
+    plan.actualizar_ejercicio!(0, 0, { "nombre" => " Press inclinado ", "series" => "5", "descanso_seg" => "120" })
+
+    ej = plan.reload.ejercicios_de(0).first
+    assert_equal "Press inclinado", ej["nombre"]
+    assert_equal 5, ej["series"]
+    assert_equal 120, ej["descanso_seg"]
+    assert_equal "8-10", ej["repeticiones"]           # no tocado
+  end
+
+  test "agregar_ejercicio! y eliminar_ejercicio! ajustan el día" do
+    plan = plan_con_rutina
+
+    assert_difference -> { plan.reload.ejercicios_de(1).size }, 1 do
+      plan.agregar_ejercicio!(1, { "nombre" => "Remo" })
+    end
+    assert_difference -> { plan.reload.ejercicios_de(0).size }, -1 do
+      plan.eliminar_ejercicio!(0, 0)
+    end
+  end
+
+  test "actualizar_enfoque! cambia solo el enfoque del día" do
+    plan = plan_con_rutina
+    plan.actualizar_enfoque!(0, "  pecho y tríceps  ")
+
+    assert_equal "pecho y tríceps", plan.reload.dias[0]["enfoque"]
+    assert_equal "espalda", plan.dias[1]["enfoque"]
+  end
+
+  test "un día inexistente levanta error" do
+    plan = plan_con_rutina
+    assert_raises(IndexError) { plan.agregar_ejercicio!(9, {}) }
+  end
+
   test "publicar! da visibilidad con el staff que lo revisó" do
     plan = crear_plan
     plan.publicar!(users(:entrenador))

@@ -5,6 +5,7 @@ class PlanPersonalizado < ApplicationRecord
   EN_PROCESO = %w[generando fallido].freeze
   GENERADORES = %w[ia entrenador].freeze
   CAMPOS_COMIDA = %w[nombre descripcion kcal proteinas_g carbohidratos_g grasas_g].freeze
+  CAMPOS_EJERCICIO = %w[nombre series repeticiones descanso_seg].freeze
 
   belongs_to :user
   belongs_to :aprobado_por, class_name: "User", optional: true
@@ -73,6 +74,37 @@ class PlanPersonalizado < ApplicationRecord
     update!(estado: "aprobado", aprobado_por: staff)
   end
 
+  # ── Rutina (SDD Fase 5.7b) — mismo patrón que las comidas pero 2D (día + ejercicio) ──
+  def dias = Array(rutina["dias"])
+
+  def ejercicios_de(dia_indice) = Array(dias.fetch(dia_indice)["ejercicios"])
+
+  def actualizar_ejercicio!(dia_indice, ej_indice, campos)
+    con_dia!(dia_indice) do |dia|
+      lista = Array(dia["ejercicios"])
+      lista[ej_indice] = lista.fetch(ej_indice).merge(ejercicio_saneado(campos))
+      dia["ejercicios"] = lista
+    end
+  end
+
+  def agregar_ejercicio!(dia_indice, campos = {})
+    con_dia!(dia_indice) do |dia|
+      dia["ejercicios"] = Array(dia["ejercicios"]) + [ ejercicio_saneado(campos, defaults: true) ]
+    end
+  end
+
+  def eliminar_ejercicio!(dia_indice, ej_indice)
+    con_dia!(dia_indice) do |dia|
+      lista = Array(dia["ejercicios"])
+      lista.delete_at(ej_indice) or raise ActiveRecord::RecordNotFound
+      dia["ejercicios"] = lista
+    end
+  end
+
+  def actualizar_enfoque!(dia_indice, texto)
+    con_dia!(dia_indice) { |dia| dia["enfoque"] = texto.to_s.strip }
+  end
+
   private
 
     # En cola del entrenador = necesita atención (generando/borrador/fallido)
@@ -113,5 +145,22 @@ class PlanPersonalizado < ApplicationRecord
     def como_numero(texto)
       numero = texto.to_f
       (numero % 1).zero? ? numero.to_i : numero.round(1)
+    end
+
+    # Muta el día indicado dentro del array jsonb y persiste la rutina completa.
+    def con_dia!(dia_indice)
+      lista_dias = dias
+      dia = lista_dias.fetch(dia_indice)
+      yield dia
+      update!(rutina: rutina.merge("dias" => lista_dias))
+    end
+
+    # series/descanso enteros, repeticiones y nombre como texto.
+    def ejercicio_saneado(campos, defaults: false)
+      base = defaults ? { "nombre" => "Nuevo ejercicio", "series" => 3,
+                          "repeticiones" => "10-12", "descanso_seg" => 60 } : {}
+      campos.to_h.slice(*CAMPOS_EJERCICIO).each_with_object(base) do |(clave, valor), saneado|
+        saneado[clave.to_s] = %w[nombre repeticiones].include?(clave.to_s) ? valor.to_s.strip : valor.to_i
+      end
     end
 end
