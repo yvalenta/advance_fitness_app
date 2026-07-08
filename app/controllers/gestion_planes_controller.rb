@@ -18,6 +18,16 @@ class GestionPlanesController < ApplicationController
                 notice: "Plan publicado: ya es visible para el miembro."
   end
 
+  # Reintento manual de la generación con IA tras un fallo (SDD Fase 5.7).
+  def regenerar
+    @plan = PlanPersonalizado.find(params[:id])
+    authorize @plan, :publicar?
+    @plan.marcar_generando!
+    GenerarPlanJob.perform_later(@plan.id)
+    redirect_back fallback_location: entrenador_borradores_path,
+                  notice: "Reintentando la generación del plan…"
+  end
+
   # Modo avanzado: pega/ajusta el JSON crudo (rutina o plan nutricional).
   # Las comidas normalmente se editan por autosave (GestionComidasController).
   def update

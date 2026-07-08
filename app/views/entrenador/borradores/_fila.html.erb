@@ -1,0 +1,48 @@
+<%# Fila de un plan en la cola del entrenador. Se transmite por Turbo Stream %>
+<%# al cambiar de estado (generando/fallido/borrador). id = dom_id para replace. %>
+<%# Render por colección usa `plan:`; el broadcast del modelo pasa `plan_personalizado:`. %>
+<% plan = local_assigns[:plan] || local_assigns[:plan_personalizado] %>
+<div id="<%= dom_id(plan) %>" class="flex flex-col gap-3 py-3">
+  <div class="flex items-center justify-between gap-3">
+    <div class="flex min-w-0 items-center gap-3">
+      <%= render "shared/avatar", user: plan.user, clase: "size-11 text-sm" %>
+      <div class="min-w-0">
+        <p class="truncate font-semibold"><%= nombre_visible(plan.user) %></p>
+        <p class="text-xs text-steel-3">
+          Generado por <%= plan.generado_por %> · <%= l plan.created_at, format: :short %>
+          <% if (objetivo = plan.user.objetivo_activo) %>
+            · meta: <%= objetivo.nombre.downcase %> (<%= objetivo.objetivo_kcal %> kcal)
+          <% end %>
+        </p>
+      </div>
+    </div>
+
+    <div class="shrink-0">
+      <% case plan.estado %>
+      <% when "generando" %>
+        <span class="flex items-center gap-2 text-sm font-semibold text-ocean">
+          <span class="loading loading-spinner loading-sm"></span> Generando…
+        </span>
+      <% when "fallido" %>
+        <span class="badge badge-error gap-1 font-semibold">
+          <%= render "shared/icono", nombre: :alerta, clase: "size-3" %> Falló
+        </span>
+      <% when "borrador" %>
+        <%= link_to "Revisar", plan_personalizado_path(plan), class: "btn btn-primary btn-sm font-bold" %>
+      <% end %>
+    </div>
+  </div>
+
+  <% if plan.fallido? %>
+    <%# Mensaje amable + reintento manual (SDD Fase 5.7). Sin auto-submit. %>
+    <div role="alert" class="alert alert-error alert-soft flex-wrap items-center gap-3 text-sm">
+      <%= render "shared/icono", nombre: :alerta, clase: "size-5 shrink-0" %>
+      <span class="flex-1">
+        <span class="font-semibold"><%= MensajeIa.amistoso(plan.error_generacion) %></span>
+        <span class="text-xs opacity-70">· intento <%= plan.intentos %></span>
+      </span>
+      <%= button_to "Reintentar", regenerar_plan_personalizado_path(plan),
+            class: "btn btn-error btn-sm shrink-0 font-bold" %>
+    </div>
+  <% end %>
+</div>

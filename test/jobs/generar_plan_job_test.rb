@@ -3,7 +3,8 @@ require "test_helper"
 class GenerarPlanJobTest < ActiveJob::TestCase
   RESULTADO = {
     rutina: { "dias" => [ { "dia" => "lunes", "ejercicios" => [] } ] },
-    plan_nutricional: { "kcal_diarias" => 2100, "comidas" => [] }
+    plan_nutricional: { "kcal_diarias" => 2100, "comidas" => [] },
+    modelo: "gemini-test"
   }.freeze
 
   setup do
@@ -22,46 +23,45 @@ class GenerarPlanJobTest < ActiveJob::TestCase
     GeneradorPlanIa.define_singleton_method(:generar, original)
   end
 
-  test "genera el borrador para un miembro premium" do
-    Suscripcion.create!(user: @user, plan: planes(:personalizado), estado: "activa", fecha_inicio: Date.current)
-
-    con_ia_stub(RESULTADO) do
-      assert_difference "PlanPersonalizado.count", 1 do
-        GenerarPlanJob.perform_now(@user.id)
-      end
-    end
-
-    plan = @user.planes_personalizados.last
-    assert plan.borrador?
-    assert_equal "ia", plan.generado_por
-    assert_equal RESULTADO[:rutina], plan.rutina
+  def plan_generando
+    @user.planes_personalizados.create!(estado: "generando", generado_por: "ia",
+                                        rutina: {}, plan_nutricional: {})
   end
 
-  test "rechaza usuarios sin suscripción premium activa (no llama a la IA)" do
+  test "completa el plan de un miembro premium (borrador + modelo)" do
+    Suscripcion.create!(user: @user, plan: planes(:personalizado), estado: "activa", fecha_inicio: Date.current)
+    plan = plan_generando
+
+    con_ia_stub(RESULTADO) { GenerarPlanJob.perform_now(plan.id) }
+
+    plan.reload
+    assert plan.borrador?
+    assert_equal RESULTADO[:rutina], plan.rutina
+    assert_equal "gemini-test", plan.modelo_generacion
+  end
+
+  test "un fallo de la IA deja el plan en fallido con su mensaje" do
+    Suscripcion.create!(user: @user, plan: planes(:personalizado), estado: "activa", fecha_inicio: Date.current)
+    plan = plan_generando
+
+    con_ia_stub(->(*) { raise "Gemini API 503: overloaded" }) do
+      GenerarPlanJob.perform_now(plan.id)
+    end
+
+    plan.reload
+    assert plan.fallido?
+    assert_equal 1, plan.intentos
+    assert_match "503", plan.error_generacion
+    assert_nil @user.plan_aprobado             # el miembro no ve nada
+  end
+
+  test "sin suscripción premium marca fallido y no llama a la IA" do
+    plan = plan_generando
     centinela = ->(*) { raise "la IA no debe llamarse sin suscripción" }
 
-    con_ia_stub(centinela) do
-      assert_no_difference "PlanPersonalizado.count" do
-        GenerarPlanJob.perform_now(@user.id)
-      end
-    end
-  end
+    con_ia_stub(centinela) { GenerarPlanJob.perform_now(plan.id) }
 
-  test "suscripción cancelada tampoco genera" do
-    Suscripcion.create!(user: @user, plan: planes(:personalizado), estado: "cancelada", fecha_inicio: Date.current)
-
-    assert_no_difference "PlanPersonalizado.count" do
-      GenerarPlanJob.perform_now(@user.id)
-    end
-  end
-
-  test "no duplica si ya hay un borrador en revisión" do
-    Suscripcion.create!(user: @user, plan: planes(:personalizado), estado: "activa", fecha_inicio: Date.current)
-    PlanPersonalizado.create!(user: @user, rutina: RESULTADO[:rutina],
-                              plan_nutricional: RESULTADO[:plan_nutricional], generado_por: "ia")
-
-    assert_no_difference "PlanPersonalizado.count" do
-      GenerarPlanJob.perform_now(@user.id)
-    end
+    assert plan.reload.fallido?
+    assert_match(/suscripción/i, plan.error_generacion)
   end
 end

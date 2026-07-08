@@ -68,6 +68,8 @@ app/
 | 4 | Nutrición & Objetivos | ✅ Completa |
 | 5 | Planes & IA | ✅ Completa |
 | 5.6 | Editor de plan inline (entrenador + admin) | ✅ Completa |
+| 5.7 | Fallos de IA observables + negocio parametrizable | ✅ Completa |
+| 5.8 | Rediseño visual (editor + admin responsive) | Próxima |
 | 6 | Nutrición personalizada & Gustos | Próxima (nota 3 SDD §11) |
 | 7 | Comunidad & Cierre | Pendiente |
 

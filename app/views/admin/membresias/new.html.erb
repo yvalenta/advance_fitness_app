@@ -50,36 +50,14 @@
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="form-control">
               <span class="label-text mb-1 text-xs font-semibold">Monto (COP)</span>
-              <%= number_field_tag "membresia[monto]", nil, min: 1, step: 1000, required: true,
-                    placeholder: "80.000", class: "input input-bordered w-full" %>
+              <%= number_field_tag "membresia[monto]", Negocio.precio_mensualidad, min: 1, step: 1000, required: true,
+                    placeholder: number_with_delimiter(Negocio.precio_mensualidad, delimiter: "."), class: "input input-bordered w-full" %>
             </label>
             <label class="form-control">
               <span class="label-text mb-1 text-xs font-semibold">Método de pago</span>
               <%= select_tag "membresia[metodo]", options_for_select(Pago::METODOS), class: "select select-bordered w-full" %>
             </label>
           </div>
-        </fieldset>
-
-        <div class="divider my-0"></div>
-
-        <fieldset class="flex flex-col gap-4">
-          <legend class="mb-3 flex items-center gap-2 text-sm font-bold">
-            <span class="flex size-7 items-center justify-center rounded-lg bg-volt/15 text-volt-d">
-              <%= render "shared/icono", nombre: :reloj, clase: "size-4" %>
-            </span>
-            Horario de acceso
-          </legend>
-          <div class="grid gap-4 sm:grid-cols-2">
-            <label class="form-control">
-              <span class="label-text mb-1 text-xs font-semibold">Apertura</span>
-              <%= time_field_tag "membresia[hora_apertura]", @membresia.hora_apertura, class: "input input-bordered w-full" %>
-            </label>
-            <label class="form-control">
-              <span class="label-text mb-1 text-xs font-semibold">Cierre</span>
-              <%= time_field_tag "membresia[hora_cierre]", @membresia.hora_cierre, class: "input input-bordered w-full" %>
-            </label>
-          </div>
-          <p class="text-xs text-steel-3">Sin horario = acceso libre en el horario del gimnasio.</p>
         </fieldset>
 
         <div class="flex gap-2 pt-2">

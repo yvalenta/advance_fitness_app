@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_07_200001) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_07_210001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -77,8 +77,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_07_200001) do
   create_table "planes_personalizados", force: :cascade do |t|
     t.bigint "aprobado_por_id"
     t.datetime "created_at", null: false
+    t.text "error_generacion"
     t.string "estado", default: "borrador", null: false
     t.string "generado_por", default: "ia", null: false
+    t.integer "intentos", default: 0, null: false
+    t.string "modelo_generacion"
     t.jsonb "plan_nutricional", default: {}, null: false
     t.jsonb "rutina", default: {}, null: false
     t.datetime "updated_at", null: false

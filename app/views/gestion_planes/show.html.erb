@@ -25,12 +25,33 @@
 
 <div class="mx-auto -mt-8 grid w-full max-w-5xl grid-cols-1 gap-6 px-4 pb-12 lg:grid-cols-3">
   <div class="flex flex-col gap-6 lg:col-span-2">
-    <div class="animate-fade-up">
-      <%= render "planes_personalizados/rutina", rutina: @plan.rutina %>
-    </div>
-    <div class="animate-fade-up fade-delay-1">
-      <%= render "planes_personalizados/editor", plan: @plan, plantillas: @plantillas %>
-    </div>
+    <% if @plan.en_proceso? %>
+      <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
+        <div class="card-body items-center gap-3 py-12 text-center">
+          <% if @plan.generando? %>
+            <span class="loading loading-spinner loading-lg text-ocean"></span>
+            <h2 class="font-display text-lg font-bold">Generando el plan con IA…</h2>
+            <p class="text-sm text-steel-5">En la <%= link_to "cola de borradores", entrenador_borradores_path, class: "link" %> verás en vivo cuando esté listo.</p>
+          <% else %>
+            <span class="flex size-12 items-center justify-center rounded-2xl bg-error/15 text-error">
+              <%= render "shared/icono", nombre: :alerta, clase: "size-7" %>
+            </span>
+            <h2 class="font-display text-lg font-bold">No se pudo generar el plan</h2>
+            <p class="text-sm text-steel-5"><%= MensajeIa.amistoso(@plan.error_generacion) %></p>
+            <p class="text-xs text-steel-3">Intento <%= @plan.intentos %></p>
+            <%= button_to "Reintentar la generación", regenerar_plan_personalizado_path(@plan),
+                  class: "btn btn-error font-bold" %>
+          <% end %>
+        </div>
+      </div>
+    <% else %>
+      <div class="animate-fade-up">
+        <%= render "planes_personalizados/rutina", rutina: @plan.rutina %>
+      </div>
+      <div class="animate-fade-up fade-delay-1">
+        <%= render "planes_personalizados/editor", plan: @plan, plantillas: @plantillas %>
+      </div>
+    <% end %>
   </div>
 
   <aside class="animate-fade-up fade-delay-2 lg:col-span-1">

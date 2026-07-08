@@ -33,6 +33,23 @@ class GestionPlanesControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to root_path
   end
 
+  test "el staff reintenta la generación: pone generando y reencola" do
+    fallido = PlanPersonalizado.create!(user: users(:one), generado_por: "ia",
+                                        estado: "fallido", rutina: {}, plan_nutricional: {})
+    sign_in_as users(:entrenador)
+
+    assert_enqueued_with(job: GenerarPlanJob, args: [ fallido.id ]) do
+      post regenerar_plan_personalizado_path(fallido)
+    end
+    assert fallido.reload.generando?
+  end
+
+  test "un miembro no puede reintentar la generación" do
+    sign_in_as users(:one)
+    post regenerar_plan_personalizado_path(@plan)
+    assert_redirected_to root_path
+  end
+
   # Criterio de aceptación F5 (SDD §11): el miembro ve el plan SOLO tras publicar.
   test "el miembro ve su plan solo después de publicar" do
     Suscripcion.create!(user: users(:one), plan: planes(:personalizado), estado: "activa", fecha_inicio: Date.current)

@@ -1,0 +1,18 @@
+# Parámetros del negocio (SDD §04). Para adaptar la app a otro gimnasio se
+# cambian aquí o por variable de entorno (ver app/services/negocio.rb). Los
+# precios son en COP sin decimales; la duración, en días.
+default: &default
+  nombre: "Advance Fitness"
+  moneda: "COP"
+  precio_mensualidad: 80000
+  precio_personalizado: 350000
+  duracion_dias: 30
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+
+production:
+  <<: *default

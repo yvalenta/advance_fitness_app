@@ -17,9 +17,9 @@ class Admin::SuscripcionesController < ApplicationController
     @suscripcion = Suscripcion.new(datos.merge(plan: Plan.personalizado, estado: "activa"))
 
     if @suscripcion.save
-      GenerarPlanJob.perform_later(@suscripcion.user_id)
+      encolar_generacion(@suscripcion.user)
       redirect_to admin_suscripciones_path,
-                  notice: "Suscripción creada. El plan con IA quedará en borrador para revisión del entrenador."
+                  notice: "Suscripción creada. El plan con IA se está generando y quedará en revisión del entrenador."
     else
       render :new, status: :unprocessable_entity
     end
@@ -32,4 +32,16 @@ class Admin::SuscripcionesController < ApplicationController
     suscripcion.cancelar!
     redirect_to admin_suscripciones_path, notice: "Suscripción cancelada."
   end
+
+  private
+
+    # Crea el plan en "generando" (visible en la cola del entrenador con su
+    # estado) y encola el job. Evita duplicar si ya hay uno en curso/revisión.
+    def encolar_generacion(user)
+      return if user.planes_personalizados.pendientes.exists?
+
+      plan = user.planes_personalizados.create!(estado: "generando", generado_por: "ia",
+                                                rutina: {}, plan_nutricional: {})
+      GenerarPlanJob.perform_later(plan.id)
+    end
 end

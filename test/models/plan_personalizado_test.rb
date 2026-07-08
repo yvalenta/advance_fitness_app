@@ -24,6 +24,37 @@ class PlanPersonalizadoTest < ActiveSupport::TestCase
     assert_equal users(:entrenador), plan.aprobado_por
   end
 
+  test "un plan en generación no exige rutina ni plan nutricional" do
+    plan = PlanPersonalizado.new(user: users(:one), generado_por: "ia",
+                                 estado: "generando", rutina: {}, plan_nutricional: {})
+    assert plan.valid?
+  end
+
+  test "ciclo de generación: generando → completar! → fallar!" do
+    plan = PlanPersonalizado.create!(user: users(:one), generado_por: "ia",
+                                     estado: "generando", rutina: {}, plan_nutricional: {})
+
+    plan.completar!(rutina: RUTINA, plan_nutricional: NUTRICION, modelo: "gemini-x")
+    assert plan.borrador?
+    assert_equal "gemini-x", plan.modelo_generacion
+
+    plan.fallar!("Gemini API 503: overloaded")
+    assert plan.fallido?
+    assert_equal 1, plan.intentos
+    assert_match "503", plan.error_generacion
+  end
+
+  test "pendientes agrupa generando, borrador y fallido (no aprobado)" do
+    generando = PlanPersonalizado.create!(user: users(:one), generado_por: "ia", estado: "generando", rutina: {}, plan_nutricional: {})
+    borrador = crear_plan
+    aprobado = crear_plan.tap { |p| p.publicar!(users(:entrenador)) }
+
+    pendientes = PlanPersonalizado.pendientes
+    assert_includes pendientes, generando
+    assert_includes pendientes, borrador
+    assert_not_includes pendientes, aprobado
+  end
+
   test "no puede estar aprobado sin aprobador" do
     plan = PlanPersonalizado.new(user: users(:one), rutina: RUTINA,
                                  plan_nutricional: NUTRICION, estado: "aprobado")

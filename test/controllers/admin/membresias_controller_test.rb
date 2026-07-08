@@ -15,15 +15,12 @@ class Admin::MembresiasControllerTest < ActionDispatch::IntegrationTest
         user_id: users(:entrenador).id,
         fecha_inicio: Date.current,
         monto: 80_000,
-        metodo: "efectivo",
-        hora_apertura: "06:00",
-        hora_cierre: "22:00"
+        metodo: "efectivo"
       } }
     end
 
     membresia = users(:entrenador).reload.membresia
-    assert_equal Date.current + 1.month, membresia.fecha_vencimiento
-    assert_equal [ "06:00", "22:00" ], membresia.horario_acceso["lun"]
+    assert_equal Date.current + 30.days, membresia.fecha_vencimiento
   end
 
   test "la renovación extiende el vencimiento y registra el pago" do
@@ -36,7 +33,7 @@ class Admin::MembresiasControllerTest < ActionDispatch::IntegrationTest
 
     membresia.reload
     assert_equal "activa", membresia.estado
-    assert_equal Date.current + 1.month, membresia.fecha_vencimiento
+    assert_equal Date.current + 30.days, membresia.fecha_vencimiento
   end
 
   test "un entrenador no puede renovar (solo admin registra pagos)" do

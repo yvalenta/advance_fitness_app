@@ -25,7 +25,10 @@ Rails.application.routes.draw do
   # Editor de plan compartido por entrenador y admin (SDD Fase 5.6) —
   # autorizado por Pundit (editar?/publicar?), no por el namespace.
   resources :planes_personalizados, only: %i[ show update ], controller: "gestion_planes" do
-    member { post :publicar }
+    member do
+      post :publicar
+      post :regenerar
+    end
     resources :comidas, only: %i[ create update destroy ], controller: "gestion_comidas"
   end
 

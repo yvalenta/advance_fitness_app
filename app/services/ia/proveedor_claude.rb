@@ -21,7 +21,7 @@ module Ia
       end
       raise "Claude API #{respuesta.code}: #{respuesta.body.to_s.truncate(300)}" unless respuesta.is_a?(Net::HTTPSuccess)
 
-      JSON.parse(respuesta.body).dig("content", 0, "text").to_s
+      { texto: JSON.parse(respuesta.body).dig("content", 0, "text").to_s, modelo: MODELO }
     end
 
     def self.cuerpo(system:, prompt:)

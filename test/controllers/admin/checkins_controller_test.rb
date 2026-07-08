@@ -34,4 +34,16 @@ class Admin::CheckinsControllerTest < ActionDispatch::IntegrationTest
     end
     assert_match(/no tiene membresía/, flash[:alert])
   end
+
+  # Regla de negocio (SDD §10): el plan personalizado reemplaza la mensualidad.
+  test "un miembro premium sin membresía activa entra igual" do
+    sign_in_as users(:admin)
+    # two tiene la membresía vencida; le damos plan personalizado activo
+    Suscripcion.create!(user: users(:two), plan: planes(:personalizado), estado: "activa", fecha_inicio: Date.current)
+
+    assert_difference "Acceso.count", 1 do
+      post admin_checkins_path, params: { user_id: users(:two).id }
+    end
+    assert_match(/plan personalizado/, flash[:notice])
+  end
 end

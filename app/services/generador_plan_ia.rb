@@ -32,14 +32,17 @@ module GeneradorPlanIa
         ]
       }
     }
-    La rutina cubre de lunes a sábado (domingo descanso). Las kcal de las
+    La rutina cubre de lunes a sábado (domingo descanso) y se enfoca en
+    entrenamiento de FUERZA con pesos; NO incluyas días dedicados a cardio
+    ni ejercicios de cardio como enfoque principal de un día. Las kcal de las
     comidas deben sumar aproximadamente el objetivo diario indicado.
   PROMPT
 
-  # perfil: hash plano con los datos del miembro (sin objetos ActiveRecord)
+  # perfil: hash plano con los datos del miembro (sin objetos ActiveRecord).
+  # Devuelve { rutina:, plan_nutricional:, modelo: } (modelo que respondió).
   def self.generar(perfil)
     respuesta = proveedor.completar(system: SYSTEM_PROMPT, prompt: construir_prompt(perfil))
-    parsear(respuesta)
+    parsear(respuesta[:texto]).merge(modelo: respuesta[:modelo])
   end
 
   def self.proveedor

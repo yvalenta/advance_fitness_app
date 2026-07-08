@@ -19,14 +19,17 @@ class Admin::SuscripcionesControllerTest < ActionDispatch::IntegrationTest
   test "el alta crea la suscripción personalizada y encola la generación con IA" do
     sign_in_as users(:admin)
 
-    assert_difference "Suscripcion.count", 1 do
+    assert_difference [ "Suscripcion.count", "PlanPersonalizado.count" ], 1 do
       post admin_suscripciones_path, params: { suscripcion: { user_id: users(:one).id, fecha_inicio: Date.current } }
     end
 
     suscripcion = Suscripcion.last
     assert_equal planes(:personalizado), suscripcion.plan
     assert suscripcion.activa?
-    assert_enqueued_with(job: GenerarPlanJob, args: [ users(:one).id ])
+
+    plan = users(:one).planes_personalizados.last
+    assert plan.generando?
+    assert_enqueued_with(job: GenerarPlanJob, args: [ plan.id ])
   end
 
   test "cancelar deja al miembro sin premium" do

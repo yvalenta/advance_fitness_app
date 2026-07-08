@@ -1,6 +1,9 @@
 class Membresia < ApplicationRecord
   ESTADOS = %w[activa vencida suspendida].freeze
-  DURACION_PERIODO = 1.month
+
+  # Duración fija parametrizable (SDD §07): 30 días exactos por defecto, no
+  # un mes calendario. Se ajusta en config/negocio.yml o por ENV.
+  def self.duracion = Negocio.duracion_dias.days
 
   belongs_to :user
   has_many :pagos, dependent: :restrict_with_error
@@ -24,7 +27,7 @@ class Membresia < ApplicationRecord
   def renovar!(monto:, metodo:, registrado_por:)
     transaction do
       base = [ fecha_vencimiento, Date.current ].max
-      nuevo_vencimiento = base + DURACION_PERIODO
+      nuevo_vencimiento = base + self.class.duracion
 
       pagos.create!(
         monto: monto,

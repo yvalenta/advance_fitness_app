@@ -9,7 +9,7 @@ class MembresiaTest < ActiveSupport::TestCase
     end
 
     assert_equal "activa", membresia.estado
-    assert_equal Date.current + 1.month, membresia.fecha_vencimiento
+    assert_equal Date.current + 30.days, membresia.fecha_vencimiento
 
     pago = membresia.pagos.order(:id).last
     assert_equal Date.current, pago.periodo_inicio
@@ -22,7 +22,7 @@ class MembresiaTest < ActiveSupport::TestCase
 
     membresia.renovar!(monto: 80_000, metodo: "tarjeta", registrado_por: users(:admin))
 
-    assert_equal vencimiento_original + 1.month, membresia.fecha_vencimiento
+    assert_equal vencimiento_original + 30.days, membresia.fecha_vencimiento
   end
 
   test "para_vencer solo incluye activas con fecha pasada" do

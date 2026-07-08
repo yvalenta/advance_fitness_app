@@ -12,8 +12,7 @@ class Admin::MembresiasController < ApplicationController
   # Alta = membresía + primer pago, en una sola transacción
   def create
     @membresia = Membresia.new(membresia_params)
-    @membresia.fecha_vencimiento = @membresia.fecha_inicio + Membresia::DURACION_PERIODO if @membresia.fecha_inicio
-    @membresia.aplicar_horario(params[:membresia][:hora_apertura], params[:membresia][:hora_cierre])
+    @membresia.fecha_vencimiento = @membresia.fecha_inicio + Membresia.duracion if @membresia.fecha_inicio
     authorize @membresia
 
     Membresia.transaction do
@@ -42,7 +41,6 @@ class Admin::MembresiasController < ApplicationController
     @membresia = Membresia.find(params[:id])
     authorize @membresia
     @membresia.assign_attributes(membresia_params.except(:user_id))
-    @membresia.aplicar_horario(params[:membresia][:hora_apertura], params[:membresia][:hora_cierre])
 
     if @membresia.save
       redirect_to admin_membresias_path, notice: "Membresía actualizada."

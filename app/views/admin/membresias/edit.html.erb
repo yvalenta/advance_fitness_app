@@ -65,17 +65,6 @@
           </label>
         </div>
 
-        <div class="grid gap-4 sm:grid-cols-2">
-          <label class="form-control">
-            <span class="label-text mb-1 text-xs font-semibold">Horario — apertura</span>
-            <%= time_field_tag "membresia[hora_apertura]", @membresia.hora_apertura, class: "input input-bordered w-full" %>
-          </label>
-          <label class="form-control">
-            <span class="label-text mb-1 text-xs font-semibold">Horario — cierre</span>
-            <%= time_field_tag "membresia[hora_cierre]", @membresia.hora_cierre, class: "input input-bordered w-full" %>
-          </label>
-        </div>
-
         <div class="flex gap-2">
           <%= form.submit "Guardar cambios", class: "btn btn-primary font-bold" %>
           <%= link_to "Volver", admin_membresias_path, class: "btn btn-ghost" %>

@@ -136,7 +136,8 @@ Monolito Rails con **cero dependencias de Node** (importmap + binario standalone
 | Solid Cache | — | Caché de fragmentos | Sobre Postgres; blog/novedades, catálogo de planes y métricas del dashboard (expiración corta) |
 | Solid Cable + Turbo Streams | — | Tiempo real | Sobre Postgres; notificación al aprobarse un plan, check-in panel del admin en vivo |
 | Action Text | — | Contenido rich del blog | Editor Trix + Active Storage (posts y novedades) |
-| Capa de IA multi-proveedor | — | IA generativa | `GeneradorPlanIa` + adaptadores intercambiables (`Ia::ProveedorGemini` activo, `Ia::ProveedorClaude` disponible) elegidos por `IA_PROVEEDOR`; llamada HTTP desde el job; salida JSON estructurada; API keys en credentials/ENV |
+| Capa de IA multi-proveedor | — | IA generativa | `GeneradorPlanIa` + adaptadores intercambiables (`Ia::ProveedorGemini` activo con **fallback de modelo** ante 503, `Ia::ProveedorClaude` disponible) elegidos por `IA_PROVEEDOR`; llamada HTTP desde el job; salida JSON estructurada; API keys en credentials/ENV |
+| Config `Negocio` | — | Parámetros del negocio | `config/negocio.yml` + overrides por ENV (precios, duración de membresía, nombre) leídos por `app/services/negocio.rb`; permite clonar la app a otro gimnasio sin tocar código |
 | Minitest + Capybara | — | Tests | Unit, integration y system tests en cada fase |
 | RuboCop (omakase) + Brakeman + bundler-audit | — | Calidad y seguridad | `dip rubocop` · `dip brakeman`; corren también en CI (`.github/workflows`) |
 | dip + Docker Compose | 8.x | Entorno local | `dip provision` levanta todo; ver §13 |
@@ -435,7 +436,8 @@ Schema en **PostgreSQL** gestionado con **migraciones ActiveRecord** (snake_case
 | `rutina` | `jsonb` | Días → ejercicios → series/reps, generado por IA |
 | `plan_nutricional` | `jsonb` | Comidas → macros → kcal, generado por IA; desde la fase de gustos cada comida incluye `receta: { ingredientes: [{alimento, cantidad}], preparacion }` |
 | `generado_por` | `string` | enum: `ia` · `entrenador` |
-| `estado` | `string` | enum: `borrador` · `aprobado` — el miembro solo ve aprobados |
+| `estado` | `string` | enum: `generando` · `borrador` · `aprobado` · `fallido` — el miembro solo ve aprobados; `generando`/`fallido` son la generación con IA (§10) |
+| `error_generacion` · `modelo_generacion` · `intentos` | `text`/`string`/`int` | Diagnóstico de la generación con IA (mensaje crudo, modelo que respondió, reintentos) — solo staff |
 | `aprobado_por_id` | `bigint` | FK → `users` (entrenador), nil en borrador |
 
 ### `plantillas_comida` — biblioteca del entrenador para el editor de planes
@@ -593,7 +595,7 @@ Rutas RESTful de Rails; los nombres siguen el dominio en español. Las de staff 
 | Paso | Acción | Detalle |
 |---|---|---|
 | 1 | Identificar | Recepción busca al miembro (nombre / email) en `/admin/checkins`, o el miembro se auto-identifica en la tablet de entrada. |
-| 2 | Validar | Membresía `activa` + hora dentro de `horario_acceso`. Vencida → aviso de renovación; fuera de horario → se registra con `dentro_de_horario: false` y alerta. |
+| 2 | Validar | Se permite el acceso si la membresía está `activa` **o** el miembro tiene **plan personalizado activo** (reemplaza la mensualidad, §04). Sin ninguno → aviso de crear/renovar; fuera de horario → se registra con `dentro_de_horario: false` y alerta. |
 | 3 | Registrar | Crea el `acceso`. Si es el primer acceso tras una renovación de membresía vencida, `tipo: reingreso` — esto alimenta el historial de reingresos. |
 | 4 | Renovar (si aplica) | El admin registra el pago; la renovación extiende el vencimiento dentro de una transacción. |
 
@@ -619,7 +621,9 @@ Rutas RESTful de Rails; los nombres siguen el dominio en español. Las de staff 
 | 4 | Nutrición & Objetivos | ~1 semana | Services TDEE, objetivos déficit/superávit, registro diario de calorías | Al fijar "bajar de peso" veo mi objetivo kcal y el faltante del día se actualiza al registrar consumo |
 | 5 | Planes & IA | ~1.5 semanas | Catálogo de planes, suscripciones, `GenerarPlanJob` (IA multi-proveedor), panel de aprobación del entrenador | Un miembro premium recibe un plan generado por IA solo después de la aprobación del entrenador |
 | 5.6 | Editor de plan inline (entrenador + admin) | ~1 semana | Editor por comida con **autosave tolerante a fallos** (estados guardando/guardado/error+reintentar), **modal** de plantillas (`plantillas_comida`, seed + "guardar como plantilla"), botón Publicar desacoplado, editable también por el **admin desde Suscripciones** con **historial del miembro**, JSON como modo avanzado; vista del miembro con macros por comida | El staff edita comidas inline y ven guardado en vivo; una falla de red no pierde datos y ofrece reintentar; el miembro ve el plan solo tras publicar |
-| 6 | Nutrición personalizada & Gustos | ~2 semanas | Catálogo `alimentos` (seed colombiano + CRUD admin), calificación de gustos (`/gustos`), armador de comidas con registro del día (`/armador`), gustos + recetas en el prompt de IA, benchmark de modelo Gemini | El miembro califica alimentos y arma su día viendo kcal en vivo; el registro alimenta `/progreso`; el plan IA de un premium no incluye ningún alimento `no_le_gusta` y cada comida trae receta |
+| 5.7 | Fallos de IA + negocio parametrizable | ~1 semana | Generación con IA observable (estados `generando`/`fallido`, **Turbo Streams** en vivo, reintento manual, **fallback de modelo** si está ocupado, mensajes amables), config central `Negocio` (precios/duración/nombre por `config/negocio.yml`+ENV), rutina IA **sin cardio**, membresías a **30 días** fijos, **acceso premium sin mensualidad**, sin horario de acceso | Un fallo de la IA se ve en la cola con mensaje amable + Reintentar y estado en vivo; un premium entra sin membresía; los precios se cambian por config |
+| 5.8 | Rediseño visual (editor + admin responsive) | ~1 semana | Editor de plan menos plano/más interactivo y **reestructuración responsive** de las vistas de administrador | Las vistas admin se ven cómodas en móvil y desktop; el editor es visualmente rico |
+| 6 | Nutrición personalizada & Gustos | ~2 semanas | Catálogo `alimentos` (seed colombiano + CRUD admin), calificación de gustos (`/gustos`), armador de comidas con registro del día (`/armador`), gustos + recetas en el prompt de IA, benchmark de modelo Gemini, **editor de rutina + plantillas de ejercicios por músculo + animaciones SVG** | El miembro califica alimentos y arma su día viendo kcal en vivo; el registro alimenta `/progreso`; el plan IA de un premium no incluye ningún alimento `no_le_gusta` y cada comida trae receta |
 | 7 | Comunidad & Cierre | ~1 semana | Blog, novedades, pulido responsive, checklist MVP completo | Un miembro lee posts y novedades publicadas; todo el checklist §15 en verde |
 
 > **Nota (julio 2026):** la Fase 3 se **aplaza** y la Fase 4 se adelanta. Mientras no existan mediciones, los inputs del TDEE se capturan así: fecha de nacimiento, sexo, talla y nivel de actividad en un formulario de **"Completar perfil"** (columnas ya existentes en `users`), y el **peso** como snapshot en `objetivos_nutricionales.peso_kg` al fijar el objetivo. Cuando la Fase 3 llegue, el peso se precargará de la última medición y la recalibración seguirá el Flujo C.

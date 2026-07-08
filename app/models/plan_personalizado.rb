@@ -1,5 +1,8 @@
 class PlanPersonalizado < ApplicationRecord
-  ESTADOS = %w[borrador aprobado].freeze
+  # generando/fallido: estados de la generación con IA antes de que exista un
+  # borrador revisable (SDD §07/§10, Fase 5.7).
+  ESTADOS = %w[generando borrador aprobado fallido].freeze
+  EN_PROCESO = %w[generando fallido].freeze
   GENERADORES = %w[ia entrenador].freeze
   CAMPOS_COMIDA = %w[nombre descripcion kcal proteinas_g carbohidratos_g grasas_g].freeze
 
@@ -8,14 +11,39 @@ class PlanPersonalizado < ApplicationRecord
 
   validates :estado, inclusion: { in: ESTADOS }
   validates :generado_por, inclusion: { in: GENERADORES }
-  validates :rutina, :plan_nutricional, presence: true
+  validates :rutina, :plan_nutricional, presence: true, unless: :en_proceso?
   validates :aprobado_por, presence: true, if: :aprobado?
 
   scope :borradores, -> { where(estado: "borrador") }
   scope :aprobados, -> { where(estado: "aprobado") }
+  scope :fallidos, -> { where(estado: "fallido") }
+  # Lo que el entrenador debe atender en su cola
+  scope :pendientes, -> { where(estado: %w[generando borrador fallido]) }
+
+  # Turbo Streams: la cola del entrenador se actualiza en vivo (SDD §14, 5.7)
+  after_create_commit :difundir_alta
+  after_update_commit :difundir_cambio
 
   def borrador? = estado == "borrador"
   def aprobado? = estado == "aprobado"
+  def generando? = estado == "generando"
+  def fallido? = estado == "fallido"
+  def en_proceso? = estado.in?(EN_PROCESO)
+
+  # ── Generación con IA ──────────────────────────────────────────────────
+  def marcar_generando!
+    update!(estado: "generando", error_generacion: nil)
+  end
+
+  def completar!(rutina:, plan_nutricional:, modelo:)
+    update!(estado: "borrador", rutina: rutina, plan_nutricional: plan_nutricional,
+            modelo_generacion: modelo, error_generacion: nil)
+  end
+
+  def fallar!(mensaje)
+    update!(estado: "fallido", error_generacion: mensaje.to_s.truncate(500),
+            intentos: intentos + 1)
+  end
 
   def comidas = Array(plan_nutricional["comidas"])
 
@@ -46,6 +74,25 @@ class PlanPersonalizado < ApplicationRecord
   end
 
   private
+
+    # En cola del entrenador = necesita atención (generando/borrador/fallido)
+    def en_cola? = estado.in?(%w[generando borrador fallido])
+
+    def difundir_alta
+      return unless en_cola?
+
+      broadcast_prepend_to("planes_pendientes", target: "planes_pendientes",
+                           partial: "entrenador/borradores/fila", locals: { plan: self })
+    end
+
+    def difundir_cambio
+      if en_cola?
+        broadcast_replace_to("planes_pendientes", target: self,
+                             partial: "entrenador/borradores/fila", locals: { plan: self })
+      else
+        broadcast_remove_to("planes_pendientes", target: self)
+      end
+    end
 
     def guardar_comidas!(lista)
       update!(plan_nutricional: plan_nutricional.merge(

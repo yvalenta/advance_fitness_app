@@ -23,29 +23,30 @@ if ENV["ADMIN_EMAIL"].present?
   User.find_by(email_address: ENV["ADMIN_EMAIL"])&.update!(rol: "admin")
 end
 
-# Catálogo de planes (SDD §07 — monetización). Idempotente.
-Plan.find_or_create_by!(codigo: "free") do |plan|
-  plan.nombre = "Free"
-  plan.precio = 0
-  plan.beneficios = [
+# Catálogo de planes (SDD §07 — monetización). Idempotente; los precios se
+# sincronizan desde la config del negocio en cada corrida (update! no solo create).
+Plan.find_or_create_by!(codigo: "free").update!(
+  nombre: "Free",
+  precio: 0,
+  beneficios: [
     "Control de membresía y check-in",
     "Objetivo calórico y registro diario",
     "Guías generales según tu meta",
     "Acceso al blog y novedades"
   ]
-end
+)
 
-Plan.find_or_create_by!(codigo: "personalizado") do |plan|
-  plan.nombre = "Personalizado"
-  plan.precio = 60_000
-  plan.beneficios = [
-    "Todo lo del plan Free",
-    "Rutina semanal generada con IA para tu perfil",
+Plan.find_or_create_by!(codigo: "personalizado").update!(
+  nombre: "Personalizado",
+  precio: Negocio.precio_personalizado,
+  beneficios: [
+    "Rutina de fuerza generada con IA para tu perfil",
     "Plan nutricional con comidas y macros",
     "Revisado y aprobado por tu entrenador",
+    "No pagas mensualidad de gimnasio mientras esté activo",
     "Recalibración cuando cambia tu objetivo"
   ]
-end
+)
 
 # Plantillas de comidas para el editor de planes del entrenador (SDD §07,
 # Fase 5.5). Base curada con alimentos colombianos; crece con el uso.
