@@ -67,6 +67,7 @@ app/
 | 3 | Biometría & Progreso | Progreso ✅ · Biometría aplazada (nota SDD §11) |
 | 4 | Nutrición & Objetivos | ✅ Completa |
 | 5 | Planes & IA | ✅ Completa |
+| 5.6 | Editor de plan inline (entrenador + admin) | ✅ Completa |
 | 6 | Nutrición personalizada & Gustos | Próxima (nota 3 SDD §11) |
 | 7 | Comunidad & Cierre | Pendiente |
 

@@ -37,11 +37,19 @@
                   <td class="text-sm text-steel-5"><%= l suscripcion.fecha_inicio %></td>
                   <td class="text-sm text-steel-5"><%= suscripcion.fecha_fin ? l(suscripcion.fecha_fin) : "—" %></td>
                   <td class="text-right">
-                    <% if suscripcion.activa? %>
-                      <%= button_to "Cancelar", admin_suscripcion_path(suscripcion), method: :patch,
-                            class: "btn btn-ghost btn-xs text-error",
-                            data: { turbo_confirm: "¿Cancelar la suscripción de #{nombre_visible(suscripcion.user)}?" } %>
-                    <% end %>
+                    <div class="flex items-center justify-end gap-1">
+                      <% if (plan = suscripcion.user.plan_actual) %>
+                        <%= link_to plan_personalizado_path(plan), class: "btn btn-ghost btn-xs" do %>
+                          <%= plan.aprobado? ? "Editar plan" : "Revisar plan" %>
+                          <span class="badge badge-xs <%= plan.aprobado? ? "badge-success" : "badge-warning" %>"></span>
+                        <% end %>
+                      <% end %>
+                      <% if suscripcion.activa? %>
+                        <%= button_to "Cancelar", admin_suscripcion_path(suscripcion), method: :patch,
+                              class: "btn btn-ghost btn-xs text-error",
+                              data: { turbo_confirm: "¿Cancelar la suscripción de #{nombre_visible(suscripcion.user)}?" } %>
+                      <% end %>
+                    </div>
                   </td>
                 </tr>
               <% end %>

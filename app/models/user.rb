@@ -48,6 +48,9 @@ class User < ApplicationRecord
 
   def plan_aprobado = planes_personalizados.aprobados.order(created_at: :desc).first
 
+  # El plan más reciente del miembro (borrador o publicado) — el que edita el staff
+  def plan_actual = planes_personalizados.order(created_at: :desc).first
+
   # La edad se deriva de la fecha de nacimiento, nunca se guarda (SDD §07)
   def edad
     return unless fecha_nacimiento

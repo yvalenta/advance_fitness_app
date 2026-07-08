@@ -1,0 +1,17 @@
+desayuno_avena:
+  tipo: desayuno
+  nombre: Avena con fruta
+  descripcion: 1 taza de avena cocida con banano y canela.
+  kcal: 400
+  proteinas_g: 20.0
+  carbohidratos_g: 60.0
+  grasas_g: 8.0
+
+cena_ligera:
+  tipo: cena
+  nombre: Cena ligera
+  descripcion: Omelette de claras con ensalada verde.
+  kcal: 350
+  proteinas_g: 30.0
+  carbohidratos_g: 20.0
+  grasas_g: 14.0

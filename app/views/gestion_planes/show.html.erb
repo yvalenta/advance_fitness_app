@@ -1,0 +1,71 @@
+<% content_for :title, "Editar plan — Advance Fitness" %>
+
+<div class="gradient-hero relative overflow-hidden">
+  <div class="trama-puntos absolute inset-0"></div>
+  <div class="relative mx-auto flex w-full max-w-5xl items-center gap-4 px-4 pb-14 pt-10">
+    <%= render "shared/avatar", user: @plan.user, clase: "size-14 text-lg" %>
+    <div class="min-w-0">
+      <div class="mb-1 flex items-center gap-2">
+        <p class="eyebrow text-volt">Plan · generado por <%= @plan.generado_por %></p>
+        <span class="badge badge-sm <%= @plan.aprobado? ? "badge-success" : "badge-warning" %>">
+          <%= @plan.aprobado? ? "Publicado" : "Borrador" %>
+        </span>
+      </div>
+      <h1 class="font-display text-2xl font-bold text-white sm:text-3xl">Plan de <%= nombre_visible(@plan.user) %></h1>
+      <p class="mt-1.5 text-sm text-white/60">
+        <% if (objetivo = @plan.user.objetivo_activo) %>
+          Meta: <%= objetivo.nombre.downcase %> · <%= objetivo.objetivo_kcal %> kcal/día · <%= objetivo.peso_kg.to_f %> kg
+        <% else %>
+          Sin objetivo nutricional activo
+        <% end %>
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="mx-auto -mt-8 grid w-full max-w-5xl grid-cols-1 gap-6 px-4 pb-12 lg:grid-cols-3">
+  <div class="flex flex-col gap-6 lg:col-span-2">
+    <div class="animate-fade-up">
+      <%= render "planes_personalizados/rutina", rutina: @plan.rutina %>
+    </div>
+    <div class="animate-fade-up fade-delay-1">
+      <%= render "planes_personalizados/editor", plan: @plan, plantillas: @plantillas %>
+    </div>
+  </div>
+
+  <aside class="animate-fade-up fade-delay-2 lg:col-span-1">
+    <div class="card border border-base-300 bg-base-100 shadow-md lg:sticky lg:top-24">
+      <div class="card-body">
+        <h2 class="card-title text-base">
+          <span class="flex size-7 items-center justify-center rounded-lg bg-ocean/15 text-ocean">
+            <%= render "shared/icono", nombre: :reloj, clase: "size-4" %>
+          </span>
+          Historial del miembro
+        </h2>
+        <ul class="flex flex-col divide-y divide-base-200">
+          <% @historial.each do |version| %>
+            <li class="flex items-center justify-between gap-2 py-2.5">
+              <div class="min-w-0">
+                <p class="flex items-center gap-1.5 text-sm font-semibold">
+                  <span class="badge badge-xs <%= version.aprobado? ? "badge-success" : "badge-warning" %>"></span>
+                  <%= l version.created_at.to_date %>
+                </p>
+                <p class="text-xs text-steel-3">
+                  <%= version.aprobado? ? "publicado" : "borrador" %> · por <%= version.generado_por %>
+                  <%= "· aprobó #{nombre_visible(version.aprobado_por)}" if version.aprobado_por %>
+                </p>
+              </div>
+              <% if version == @plan %>
+                <span class="badge badge-ghost badge-sm shrink-0">editando</span>
+              <% else %>
+                <%= link_to "Abrir", plan_personalizado_path(version), class: "btn btn-ghost btn-xs shrink-0" %>
+              <% end %>
+            </li>
+          <% end %>
+        </ul>
+        <%= link_to "Volver", (Current.user.admin? ? admin_suscripciones_path : entrenador_borradores_path),
+              class: "btn btn-ghost btn-sm mt-2" %>
+      </div>
+    </div>
+  </aside>
+</div>

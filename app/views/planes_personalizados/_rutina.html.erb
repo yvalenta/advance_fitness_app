@@ -1,0 +1,49 @@
+<%# Rutina semanal por día (tabs Stimulus) — solo lectura. Reutilizada por %>
+<%# el plan del miembro y el editor del staff. %>
+<%# locals: (rutina:) %>
+<% dias = Array(rutina["dias"]) %>
+
+<div class="card border border-base-300 bg-base-100 shadow-md" data-controller="tabs">
+  <div class="card-body">
+    <h2 class="card-title text-base">
+      <span class="flex size-7 items-center justify-center rounded-lg bg-volt/15 text-volt-d">
+        <%= render "shared/icono", nombre: :actividad, clase: "size-4" %>
+      </span>
+      Rutina semanal
+    </h2>
+
+    <div role="tablist" class="tabs tabs-box w-fit max-w-full flex-nowrap overflow-x-auto">
+      <% dias.each do |dia| %>
+        <button type="button" role="tab" class="tab whitespace-nowrap font-semibold capitalize"
+                data-tabs-target="tab" data-action="tabs#seleccionar"><%= dia["dia"] %></button>
+      <% end %>
+    </div>
+
+    <% dias.each do |dia| %>
+      <div data-tabs-target="panel" hidden>
+        <% if dia["enfoque"].present? %>
+          <p class="mb-3 text-sm font-semibold text-steel-5">Enfoque: <%= dia["enfoque"] %></p>
+        <% end %>
+        <div class="overflow-x-auto">
+          <table class="table table-sm">
+            <thead>
+              <tr class="text-xs uppercase tracking-wider text-steel-3">
+                <th>Ejercicio</th><th>Series</th><th>Reps</th><th>Descanso</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% Array(dia["ejercicios"]).each do |ejercicio| %>
+                <tr class="hover:bg-base-200">
+                  <td class="font-medium"><%= ejercicio["nombre"] %></td>
+                  <td><%= ejercicio["series"] %></td>
+                  <td><%= ejercicio["repeticiones"] %></td>
+                  <td class="text-steel-3"><%= ejercicio["descanso_seg"] %> s</td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

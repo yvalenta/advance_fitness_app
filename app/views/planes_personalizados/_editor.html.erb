@@ -1,0 +1,119 @@
+<%# Editor del plan nutricional por comida con autosave (SDD Fase 5.6). %>
+<%# locals: (plan:, plantillas:) %>
+<% comidas = plan.comidas %>
+<% total = plan.plan_nutricional["kcal_diarias"].to_i %>
+<% total = comidas.sum { |c| c["kcal"].to_i } if total.zero? %>
+
+<div class="card border border-base-300 bg-base-100 shadow-md"
+     data-controller="autosave modal-plantillas"
+     data-autosave-crear-url="<%= plan_personalizado_comidas_path(plan) %>"
+     data-modal-plantillas-crear-url="<%= entrenador_plantillas_comida_path %>">
+  <div class="card-body">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h2 class="card-title text-base">
+        <span class="flex size-7 items-center justify-center rounded-lg bg-pulse/15 text-pulse">
+          <%= render "shared/icono", nombre: :fuego, clase: "size-4" %>
+        </span>
+        Plan nutricional
+      </h2>
+      <div class="flex items-center gap-3">
+        <span class="font-display text-lg font-bold"><span data-autosave-target="total"><%= number_with_delimiter(total, delimiter: ".") %></span> <span class="text-xs font-normal text-steel-5">kcal/día</span></span>
+        <span class="badge badge-ghost badge-sm" data-autosave-target="macros"></span>
+      </div>
+    </div>
+
+    <div class="mt-1 flex h-2 w-full overflow-hidden rounded-full bg-base-200" aria-hidden="true">
+      <div class="bg-volt transition-all duration-300" data-autosave-target="barra"></div>
+      <div class="bg-ocean transition-all duration-300" data-autosave-target="barra"></div>
+      <div class="bg-warning transition-all duration-300" data-autosave-target="barra"></div>
+    </div>
+
+    <div class="mt-3 grid gap-3 lg:grid-cols-2">
+      <% comidas.each_with_index do |comida, indice| %>
+        <div class="flex flex-col gap-2 rounded-xl border border-base-300 bg-base-100 p-3"
+             data-autosave-target="card" data-url="<%= plan_personalizado_comida_path(plan, indice) %>">
+          <div class="flex items-center gap-2">
+            <input type="text" name="comida[nombre]" value="<%= comida["nombre"] %>" required
+                   class="input input-sm input-bordered w-full font-semibold" aria-label="Nombre de la comida"
+                   data-action="input->autosave#programar">
+            <label class="input input-sm input-bordered flex w-28 shrink-0 items-center gap-1">
+              <input type="number" name="comida[kcal]" value="<%= comida["kcal"] %>" min="0" required
+                     class="w-full text-right font-semibold" aria-label="Calorías"
+                     data-action="input->autosave#programar">
+              <span class="text-xs text-steel-3">kcal</span>
+            </label>
+          </div>
+          <textarea name="comida[descripcion]" rows="3" aria-label="Descripción"
+                    class="textarea textarea-bordered w-full text-sm leading-snug"
+                    data-action="input->autosave#programar"><%= comida["descripcion"] %></textarea>
+          <div class="grid grid-cols-3 gap-2">
+            <% { "proteinas_g" => "P", "carbohidratos_g" => "C", "grasas_g" => "G" }.each do |campo, letra| %>
+              <label class="input input-sm input-bordered flex items-center gap-1">
+                <span class="text-xs font-bold text-steel-3"><%= letra %></span>
+                <input type="number" name="comida[<%= campo %>]" value="<%= comida[campo] %>" min="0" step="0.5"
+                       class="w-full text-right" aria-label="<%= campo.humanize %>"
+                       data-action="input->autosave#programar">
+                <span class="text-xs text-steel-3">g</span>
+              </label>
+            <% end %>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" class="btn btn-ghost btn-xs" data-action="modal-plantillas#abrir">
+              <%= render "shared/icono", nombre: :busqueda, clase: "size-3.5" %> Plantilla
+            </button>
+            <button type="button" class="btn btn-ghost btn-xs text-steel-5"
+                    data-action="modal-plantillas#guardarPlantilla"
+                    data-tipo="<%= PlantillaComida.tipo_para(comida["nombre"]) %>">
+              Guardar como plantilla
+            </button>
+            <button type="button" class="btn btn-ghost btn-xs ml-auto text-error"
+                    data-action="autosave#eliminar" aria-label="Eliminar comida">
+              <%= render "shared/icono", nombre: :alerta, clase: "size-3.5" %>
+            </button>
+            <span class="badge badge-sm gap-1 font-semibold estado-autosave" hidden
+                  data-autosave-target="estado" data-action="click->autosave#reintentar"></span>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <button type="button" class="btn btn-outline btn-sm mt-3 w-full border-dashed" data-action="autosave#agregar">
+      + Agregar comida
+    </button>
+
+    <%= render "planes_personalizados/modal_plantillas", plantillas: plantillas %>
+
+    <div class="mt-4 flex flex-wrap items-center gap-3 border-t border-base-200 pt-4">
+      <% if plan.aprobado? %>
+        <span class="badge badge-success gap-1 font-semibold">
+          <%= render "shared/icono", nombre: :check, clase: "size-3" %> Publicado
+        </span>
+        <p class="text-xs text-steel-5">Los cambios se guardan y el miembro los ve al instante.</p>
+      <% else %>
+        <%= button_to "Publicar plan", publicar_plan_personalizado_path(plan),
+              class: "btn btn-primary font-bold",
+              data: { autosave_target: "publicar", turbo_confirm: "¿Publicar el plan? Quedará visible para el miembro." } %>
+      <% end %>
+      <span class="ml-auto text-xs text-steel-3" data-autosave-target="global">Todo guardado ✓</span>
+    </div>
+
+    <details class="collapse-arrow collapse mt-3 border border-base-300">
+      <summary class="collapse-title text-sm font-semibold">Modo avanzado: editar JSON</summary>
+      <div class="collapse-content">
+        <%= form_with url: plan_personalizado_path(plan), method: :patch, class: "flex flex-col gap-3" do %>
+          <label class="form-control">
+            <span class="label-text mb-1 text-xs font-semibold">Rutina</span>
+            <%= text_area_tag :rutina, JSON.pretty_generate(plan.rutina),
+                  rows: 12, class: "textarea textarea-bordered w-full font-mono text-xs" %>
+          </label>
+          <label class="form-control">
+            <span class="label-text mb-1 text-xs font-semibold">Plan nutricional</span>
+            <%= text_area_tag :plan_nutricional, JSON.pretty_generate(plan.plan_nutricional),
+                  rows: 12, class: "textarea textarea-bordered w-full font-mono text-xs" %>
+          </label>
+          <%= submit_tag "Guardar JSON", class: "btn btn-sm btn-secondary self-start" %>
+        <% end %>
+      </div>
+    </details>
+  </div>
+</div>

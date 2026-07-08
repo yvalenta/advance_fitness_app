@@ -22,10 +22,16 @@ Rails.application.routes.draw do
   get "mi_plan", to: "planes_personalizados#show", as: :mi_plan
   get "upgrade", to: "planes#index", as: :upgrade
 
+  # Editor de plan compartido por entrenador y admin (SDD Fase 5.6) —
+  # autorizado por Pundit (editar?/publicar?), no por el namespace.
+  resources :planes_personalizados, only: %i[ show update ], controller: "gestion_planes" do
+    member { post :publicar }
+    resources :comidas, only: %i[ create update destroy ], controller: "gestion_comidas"
+  end
+
   namespace :entrenador do
-    resources :borradores, only: %i[ index show ], controller: "borradores" do
-      resource :aprobacion, only: :create, controller: "aprobaciones"
-    end
+    resources :borradores, only: %i[ index ], controller: "borradores"
+    resources :plantillas_comida, only: %i[ create destroy ], controller: "plantillas_comida"
   end
 
   # Panel de administración (SDD §09) — protegido por Pundit, no solo por el namespace

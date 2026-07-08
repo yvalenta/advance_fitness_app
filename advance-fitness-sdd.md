@@ -438,6 +438,20 @@ Schema en **PostgreSQL** gestionado con **migraciones ActiveRecord** (snake_case
 | `estado` | `string` | enum: `borrador` · `aprobado` — el miembro solo ve aprobados |
 | `aprobado_por_id` | `bigint` | FK → `users` (entrenador), nil en borrador |
 
+### `plantillas_comida` — biblioteca del entrenador para el editor de planes
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `bigint` PK | — |
+| `tipo` | `string` | enum: `desayuno` · `almuerzo` · `cena` · `snack` — agrupa el picker |
+| `nombre` | `string` | Descriptivo ("Desayuno alto en proteína"); unique por tipo |
+| `descripcion` | `text` | El contenido de la comida, mismo texto que va al plan |
+| `kcal` | `integer` | — |
+| `proteinas_g` / `carbohidratos_g` / `grasas_g` | `decimal(5,1)` | — |
+| `creado_por_id` | `bigint` | FK → `users`, nil para las del seed |
+
+> Nace con un **seed de ~20 plantillas** (4-5 por tipo) y crece con el uso: en el editor del plan, el entrenador guarda cualquier comida ajustada como plantilla nueva ("guardar como plantilla").
+
 ### `posts`
 
 | Columna | Tipo | Notas |
@@ -529,8 +543,11 @@ Rutas RESTful de Rails; los nombres siguen el dominio en español. Las de staff 
 | `/admin/checkins` | GET/POST | staff | Búsqueda de miembro + registro de acceso (valida horario) |
 | `/admin/membresias/:id/renovacion` | POST | admin | Transacción: crea pago + extiende vencimiento |
 | `/admin/suscripciones` | CRUD | admin | Alta del plan personalizado (dispara `GenerarPlanJob`) |
-| `/entrenador/borradores` | GET | entrenador | Planes generados por IA pendientes de revisión |
-| `/entrenador/borradores/:id/aprobacion` | POST | entrenador | Ajusta el JSONB si hace falta y aprueba |
+| `/entrenador/borradores` | GET | entrenador | Cola de planes generados por IA pendientes de revisión; cada fila abre el editor |
+| `/planes_personalizados/:id` | GET/PATCH | staff | Editor compartido (entrenador + admin): comidas editables, historial del miembro; PATCH = modo avanzado JSON |
+| `/planes_personalizados/:id/publicar` | POST | staff | Da visibilidad al miembro (`estado→aprobado`, fija `aprobado_por`) |
+| `/planes_personalizados/:id/comidas[/:i]` | POST/PATCH/DELETE | staff | Autosave por comida (índice del array jsonb); responde JSON con el total recalculado |
+| `/entrenador/plantillas_comida` | POST/DELETE | staff | Guardar una comida del editor como plantilla · retirar plantillas |
 | `/admin/posts` · `/admin/novedades` | CRUD | staff | Contenido de comunidad |
 
 > **Jobs (sin ruta):** `GenerarPlanJob` (Solid Queue, disparado al crear la suscripción premium) y `VencerMembresiasJob` (recurrente diario vía `config/recurring.yml`) — marca `vencida` toda membresía con `fecha_vencimiento < hoy`.
@@ -557,7 +574,8 @@ Rutas RESTful de Rails; los nombres siguen el dominio en español. Las de staff 
 | 1 | Ver oferta | El miembro abre "Mejorar plan": comparación Free vs. Personalizado desde `planes.beneficios`. |
 | 2 | Pagar en recepción | MVP sin pasarela: el admin registra el pago y crea la `suscripcion` al plan personalizado. |
 | 3 | Generar con IA | Al crearse la suscripción se encola `GenerarPlanJob`: revalida la suscripción, arma el prompt con biometría reciente, somatotipo, objetivo y restricciones, y pide al proveedor de IA configurado un JSON de rutina semanal + plan nutricional. |
-| 4 | Revisión del entrenador | El plan queda en `borrador`. El entrenador lo revisa en su panel, ajusta el JSONB si hace falta y lo aprueba. |
+| 4 | Revisión del entrenador | El plan queda en `borrador`. El entrenador lo edita en un **editor por comida con autosave**: nombre/descripción/kcal/macros se guardan al instante (estados guardando/guardado/error+reintentar), aplica `plantillas_comida` desde un **modal** o guarda comidas como plantillas nuevas. El JSON crudo queda como modo avanzado. |
+| 4b | Publicación y edición continua | **Publicar** (botón desacoplado de la edición) da visibilidad al miembro. Tras publicar, el **admin** puede seguir editando el plan desde Suscripciones —con el **historial** de planes del miembro— y los cambios se reflejan en vivo. |
 | 5 | Publicación | Al pasar a `aprobado`, la policy lo hace visible para el miembro, que lo ve en "Mi plan" con rutina por día y comidas con macros. |
 
 ### Flujo C — Actualización de progreso mensual
@@ -600,12 +618,13 @@ Rutas RESTful de Rails; los nombres siguen el dominio en español. Las de staff 
 | 3 | Biometría & Progreso | ~1.5 semanas | Mediciones (IMC generado), somatotipo, wizard de onboarding, gráficas SVG mensuales | Registro 3 mediciones y veo la gráfica con clasificación OMS y propensión correctas |
 | 4 | Nutrición & Objetivos | ~1 semana | Services TDEE, objetivos déficit/superávit, registro diario de calorías | Al fijar "bajar de peso" veo mi objetivo kcal y el faltante del día se actualiza al registrar consumo |
 | 5 | Planes & IA | ~1.5 semanas | Catálogo de planes, suscripciones, `GenerarPlanJob` (IA multi-proveedor), panel de aprobación del entrenador | Un miembro premium recibe un plan generado por IA solo después de la aprobación del entrenador |
+| 5.6 | Editor de plan inline (entrenador + admin) | ~1 semana | Editor por comida con **autosave tolerante a fallos** (estados guardando/guardado/error+reintentar), **modal** de plantillas (`plantillas_comida`, seed + "guardar como plantilla"), botón Publicar desacoplado, editable también por el **admin desde Suscripciones** con **historial del miembro**, JSON como modo avanzado; vista del miembro con macros por comida | El staff edita comidas inline y ven guardado en vivo; una falla de red no pierde datos y ofrece reintentar; el miembro ve el plan solo tras publicar |
 | 6 | Nutrición personalizada & Gustos | ~2 semanas | Catálogo `alimentos` (seed colombiano + CRUD admin), calificación de gustos (`/gustos`), armador de comidas con registro del día (`/armador`), gustos + recetas en el prompt de IA, benchmark de modelo Gemini | El miembro califica alimentos y arma su día viendo kcal en vivo; el registro alimenta `/progreso`; el plan IA de un premium no incluye ningún alimento `no_le_gusta` y cada comida trae receta |
 | 7 | Comunidad & Cierre | ~1 semana | Blog, novedades, pulido responsive, checklist MVP completo | Un miembro lee posts y novedades publicadas; todo el checklist §15 en verde |
 
 > **Nota (julio 2026):** la Fase 3 se **aplaza** y la Fase 4 se adelanta. Mientras no existan mediciones, los inputs del TDEE se capturan así: fecha de nacimiento, sexo, talla y nivel de actividad en un formulario de **"Completar perfil"** (columnas ya existentes en `users`), y el **peso** como snapshot en `objetivos_nutricionales.peso_kg` al fijar el objetivo. Cuando la Fase 3 llegue, el peso se precargará de la última medición y la recalibración seguirá el Flujo C.
 >
-> **Nota 3 (julio 2026):** se inserta la **Fase 6 — Nutrición personalizada & Gustos** antes de Comunidad (que pasa a Fase 7). Decisiones cerradas con el cliente: catálogo por **seed curado colombiano** (no base externa); gustos y armador **para todos los miembros** (el plan IA sigue siendo premium); el armador **registra el consumo del día** (reemplaza el input manual de kcal cuando se usa); recetas **dentro del plan premium** (JSONB), no como biblioteca aparte. Durante la fase se hace un **benchmark de modelos Gemini** (`gemini-2.5-flash-lite` actual vs. `gemini-3.1-flash-lite`) con la misma petición real; el ganador queda como default de `GEMINI_MODELO`.
+> **Nota 3 (julio 2026):** se inserta la **Fase 6 — Nutrición personalizada & Gustos** antes de Comunidad (que pasa a Fase 7). Decisiones cerradas con el cliente: catálogo por **seed curado colombiano** (no base externa); gustos y armador **para todos los miembros** (el plan IA sigue siendo premium); el armador **registra el consumo del día** (reemplaza el input manual de kcal cuando se usa); recetas **dentro del plan premium** (JSONB), no como biblioteca aparte. Durante la fase se hace un **benchmark de modelos Gemini** (`gemini-2.5-flash-lite` actual vs. `gemini-3.1-flash-lite`) con la misma petición real; el ganador queda como default de `GEMINI_MODELO`. La Fase 6 incluye además el **voto de menú del miembro** con el modelo **"alternativas por comida"** (cada comida ofrece 2-3 opciones y el miembro marca su favorita 👍), que se apoya en el editor de la Fase 5.6.
 >
 > **Nota 2:** de la Fase 3 se **adelanta la mitad "Progreso"** (`GET /progreso`, gráficas SVG server-rendered §14) alimentada con los datos que ya existen: tendencia de **peso** desde los snapshots de `objetivos_nutricionales`, **calorías diarias vs. objetivo** desde `registros_calorias` y **asistencia** desde `accesos`. La mitad "Biometría" (tabla `mediciones` con IMC generado, clasificación OMS y wizard de onboarding) sigue aplazada; al llegar, la gráfica de peso pasará a leer de `mediciones`.
 

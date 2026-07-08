@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_06_160003) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_07_200001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -88,6 +88,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_06_160003) do
     t.index ["user_id"], name: "index_planes_personalizados_on_user_id"
   end
 
+  create_table "plantillas_comida", force: :cascade do |t|
+    t.decimal "carbohidratos_g", precision: 5, scale: 1, default: "0.0", null: false
+    t.bigint "creado_por_id"
+    t.datetime "created_at", null: false
+    t.text "descripcion", null: false
+    t.decimal "grasas_g", precision: 5, scale: 1, default: "0.0", null: false
+    t.integer "kcal", null: false
+    t.string "nombre", null: false
+    t.decimal "proteinas_g", precision: 5, scale: 1, default: "0.0", null: false
+    t.string "tipo", null: false
+    t.datetime "updated_at", null: false
+    t.index ["creado_por_id"], name: "index_plantillas_comida_on_creado_por_id"
+    t.index ["tipo", "nombre"], name: "index_plantillas_comida_on_tipo_and_nombre", unique: true
+  end
+
   create_table "registros_calorias", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.date "fecha", null: false
@@ -144,6 +159,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_06_160003) do
   add_foreign_key "pagos", "users", column: "registrado_por_id"
   add_foreign_key "planes_personalizados", "users"
   add_foreign_key "planes_personalizados", "users", column: "aprobado_por_id"
+  add_foreign_key "plantillas_comida", "users", column: "creado_por_id"
   add_foreign_key "registros_calorias", "users"
   add_foreign_key "sessions", "users"
   add_foreign_key "suscripciones", "planes"

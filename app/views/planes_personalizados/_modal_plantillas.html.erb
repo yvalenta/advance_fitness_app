@@ -1,0 +1,37 @@
+<%# Modal selector de plantillas de comida (SDD Fase 5.6). Vive dentro del %>
+<%# editor (controlador modal-plantillas). %>
+<%# locals: (plantillas:) %>
+<dialog class="modal" data-modal-plantillas-target="dialogo">
+  <div class="modal-box max-w-lg">
+    <div class="mb-3 flex items-center justify-between">
+      <h3 class="font-display text-lg font-bold">Elegir una comida de ejemplo</h3>
+      <button type="button" class="btn btn-circle btn-ghost btn-sm" data-action="modal-plantillas#cerrar" aria-label="Cerrar">✕</button>
+    </div>
+
+    <% if plantillas.any? %>
+      <div class="flex max-h-[60vh] flex-col gap-4 overflow-y-auto pr-1">
+        <% PlantillaComida::TIPOS.each do |tipo| %>
+          <% del_tipo = plantillas.select { |plantilla| plantilla.tipo == tipo } %>
+          <div>
+            <p class="eyebrow mb-1.5 text-steel-3"><%= PlantillaComida::NOMBRES_TIPO[tipo] %></p>
+            <div class="flex flex-col gap-1" data-modal-plantillas-target="grupo" data-tipo="<%= tipo %>">
+              <% del_tipo.each do |plantilla| %>
+                <button type="button" class="btn btn-ghost btn-sm w-full justify-between font-normal"
+                        data-action="modal-plantillas#aplicar"
+                        data-descripcion="<%= plantilla.descripcion %>" data-kcal="<%= plantilla.kcal %>"
+                        data-p="<%= plantilla.proteinas_g.to_f %>" data-c="<%= plantilla.carbohidratos_g.to_f %>"
+                        data-g="<%= plantilla.grasas_g.to_f %>">
+                  <span><%= plantilla.nombre %></span>
+                  <span class="text-xs text-steel-3"><%= plantilla.kcal %> kcal</span>
+                </button>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="py-6 text-center text-sm text-steel-3">Aún no hay plantillas. Guarda una comida como plantilla para reutilizarla.</p>
+    <% end %>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button aria-label="Cerrar">cerrar</button></form>
+</dialog>
