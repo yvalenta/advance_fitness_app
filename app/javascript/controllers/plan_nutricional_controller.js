@@ -1,10 +1,15 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Checklist interactivo del plan nutricional: marcar comidas anima el
-// total de kcal, la barra de progreso contra el objetivo y habilita
-// registrar ese total como el consumo del día (upsert de la Fase 4).
+// Checklist interactivo del plan nutricional: marcar comidas anima el total de
+// kcal, la barra de progreso contra el objetivo y habilita registrar ese total
+// como el consumo del día (upsert de la Fase 4). Desde la Fase 5.8 el miembro
+// puede ajustar las kcal que realmente comió por comida y anotar un cambio; el
+// total y el detalle ({ comidas: [{nombre, kcal, nota}] }) viajan al registro.
 export default class extends Controller {
-  static targets = ["comida", "consumidas", "barra", "estado", "boton", "kcalInput", "segmento"]
+  static targets = [
+    "comida", "consumidas", "barra", "estado", "boton", "kcalInput",
+    "segmento", "tarjeta", "kcal", "nota", "detalle"
+  ]
   static values = { objetivo: Number }
 
   connect() {
@@ -16,9 +21,8 @@ export default class extends Controller {
   }
 
   actualizar() {
-    const total = this.comidaTargets
-      .filter((comida) => comida.checked)
-      .reduce((suma, comida) => suma + Number(comida.dataset.kcal), 0)
+    const marcadas = this.comidaTargets.filter((comida) => comida.checked)
+    const total = marcadas.reduce((suma, comida) => suma + this.kcalDe(comida), 0)
     const completas = this.comidaTargets.length > 0 && this.comidaTargets.every((comida) => comida.checked)
     const progreso = this.objetivoValue > 0 ? Math.min((total / this.objetivoValue) * 100, 100) : 0
 
@@ -32,6 +36,26 @@ export default class extends Controller {
         total === 0 ? "Marca lo que comiste hoy" : `Registrar ${total.toLocaleString("es-CO")} kcal como mi consumo de hoy`
     }
     if (this.hasKcalInputTarget) this.kcalInputTarget.value = total
+    if (this.hasDetalleTarget) {
+      this.detalleTarget.value = JSON.stringify({ comidas: marcadas.map((comida) => this.detalleDe(comida)) })
+    }
+  }
+
+  // Las kcal de una comida marcada: el ajuste del miembro si existe, si no las
+  // kcal del plan (dataset del checkbox).
+  kcalDe(comida) {
+    const editable = this.tarjetaDe(comida)?.querySelector("[data-plan-nutricional-target='kcal']")
+    const valor = editable ? Number(editable.value) : Number(comida.dataset.kcal)
+    return Number.isFinite(valor) && valor > 0 ? Math.round(valor) : 0
+  }
+
+  detalleDe(comida) {
+    const nota = this.tarjetaDe(comida)?.querySelector("[data-plan-nutricional-target='nota']")
+    return { nombre: comida.dataset.nombre, kcal: this.kcalDe(comida), nota: nota?.value.trim() || "" }
+  }
+
+  tarjetaDe(comida) {
+    return comida.closest("[data-plan-nutricional-target='tarjeta']")
   }
 
   // Count-up con easing cúbico — el número "corre" hasta el valor nuevo

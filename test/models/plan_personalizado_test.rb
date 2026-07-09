@@ -151,4 +151,22 @@ class PlanPersonalizadoTest < ActiveSupport::TestCase
     plan = crear_plan
     assert_raises(ActiveRecord::RecordNotFound) { plan.eliminar_comida!(99) }
   end
+
+  # Fase 5.8: el "Mi plan" del miembro se refresca en vivo solo si el plan ya
+  # está publicado (la edición del staff se ve al instante).
+  test "editar un plan aprobado difunde en vivo al miembro" do
+    plan = crear_plan
+    plan.publicar!(users(:entrenador))
+
+    assert_turbo_stream_broadcasts(plan, count: 1) do
+      plan.actualizar_comida!(0, { "kcal" => "450" })
+    end
+  end
+
+  test "editar un borrador no difunde al miembro (aún no es visible)" do
+    plan = crear_plan # borrador
+    assert_no_turbo_stream_broadcasts(plan) do
+      plan.actualizar_comida!(0, { "kcal" => "450" })
+    end
+  end
 end

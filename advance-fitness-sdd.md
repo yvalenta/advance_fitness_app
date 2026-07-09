@@ -68,6 +68,7 @@ Los requerimientos en bruto se organizan en cinco módulos. Cada requerimiento q
 | Historial de reingresos | Cada check-in se registra; un reingreso es un check-in tras membresía vencida y renovada | `accesos` |
 | Control de tiempo activo ("hace cuánto entrena") | Calculado: `Date.current - user.fecha_ingreso`, descontando períodos inactivos según `accesos` | `users`, `accesos` |
 | Horarios de acceso | `membresias.horario_acceso` (JSONB por día de semana); se valida en el check-in | `membresias` |
+| Plan básico incluido con la membresía | Rutina de fuerza armada **por reglas** (sin IA) según edad/talla/peso/objetivo desde `plantillas_ejercicio`; se muestra en "Mi plan" para miembros con membresía activa no premium (Fase 5.9) | `plantillas_ejercicio` (derivado, sin persistir) |
 
 ### Módulo B — Salud y Biometría
 
@@ -104,8 +105,8 @@ Fórmulas estándar utilizadas (implementadas como POROs en `app/services`, puro
 
 | Requerimiento | Solución | Entidad |
 |---|---|---|
-| Plan Free | Acceso a rutinas y guías básicas (contenido estático por objetivo: subir / bajar de peso) | `planes`, `suscripciones` |
-| Upgrade a Plan Personalizado | Compra registrada por admin → `GenerarPlanJob` (Solid Queue) genera con IA una rutina + plan nutricional a partir de la biometría y el objetivo; el entrenador revisa y aprueba antes de publicarse al miembro | `planes_personalizados` |
+| Plan Free / básico | Miembro sin membresía: guías estáticas por objetivo. Miembro con membresía activa: **plan básico de entrenamiento por reglas** (§03 Módulo A) además de las guías | `planes`, `plantillas_ejercicio` |
+| Upgrade a Plan Personalizado | Compra registrada por admin → se toma una **medición antropométrica** (obligatoria) → `GenerarPlanJob` (Solid Queue) genera con IA una rutina + plan nutricional a partir de la **antropometría**, la biometría y el objetivo; el entrenador revisa y aprueba antes de publicarse al miembro | `planes_personalizados`, `mediciones` |
 
 ### Módulo E — Comunidad y Retención
 
@@ -341,13 +342,19 @@ Schema en **PostgreSQL** gestionado con **migraciones ActiveRecord** (snake_case
 | Columna | Tipo | Notas |
 |---|---|---|
 | `id` | `bigint` PK | — |
-| `user_id` | `bigint` | FK → `users` |
+| `user_id` | `bigint` | FK → `users` (el miembro medido) |
+| `tomada_por_id` | `bigint` | FK → `users` — el staff que tomó la medición (Fase 5.9) |
 | `fecha` | `date` | Una medición por fecha (índice unique `user_id + fecha`) |
 | `peso_kg` | `decimal(5,2)` | Input |
 | `talla_cm` | `decimal(5,1)` | Input (normalmente estable) |
 | `imc` | `decimal(4,1)` | **Columna generada** en Postgres: `peso_kg / (talla_cm/100)^2` |
 | `grasa_pct` | `decimal(4,1)` | Opcional |
+| Perímetros (cm) | `decimal(5,1)` | `cuello · pecho · cintura · cadera · brazo · muslo · pantorrilla` — todos opcionales (Fase 5.9) |
+| Diámetros óseos (cm) | `decimal(4,1)` | `muneca · codo · rodilla` — todos opcionales (Fase 5.9) |
+| Pliegues (mm) | `decimal(4,1)` | `tricipital · subescapular · suprailiaco · abdominal · muslo` — todos opcionales (Fase 5.9) |
 | `notas` | `text` | Opcional |
+
+> **Fase 5.9:** la tabla se implementa como **antropometría completa** capturada por el **staff con historial**. Alimenta el prompt de la IA en el alta de suscripción (Flujo B) y la serie de peso de `/progreso`.
 
 ### `objetivos_nutricionales`
 
@@ -574,8 +581,8 @@ Rutas RESTful de Rails; los nombres siguen el dominio en español. Las de staff 
 | Paso | Acción | Detalle |
 |---|---|---|
 | 1 | Ver oferta | El miembro abre "Mejorar plan": comparación Free vs. Personalizado desde `planes.beneficios`. |
-| 2 | Pagar en recepción | MVP sin pasarela: el admin registra el pago y crea la `suscripcion` al plan personalizado. |
-| 3 | Generar con IA | Al crearse la suscripción se encola `GenerarPlanJob`: revalida la suscripción, arma el prompt con biometría reciente, somatotipo, objetivo y restricciones, y pide al proveedor de IA configurado un JSON de rutina semanal + plan nutricional. |
+| 2 | Pagar + medir en recepción | MVP sin pasarela: el admin registra el pago, **toma la medición antropométrica** (obligatoria: peso, perímetros, diámetros, pliegues) y crea la `suscripcion` al plan personalizado en una sola transacción. |
+| 3 | Generar con IA | Al crearse la suscripción se encola `GenerarPlanJob`: revalida la suscripción, arma el prompt con la **antropometría reciente**, biometría, somatotipo, objetivo y restricciones, y pide al proveedor de IA configurado un JSON de rutina semanal + plan nutricional. |
 | 4 | Revisión del entrenador | El plan queda en `borrador`. El entrenador lo edita en un **editor por comida con autosave**: nombre/descripción/kcal/macros se guardan al instante (estados guardando/guardado/error+reintentar), aplica `plantillas_comida` desde un **modal** o guarda comidas como plantillas nuevas. El JSON crudo queda como modo avanzado. |
 | 4b | Publicación y edición continua | **Publicar** (botón desacoplado de la edición) da visibilidad al miembro. Tras publicar, el **admin** puede seguir editando el plan desde Suscripciones —con el **historial** de planes del miembro— y los cambios se reflejan en vivo. |
 | 5 | Publicación | Al pasar a `aprobado`, la policy lo hace visible para el miembro, que lo ve en "Mi plan" con rutina por día y comidas con macros. |
@@ -622,7 +629,9 @@ Rutas RESTful de Rails; los nombres siguen el dominio en español. Las de staff 
 | 5 | Planes & IA | ~1.5 semanas | Catálogo de planes, suscripciones, `GenerarPlanJob` (IA multi-proveedor), panel de aprobación del entrenador | Un miembro premium recibe un plan generado por IA solo después de la aprobación del entrenador |
 | 5.6 | Editor de plan inline (entrenador + admin) | ~1 semana | Editor por comida con **autosave tolerante a fallos** (estados guardando/guardado/error+reintentar), **modal** de plantillas (`plantillas_comida`, seed + "guardar como plantilla"), botón Publicar desacoplado, editable también por el **admin desde Suscripciones** con **historial del miembro**, JSON como modo avanzado; vista del miembro con macros por comida | El staff edita comidas inline y ven guardado en vivo; una falla de red no pierde datos y ofrece reintentar; el miembro ve el plan solo tras publicar |
 | 5.7 | Fallos de IA + negocio parametrizable | ~1 semana | Generación con IA observable (estados `generando`/`fallido`, **Turbo Streams** en vivo, reintento manual, **fallback de modelo** si está ocupado, mensajes amables), config central `Negocio` (precios/duración/nombre por `config/negocio.yml`+ENV), rutina IA **sin cardio**, membresías a **30 días** fijos, **acceso premium sin mensualidad**, sin horario de acceso | Un fallo de la IA se ve en la cola con mensaje amable + Reintentar y estado en vivo; un premium entra sin membresía; los precios se cambian por config |
-| 5.8 | Rediseño visual (editor + admin responsive) | ~1 semana | Editor de plan menos plano/más interactivo y **reestructuración responsive** de las vistas de administrador | Las vistas admin se ven cómodas en móvil y desktop; el editor es visualmente rico |
+| 5.7b | Editor de rutina + plantillas de ejercicio | ~0.5 semana | Rutina editable por día/ejercicio con autosave, plantillas de ejercicio por músculo (modal + "guardar como plantilla"), logo de marca parametrizable | El staff edita ejercicios inline y aplica plantillas; el miembro ve la rutina publicada |
+| 5.8 | Plan en vivo + UX del plan | ~1 semana | `/mi_plan` **en vivo** (Turbo Streams al editar el staff), miembro **registra qué comió** (kcal aprox + nota por comida → `registros_calorias.detalle`), **plantillas buscables**, **rediseño de la rutina semanal**, **navbar/menú responsive y profesional** | El miembro ve los cambios del staff sin recargar; registra su consumo por comida; el menú se ve cómodo en móvil |
+| 5.9 | Antropometría + plan básico con membresía | ~1 semana | Entidad **`mediciones`** completa (perímetros/diámetros/pliegues/% grasa) capturada por staff con historial; **medición obligatoria** en el alta de suscripción que alimenta el prompt de IA; **plan básico por reglas** incluido con la membresía (`GeneradorPlanBasico`, sin IA) | El staff toma la medición y sin ella no genera; el plan IA usa la antropometría; un miembro con membresía ve su plan básico |
 | 6 | Nutrición personalizada & Gustos | ~2 semanas | Catálogo `alimentos` (seed colombiano + CRUD admin), calificación de gustos (`/gustos`), armador de comidas con registro del día (`/armador`), gustos + recetas en el prompt de IA, benchmark de modelo Gemini, **editor de rutina + plantillas de ejercicios por músculo + animaciones SVG** | El miembro califica alimentos y arma su día viendo kcal en vivo; el registro alimenta `/progreso`; el plan IA de un premium no incluye ningún alimento `no_le_gusta` y cada comida trae receta |
 | 7 | Comunidad & Cierre | ~1 semana | Blog, novedades, pulido responsive, checklist MVP completo | Un miembro lee posts y novedades publicadas; todo el checklist §15 en verde |
 
@@ -631,6 +640,8 @@ Rutas RESTful de Rails; los nombres siguen el dominio en español. Las de staff 
 > **Nota 3 (julio 2026):** se inserta la **Fase 6 — Nutrición personalizada & Gustos** antes de Comunidad (que pasa a Fase 7). Decisiones cerradas con el cliente: catálogo por **seed curado colombiano** (no base externa); gustos y armador **para todos los miembros** (el plan IA sigue siendo premium); el armador **registra el consumo del día** (reemplaza el input manual de kcal cuando se usa); recetas **dentro del plan premium** (JSONB), no como biblioteca aparte. Durante la fase se hace un **benchmark de modelos Gemini** (`gemini-2.5-flash-lite` actual vs. `gemini-3.1-flash-lite`) con la misma petición real; el ganador queda como default de `GEMINI_MODELO`. La Fase 6 incluye además el **voto de menú del miembro** con el modelo **"alternativas por comida"** (cada comida ofrece 2-3 opciones y el miembro marca su favorita 👍), que se apoya en el editor de la Fase 5.6.
 >
 > **Nota 2:** de la Fase 3 se **adelanta la mitad "Progreso"** (`GET /progreso`, gráficas SVG server-rendered §14) alimentada con los datos que ya existen: tendencia de **peso** desde los snapshots de `objetivos_nutricionales`, **calorías diarias vs. objetivo** desde `registros_calorias` y **asistencia** desde `accesos`. La mitad "Biometría" (tabla `mediciones` con IMC generado, clasificación OMS y wizard de onboarding) sigue aplazada; al llegar, la gráfica de peso pasará a leer de `mediciones`.
+>
+> **Nota 4 (julio 2026):** la **Fase 5.9** adelanta la tabla **`mediciones`** (con IMC generado) para la **antropometría de las suscripciones**, capturada por el **staff** (no el wizard de onboarding del miembro, que sigue aplazado). El peso pasa a derivarse de la última medición cuando exista (con fallback a `objetivos_nutricionales.peso_kg`).
 
 ---
 

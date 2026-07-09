@@ -6,15 +6,36 @@ import { Controller } from "@hotwired/stimulus"
 // "Guardar como plantilla" crea una plantilla nueva desde la card. Convive con
 // "autosave" en el mismo elemento.
 export default class extends Controller {
-  static targets = ["dialogo", "grupo"]
+  static targets = ["dialogo", "grupo", "buscador"]
 
   abrir(event) {
     this.destino = event.target.closest("[data-autosave-target='card']")
+    if (this.hasBuscadorTarget) { this.buscadorTarget.value = ""; this.filtrar() }
     this.dialogoTarget.showModal()
+    this.buscadorTarget?.focus()
   }
 
   cerrar() {
     this.dialogoTarget.close()
+  }
+
+  // Búsqueda en vivo: oculta botones que no coinciden y los grupos que quedan
+  // vacíos. Ignora mayúsculas y acentos.
+  filtrar() {
+    const consulta = this.normalizar(this.buscadorTarget.value)
+    this.grupoTargets.forEach((grupo) => {
+      let visibles = 0
+      grupo.querySelectorAll("button").forEach((boton) => {
+        const coincide = this.normalizar(boton.textContent).includes(consulta)
+        boton.hidden = !coincide
+        if (coincide) visibles++
+      })
+      grupo.parentElement.hidden = visibles === 0
+    })
+  }
+
+  normalizar(texto) {
+    return (texto || "").toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "").trim()
   }
 
   aplicar(event) {

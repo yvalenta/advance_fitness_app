@@ -1,5 +1,9 @@
-<%# Plan del miembro (solo lectura): rutina + nutrición con macros por comida %>
-<%# locals: (plan:) %>
+<%# Plan del miembro (solo lectura): rutina + nutrición con macros por comida. %>
+<%# usuario = Current.user en la vista; plan.user en el broadcast Turbo (donde %>
+<%# Current.user es nil). Sin strict-locals: el broadcast inyecta el local del %>
+<%# modelo (plan_personalizado). SDD Fase 5.8. %>
+<% plan = local_assigns[:plan] || local_assigns[:plan_personalizado] %>
+<% usuario = local_assigns[:usuario] || Current.user %>
 <% nutricion = plan.plan_nutricional %>
 <% comidas = Array(nutricion["comidas"]) %>
 <% proteinas = comidas.sum { |c| c["proteinas_g"].to_i } %>
@@ -9,9 +13,9 @@
 <% pct = ->(kcal) { kcal_macros.positive? ? ((kcal * 100.0) / kcal_macros).round : 0 } %>
 <% objetivo_dia = nutricion["kcal_diarias"].to_i %>
 <% objetivo_dia = comidas.sum { |c| c["kcal"].to_i } if objetivo_dia.zero? %>
-<% propio = plan.user_id == Current.user.id %>
+<% propio = plan.user_id == usuario&.id %>
 
-<div class="flex flex-col gap-6">
+<div id="<%= dom_id(plan, :mi_plan) %>" class="flex flex-col gap-6">
   <%= render "planes_personalizados/rutina", rutina: plan.rutina %>
 
   <div class="card border border-base-300 bg-base-100 shadow-md"
@@ -62,6 +66,10 @@
         </div>
       </div>
 
+      <% if propio %>
+        <p class="mt-3 text-xs text-steel-3">Marca lo que comiste y, si cambiaste algo, ajusta las kcal y anota qué comiste.</p>
+      <% end %>
+
       <div class="mt-3 grid gap-3 sm:grid-cols-2">
         <% comidas.each do |comida| %>
           <% cp = comida["proteinas_g"].to_i * 4 %>
@@ -69,10 +77,11 @@
           <% cg = comida["grasas_g"].to_i * 9 %>
           <% cm = cp + cc + cg %>
           <% cpct = ->(v) { cm.positive? ? ((v * 100.0) / cm).round : 0 } %>
-          <label class="group card-hover relative flex cursor-pointer flex-col rounded-xl border-2 border-base-300 p-4 transition-colors has-checked:border-volt-d has-checked:bg-volt/10">
-            <input type="checkbox" class="sr-only" data-kcal="<%= comida["kcal"].to_i %>"
-                   data-plan-nutricional-target="comida" data-action="change->plan-nutricional#actualizar">
-            <div class="flex items-start justify-between gap-2">
+          <div class="group card-hover relative flex flex-col rounded-xl border-2 border-base-300 p-4 transition-colors has-[:checked]:border-volt-d has-[:checked]:bg-volt/10"
+               data-plan-nutricional-target="tarjeta">
+            <label class="flex cursor-pointer items-start justify-between gap-2">
+              <input type="checkbox" class="sr-only" data-kcal="<%= comida["kcal"].to_i %>" data-nombre="<%= comida["nombre"] %>"
+                     data-plan-nutricional-target="comida" data-action="change->plan-nutricional#actualizar">
               <h3 class="font-semibold leading-tight"><%= comida["nombre"] %></h3>
               <div class="flex shrink-0 items-center gap-2">
                 <span class="font-display text-sm font-bold text-volt-d"><%= comida["kcal"] %> kcal</span>
@@ -80,11 +89,11 @@
                   <%= render "shared/icono", nombre: :check, clase: "size-3" %>
                 </span>
               </div>
-            </div>
+            </label>
             <p class="mt-1 text-sm text-steel-5 transition-opacity group-has-[:checked]:opacity-60"><%= comida["descripcion"] %></p>
 
             <%# Mini-barra de macros de la comida %>
-            <div class="mt-auto pt-3">
+            <div class="pt-3">
               <div class="flex h-1.5 w-full overflow-hidden rounded-full bg-base-200">
                 <div class="bg-volt" style="width: <%= cpct.call(cp) %>%"></div>
                 <div class="bg-ocean" style="width: <%= cpct.call(cc) %>%"></div>
@@ -96,17 +105,34 @@
                 <span class="inline-flex items-center gap-1"><span class="size-2 rounded-full bg-warning"></span>G <%= comida["grasas_g"] %>g</span>
               </div>
             </div>
-          </label>
+
+            <% if propio %>
+              <%# El miembro ajusta lo que realmente comió (kcal + nota). No muta el plan del coach. %>
+              <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-base-200 pt-3">
+                <label class="flex items-center gap-1.5 text-xs font-medium text-steel-5">
+                  Comí
+                  <input type="number" min="0" step="10" value="<%= comida["kcal"].to_i %>"
+                         data-plan-nutricional-target="kcal" data-action="input->plan-nutricional#actualizar"
+                         class="input input-bordered input-xs w-20 text-right font-mono">
+                  kcal
+                </label>
+                <input type="text" placeholder="¿Qué comiste / cambiaste? (opcional)" maxlength="120"
+                       data-plan-nutricional-target="nota" data-action="input->plan-nutricional#actualizar"
+                       class="input input-bordered input-xs min-w-0 flex-1">
+              </div>
+            <% end %>
+          </div>
         <% end %>
       </div>
 
       <% if propio %>
-        <%= form_with url: registros_calorias_path, class: "mt-2 flex flex-col gap-1" do %>
+        <%= form_with url: registros_calorias_path, class: "mt-4 flex flex-col gap-1" do %>
           <input type="hidden" name="registro_caloria[kcal_consumidas]" value="0" data-plan-nutricional-target="kcalInput">
+          <input type="hidden" name="registro_caloria[detalle]" value="{}" data-plan-nutricional-target="detalle">
           <button type="submit" class="btn btn-primary font-bold" disabled data-plan-nutricional-target="boton">
             Marca lo que comiste hoy
           </button>
-          <p class="text-center text-xs text-steel-3">Reemplaza tu registro de calorías de hoy con el total marcado.</p>
+          <p class="text-center text-xs text-steel-3">Reemplaza tu registro de calorías de hoy con lo que marcaste.</p>
         <% end %>
       <% end %>
     </div>

@@ -72,6 +72,14 @@ class GestionPlanesControllerTest < ActionDispatch::IntegrationTest
     get mi_plan_path
     assert_match "Press banca", response.body
     assert_match "Huevos con arepa", response.body
+    # Fase 5.8: suscripción Turbo en vivo, rutina rediseñada (chips) y edición
+    # del consumo por el miembro (kcal ajustable + nota + detalle oculto).
+    assert_select "turbo-cable-stream-source"
+    assert_match "4 × 8-10", response.body
+    assert_match "Enfoque:", response.body
+    assert_select "input[data-plan-nutricional-target=kcal]"
+    assert_select "input[data-plan-nutricional-target=nota]"
+    assert_select "input[name=?]", "registro_caloria[detalle]"
   end
 
   test "el modo avanzado guarda el JSON de la rutina" do

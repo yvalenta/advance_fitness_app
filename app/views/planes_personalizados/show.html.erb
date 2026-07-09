@@ -8,8 +8,9 @@
 
 <div class="mx-auto -mt-8 w-full max-w-4xl px-4 pb-12">
   <% if @plan %>
+    <%= turbo_stream_from @plan %>
     <div class="animate-fade-up">
-      <%= render "planes_personalizados/plan", plan: @plan %>
+      <%= render "planes_personalizados/plan", plan: @plan, usuario: Current.user %>
     </div>
   <% else %>
     <% if @pendiente %>

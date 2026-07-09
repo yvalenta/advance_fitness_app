@@ -1,34 +1,66 @@
+<%#
+  Navbar (SDD §14, rediseño Fase 5.8): links de miembro planos + dropdown
+  "Gestión" para staff/admin en desktop; en móvil un menú seccionado con
+  íconos, targets grandes y estado activo.
+%>
+<%
+  cuenta = [
+    [ "Nutrición", objetivo_path, :fuego ],
+    [ "Progreso", progreso_path, :tendencia_alta ],
+    [ "Mi plan", mi_plan_path, :actividad ]
+  ]
+  gestion = []
+  if Current.user.staff?
+    gestion << [ "Check-in", admin_checkins_path, :check ]
+    gestion << [ "Miembros", admin_users_path, :usuarios ]
+    gestion << [ "Membresías", admin_membresias_path, :escudo ]
+  end
+  if Current.user.admin?
+    gestion << [ "Pagos", admin_pagos_path, :tarjeta ]
+    gestion << [ "Suscripciones", admin_suscripciones_path, :rayo ]
+  end
+  gestion << [ "Borradores", entrenador_borradores_path, :busqueda ] if Current.user.entrenador? || Current.user.admin?
+%>
+
 <header class="gradient-hero sticky top-0 z-40 border-b border-white/10 shadow-lg">
-  <div class="mx-auto flex h-16 w-full max-w-6xl items-center gap-4 px-4">
+  <div class="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4">
     <%= link_to root_path, class: "flex shrink-0 items-center gap-2.5" do %>
       <span class="flex size-9 items-center justify-center rounded-xl bg-volt text-steel shadow-[0_0_18px_rgba(180,240,0,0.35)]">
         <%= render "shared/logo", clase: "h-6 w-6 text-steel" %>
       </span>
       <% marca = Negocio.nombre.upcase.split(" ", 2) %>
-      <span class="font-display text-sm font-bold tracking-[0.18em] text-white">
+      <span class="hidden font-display text-sm font-bold tracking-[0.18em] text-white sm:inline">
         <%= marca[0] %><span class="text-volt"><%= marca[1] %></span>
       </span>
     <% end %>
 
+    <%# ── Desktop: miembro plano + dropdown Gestión ── %>
     <nav class="hidden flex-1 items-center gap-1 md:flex">
-      <%= nav_link "Nutrición", objetivo_path %>
-      <%= nav_link "Progreso", progreso_path %>
-      <%= nav_link "Mi plan", mi_plan_path %>
-      <% if Current.user.staff? %>
-        <%= nav_link "Check-in", admin_checkins_path %>
-        <%= nav_link "Miembros", admin_users_path %>
-        <%= nav_link "Membresías", admin_membresias_path %>
-      <% end %>
-      <% if Current.user.admin? %>
-        <%= nav_link "Pagos", admin_pagos_path %>
-        <%= nav_link "Suscripciones", admin_suscripciones_path %>
-      <% end %>
-      <% if Current.user.entrenador? || Current.user.admin? %>
-        <%= nav_link "Borradores", entrenador_borradores_path %>
+      <% cuenta.each { |texto, ruta, _| %><%= nav_link texto, ruta %><% } %>
+
+      <% if gestion.any? %>
+        <div class="dropdown">
+          <div tabindex="0" role="button"
+               class="flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white">
+            Gestión
+            <svg class="size-3.5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <ul tabindex="0" class="dropdown-content menu z-50 mt-3 w-56 gap-0.5 rounded-2xl border border-base-300 bg-base-100 p-2 shadow-xl">
+            <% gestion.each do |texto, ruta, icono| %>
+              <li>
+                <%= link_to ruta, class: "gap-3 #{"menu-active" if current_page?(ruta)}" do %>
+                  <%= render "shared/icono", nombre: icono, clase: "size-4 text-steel-3" %>
+                  <%= texto %>
+                <% end %>
+              </li>
+            <% end %>
+          </ul>
+        </div>
       <% end %>
     </nav>
 
-    <div class="ml-auto flex items-center gap-2">
+    <div class="ml-auto flex items-center gap-1">
+      <%# ── Avatar + cuenta ── %>
       <div class="dropdown dropdown-end">
         <div tabindex="0" role="button" class="flex cursor-pointer items-center gap-2.5 rounded-full py-1 pl-1 pr-3 transition-colors hover:bg-white/10">
           <%= render "shared/avatar", user: Current.user %>
@@ -52,25 +84,32 @@
         </div>
       </div>
 
+      <%# ── Móvil: menú seccionado con íconos ── %>
       <div class="dropdown dropdown-end md:hidden">
-        <div tabindex="0" role="button" class="btn btn-ghost btn-sm text-white">
-          <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+        <div tabindex="0" role="button" class="btn btn-square btn-ghost text-white">
+          <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
         </div>
-        <ul tabindex="0" class="menu dropdown-content z-50 mt-3 w-52 rounded-2xl border border-base-300 bg-base-100 p-2 shadow-xl">
-          <li><%= link_to "Nutrición", objetivo_path %></li>
-          <li><%= link_to "Progreso", progreso_path %></li>
-          <li><%= link_to "Mi plan", mi_plan_path %></li>
-          <% if Current.user.staff? %>
-            <li><%= link_to "Check-in", admin_checkins_path %></li>
-            <li><%= link_to "Miembros", admin_users_path %></li>
-            <li><%= link_to "Membresías", admin_membresias_path %></li>
+        <ul tabindex="0" class="menu dropdown-content menu-md z-50 mt-3 w-72 gap-0.5 rounded-2xl border border-base-300 bg-base-100 p-3 shadow-xl">
+          <li class="menu-title text-steel-3">Tu cuenta</li>
+          <% cuenta.each do |texto, ruta, icono| %>
+            <li>
+              <%= link_to ruta, class: "gap-3 py-2.5 #{"menu-active" if current_page?(ruta)}" do %>
+                <%= render "shared/icono", nombre: icono, clase: "size-5 text-steel-3" %>
+                <span class="text-sm font-medium"><%= texto %></span>
+              <% end %>
+            </li>
           <% end %>
-          <% if Current.user.admin? %>
-            <li><%= link_to "Pagos", admin_pagos_path %></li>
-            <li><%= link_to "Suscripciones", admin_suscripciones_path %></li>
-          <% end %>
-          <% if Current.user.entrenador? || Current.user.admin? %>
-            <li><%= link_to "Borradores", entrenador_borradores_path %></li>
+
+          <% if gestion.any? %>
+            <li class="menu-title mt-1 text-steel-3">Administración</li>
+            <% gestion.each do |texto, ruta, icono| %>
+              <li>
+                <%= link_to ruta, class: "gap-3 py-2.5 #{"menu-active" if current_page?(ruta)}" do %>
+                  <%= render "shared/icono", nombre: icono, clase: "size-5 text-steel-3" %>
+                  <span class="text-sm font-medium"><%= texto %></span>
+                <% end %>
+              </li>
+            <% end %>
           <% end %>
         </ul>
       </div>

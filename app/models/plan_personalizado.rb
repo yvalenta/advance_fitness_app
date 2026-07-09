@@ -24,6 +24,9 @@ class PlanPersonalizado < ApplicationRecord
   # Turbo Streams: la cola del entrenador se actualiza en vivo (SDD §14, 5.7)
   after_create_commit :difundir_alta
   after_update_commit :difundir_cambio
+  # Y el "Mi plan" del miembro se refresca en vivo cuando el staff edita un
+  # plan ya publicado (SDD Fase 5.8).
+  after_update_commit :difundir_a_miembro
 
   def borrador? = estado == "borrador"
   def aprobado? = estado == "aprobado"
@@ -124,6 +127,16 @@ class PlanPersonalizado < ApplicationRecord
       else
         broadcast_remove_to("planes_pendientes", target: self)
       end
+    end
+
+    # Solo un plan publicado es visible para el miembro; al reeditar su rutina o
+    # nutrición se reemplaza su vista de "Mi plan" sin recargar. En un broadcast
+    # NO hay Current.user, por eso el partial recibe `usuario:` explícito.
+    def difundir_a_miembro
+      return unless aprobado? && (saved_change_to_rutina? || saved_change_to_plan_nutricional?)
+
+      broadcast_replace_to(self, target: ActionView::RecordIdentifier.dom_id(self, :mi_plan),
+                           partial: "planes_personalizados/plan", locals: { plan: self, usuario: user })
     end
 
     def guardar_comidas!(lista)
