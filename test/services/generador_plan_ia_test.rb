@@ -14,6 +14,28 @@ class GeneradorPlanIaTest < ActiveSupport::TestCase
     assert_match "2500 kcal", prompt
   end
 
+  test "el prompt incluye la antropometría cuando hay medición" do
+    medicion = Medicion.new(peso_kg: 80, grasa_pct: 18, cintura_cm: 85, pliegue_abdominal_mm: 15)
+    prompt = GeneradorPlanIa.construir_prompt(
+      edad: 30, sexo: "M", talla_cm: 178.0, peso_kg: 80.0, somatotipo: "mesomorfo",
+      nivel_actividad: 1.6, meta: "Ganar masa", objetivo_kcal: 2800, tdee_kcal: 2400, medicion: medicion
+    )
+
+    assert_match "Medidas antropométricas", prompt
+    assert_match "Grasa corporal: 18", prompt
+    assert_match "Cintura 85", prompt
+    assert_match "Abdominal 15", prompt
+  end
+
+  test "sin medición el prompt no agrega el bloque de antropometría" do
+    prompt = GeneradorPlanIa.construir_prompt(
+      edad: 30, sexo: "M", talla_cm: 178.0, peso_kg: 80.0, somatotipo: "mesomorfo",
+      nivel_actividad: 1.6, meta: "x", objetivo_kcal: 2000, tdee_kcal: 1800
+    )
+
+    assert_no_match(/Medidas antropométricas/, prompt)
+  end
+
   test "parsear acepta JSON limpio y envuelto en fences" do
     json = '{"rutina": {"dias": []}, "plan_nutricional": {"comidas": []}}'
 

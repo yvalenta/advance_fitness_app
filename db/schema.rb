@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_08_130001) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_09_120001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -23,6 +23,37 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_08_130001) do
     t.bigint "user_id", null: false
     t.index ["user_id", "fecha_hora"], name: "index_accesos_on_user_id_and_fecha_hora"
     t.index ["user_id"], name: "index_accesos_on_user_id"
+  end
+
+  create_table "mediciones", force: :cascade do |t|
+    t.decimal "brazo_cm", precision: 5, scale: 1
+    t.decimal "cadera_cm", precision: 5, scale: 1
+    t.decimal "cintura_cm", precision: 5, scale: 1
+    t.decimal "codo_cm", precision: 4, scale: 1
+    t.datetime "created_at", null: false
+    t.decimal "cuello_cm", precision: 5, scale: 1
+    t.date "fecha", null: false
+    t.decimal "grasa_pct", precision: 4, scale: 1
+    t.virtual "imc", type: :decimal, precision: 4, scale: 1, as: "round((peso_kg / ((NULLIF(talla_cm, (0)::numeric) / 100.0) ^ (2)::numeric)), 1)", stored: true
+    t.decimal "muneca_cm", precision: 4, scale: 1
+    t.decimal "muslo_cm", precision: 5, scale: 1
+    t.text "notas"
+    t.decimal "pantorrilla_cm", precision: 5, scale: 1
+    t.decimal "pecho_cm", precision: 5, scale: 1
+    t.decimal "peso_kg", precision: 5, scale: 2
+    t.decimal "pliegue_abdominal_mm", precision: 4, scale: 1
+    t.decimal "pliegue_muslo_mm", precision: 4, scale: 1
+    t.decimal "pliegue_subescapular_mm", precision: 4, scale: 1
+    t.decimal "pliegue_suprailiaco_mm", precision: 4, scale: 1
+    t.decimal "pliegue_tricipital_mm", precision: 4, scale: 1
+    t.decimal "rodilla_cm", precision: 4, scale: 1
+    t.decimal "talla_cm", precision: 5, scale: 1
+    t.bigint "tomada_por_id"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["tomada_por_id"], name: "index_mediciones_on_tomada_por_id"
+    t.index ["user_id", "fecha"], name: "index_mediciones_on_user_id_and_fecha", unique: true
+    t.index ["user_id"], name: "index_mediciones_on_user_id"
   end
 
   create_table "membresias", force: :cascade do |t|
@@ -170,6 +201,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_08_130001) do
   end
 
   add_foreign_key "accesos", "users"
+  add_foreign_key "mediciones", "users"
+  add_foreign_key "mediciones", "users", column: "tomada_por_id"
   add_foreign_key "membresias", "users"
   add_foreign_key "objetivos_nutricionales", "users"
   add_foreign_key "pagos", "membresias"

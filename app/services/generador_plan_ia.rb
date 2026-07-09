@@ -53,7 +53,7 @@ module GeneradorPlanIa
   end
 
   def self.construir_prompt(perfil)
-    <<~PROMPT
+    base = <<~PROMPT
       Genera la rutina semanal y el plan nutricional para este miembro:
       - Edad: #{perfil[:edad]} años · Sexo: #{perfil[:sexo] == "F" ? "mujer" : "hombre"}
       - Talla: #{perfil[:talla_cm]} cm · Peso: #{perfil[:peso_kg]} kg
@@ -61,6 +61,24 @@ module GeneradorPlanIa
       - Nivel de actividad (factor TDEE): #{perfil[:nivel_actividad]}
       - Meta: #{perfil[:meta]} · Objetivo diario: #{perfil[:objetivo_kcal]} kcal (TDEE #{perfil[:tdee_kcal]} kcal)
     PROMPT
+    base + antropometria(perfil[:medicion])
+  end
+
+  # Bloque opcional con las medidas antropométricas (Fase 5.9) para afinar la
+  # rutina (puntos débiles por perímetros) y las porciones (% de grasa).
+  def self.antropometria(medicion)
+    return "" if medicion.nil?
+
+    lineas = []
+    lineas << "- Grasa corporal: #{medicion.grasa_pct}%" if medicion.grasa_pct
+    { "Perímetros (cm)" => Medicion::PERIMETROS, "Diámetros óseos (cm)" => Medicion::DIAMETROS,
+      "Pliegues (mm)" => Medicion::PLIEGUES }.each do |titulo, grupo|
+      pares = medicion.presentes(grupo)
+      lineas << "- #{titulo}: #{pares.map { |nombre, valor| "#{nombre} #{valor}" }.join(", ")}" if pares.any?
+    end
+    return "" if lineas.empty?
+
+    "Medidas antropométricas recientes:\n#{lineas.join("\n")}\n"
   end
 
   # La respuesta puede venir envuelta en fences; se limpia y valida que

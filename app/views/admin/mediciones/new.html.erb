@@ -1,0 +1,38 @@
+<% content_for :title, "Nueva medición — Advance Fitness" %>
+
+<%= render "shared/encabezado",
+      eyebrow: "Antropometría",
+      titulo: "Nueva medición de #{nombre_visible(@miembro)}",
+      descripcion: "Perímetros, diámetros y pliegues. Alimenta el plan de IA y la tendencia de progreso." %>
+
+<div class="mx-auto -mt-8 w-full max-w-3xl px-4 pb-12">
+  <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
+    <div class="card-body">
+      <% if @medicion.errors.any? %>
+        <div role="alert" class="alert alert-error text-sm">
+          <%= render "shared/icono", nombre: :alerta, clase: "size-5 shrink-0" %>
+          <span><%= @medicion.errors.full_messages.to_sentence %></span>
+        </div>
+      <% end %>
+
+      <%= form_with model: [ @miembro, @medicion ], class: "flex flex-col gap-4" do |form| %>
+        <label class="form-control max-w-xs">
+          <span class="label-text mb-1 text-xs font-semibold">Fecha</span>
+          <%= form.date_field :fecha, required: true, class: "input input-bordered w-full" %>
+        </label>
+
+        <%= render "admin/mediciones/campos", form: form %>
+
+        <label class="form-control">
+          <span class="label-text mb-1 text-xs font-semibold">Notas (opcional)</span>
+          <%= form.text_area :notas, rows: 2, class: "textarea textarea-bordered w-full" %>
+        </label>
+
+        <div class="flex gap-2">
+          <%= form.submit "Guardar medición", class: "btn btn-primary font-bold" %>
+          <%= link_to "Cancelar", admin_user_mediciones_path(@miembro), class: "btn btn-ghost" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

@@ -20,6 +20,7 @@ class User < ApplicationRecord
   has_many :registros_calorias, dependent: :destroy
   has_many :suscripciones, dependent: :destroy
   has_many :planes_personalizados, dependent: :destroy
+  has_many :mediciones, dependent: :destroy
 
   normalizes :email_address, with: ->(e) { e.strip.downcase }
 
@@ -38,6 +39,11 @@ class User < ApplicationRecord
   def entrenador? = rol == "entrenador"
 
   def objetivo_activo = objetivos_nutricionales.find_by(activo: true)
+
+  def ultima_medicion = mediciones.recientes.first
+
+  # Peso vigente: última medición, o el snapshot del objetivo activo (Fase 5.9)
+  def peso_actual = ultima_medicion&.peso_kg || objetivo_activo&.peso_kg
 
   def suscripcion_activa = suscripciones.activas.includes(:plan).first
 

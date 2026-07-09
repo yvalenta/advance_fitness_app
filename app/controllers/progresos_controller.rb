@@ -6,10 +6,19 @@ class ProgresosController < ApplicationController
     authorize :progreso, :show?
     usuario = Current.user
 
-    # Peso: cada objetivo fijado es un snapshot con su referencia completa
-    # (tipo, TDEE, kcal). Con Biometría esta serie leerá de mediciones.
-    @objetivos_historial = usuario.objetivos_nutricionales.order(:created_at).to_a
-    @pesos = @objetivos_historial.map { |objetivo| [ objetivo.created_at.to_date, objetivo.peso_kg.to_f ] }
+    # Peso: desde la Fase 5.9 la serie lee de `mediciones` (auto-registro del
+    # miembro o antropometría del staff). Si aún no hay mediciones, cae al
+    # snapshot de peso de cada objetivo fijado (comportamiento previo).
+    @mediciones = usuario.mediciones.recientes.limit(30).to_a.reverse
+    @ultima_medicion = @mediciones.last
+    if @mediciones.any?
+      @fuente_peso = :mediciones
+      @pesos = @mediciones.map { |medicion| [ medicion.fecha, medicion.peso_kg.to_f ] }
+    else
+      @fuente_peso = :objetivos
+      @objetivos_historial = usuario.objetivos_nutricionales.order(:created_at).to_a
+      @pesos = @objetivos_historial.map { |objetivo| [ objetivo.created_at.to_date, objetivo.peso_kg.to_f ] }
+    end
 
     # Calorías: últimos 14 días contra el objetivo activo
     @objetivo = usuario.objetivo_activo

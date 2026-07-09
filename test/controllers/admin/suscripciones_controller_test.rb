@@ -11,25 +11,47 @@ class Admin::SuscripcionesControllerTest < ActionDispatch::IntegrationTest
     sign_in_as users(:entrenador)
 
     assert_no_difference "Suscripcion.count" do
-      post admin_suscripciones_path, params: { suscripcion: { user_id: users(:one).id, fecha_inicio: Date.current } }
+      post admin_suscripciones_path, params: {
+        suscripcion: { user_id: users(:one).id, fecha_inicio: Date.current }, medicion: { peso_kg: 70 }
+      }
     end
     assert_redirected_to root_path
   end
 
-  test "el alta crea la suscripción personalizada y encola la generación con IA" do
+  test "el alta crea la suscripción, la medición y encola la generación con IA" do
     sign_in_as users(:admin)
 
-    assert_difference [ "Suscripcion.count", "PlanPersonalizado.count" ], 1 do
-      post admin_suscripciones_path, params: { suscripcion: { user_id: users(:one).id, fecha_inicio: Date.current } }
+    assert_difference [ "Suscripcion.count", "PlanPersonalizado.count", "Medicion.count" ], 1 do
+      post admin_suscripciones_path, params: {
+        suscripcion: { user_id: users(:one).id, fecha_inicio: Date.current },
+        medicion: { peso_kg: 72.5, cintura_cm: 82, pliegue_abdominal_mm: 14 }
+      }
     end
 
     suscripcion = Suscripcion.last
     assert_equal planes(:personalizado), suscripcion.plan
     assert suscripcion.activa?
 
+    medicion = users(:one).ultima_medicion
+    assert_equal 72.5, medicion.peso_kg.to_f
+    assert_equal users(:admin), medicion.tomada_por
+
     plan = users(:one).planes_personalizados.last
     assert plan.generando?
     assert_enqueued_with(job: GenerarPlanJob, args: [ plan.id ])
+  end
+
+  test "sin peso en la medición no crea la suscripción ni encola" do
+    sign_in_as users(:admin)
+
+    assert_no_difference [ "Suscripcion.count", "Medicion.count", "PlanPersonalizado.count" ] do
+      assert_no_enqueued_jobs only: GenerarPlanJob do
+        post admin_suscripciones_path, params: {
+          suscripcion: { user_id: users(:one).id, fecha_inicio: Date.current }, medicion: { peso_kg: "" }
+        }
+      end
+    end
+    assert_response :unprocessable_entity
   end
 
   test "cancelar deja al miembro sin premium" do

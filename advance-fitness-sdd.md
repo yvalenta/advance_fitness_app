@@ -79,6 +79,7 @@ Los requerimientos en bruto se organizan en cinco módulos. Cada requerimiento q
 | Indicador de propensión a sobrepeso | Servicio: tendencia del IMC en las últimas 3 mediciones + somatotipo | Derivado |
 | Identificación del somatotipo | Cuestionario guiado en onboarding → `ectomorfo` · `mesomorfo` · `endomorfo` | `users.somatotipo` |
 | Gráficas de progreso mensual | Serie temporal de `mediciones` renderizada como SVG inline en un partial (sin librería de charts) | `mediciones` |
+| Auto-registro de peso del miembro | Formulario ligero solo-peso (Fase 5.9) → crea una `medicion` del propio miembro; alimenta la serie de peso de `/progreso` | `mediciones` |
 
 Fórmulas estándar utilizadas (implementadas como POROs en `app/services`, puros y testeables):
 
@@ -107,6 +108,7 @@ Fórmulas estándar utilizadas (implementadas como POROs en `app/services`, puro
 |---|---|---|
 | Plan Free / básico | Miembro sin membresía: guías estáticas por objetivo. Miembro con membresía activa: **plan básico de entrenamiento por reglas** (§03 Módulo A) además de las guías | `planes`, `plantillas_ejercicio` |
 | Upgrade a Plan Personalizado | Compra registrada por admin → se toma una **medición antropométrica** (obligatoria) → `GenerarPlanJob` (Solid Queue) genera con IA una rutina + plan nutricional a partir de la **antropometría**, la biometría y el objetivo; el entrenador revisa y aprueba antes de publicarse al miembro | `planes_personalizados`, `mediciones` |
+| Seguimiento de entrenamiento | El miembro marca **Hecho/Pendiente + nota** por ejercicio del día (hoy o días pasados) en "Mi plan", autosave dinámico sin recargar (Fase 5.10) | `registros_entrenamiento` |
 
 ### Módulo E — Comunidad y Retención
 
@@ -376,6 +378,18 @@ Schema en **PostgreSQL** gestionado con **migraciones ActiveRecord** (snake_case
 | `user_id` | `bigint` | FK → `users` |
 | `fecha` | `date` | Índice unique `user_id + fecha` |
 | `kcal_consumidas` | `integer` | Input diario del miembro; si el día se armó con el armador, se recalcula desde `registro_alimentos` al guardar |
+| `detalle` | `jsonb` | Fase 5.8: lo que el miembro dice que comió por comida `{ "comidas": [{ nombre, kcal, nota }] }` |
+
+### `registros_entrenamiento` — seguimiento de ejercicios del miembro (Fase 5.10)
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `bigint` PK | — |
+| `user_id` | `bigint` | FK → `users` |
+| `fecha` | `date` | Una por día (índice unique `user_id + fecha`); el día de semana mapea a la rutina del plan |
+| `ejercicios` | `jsonb` | `{ "<indice>": { hecho: true, nota: "subí peso", nombre: "Press banca" } }` — ausente = pendiente |
+
+> El miembro marca **Hecho/Pendiente + nota** por ejercicio del día (hoy o días pasados) en "Mi plan"; autosave dinámico (upsert por `fecha`+índice), sin recargar. No muta el plan del coach.
 
 ### `alimentos` — catálogo nutricional
 
@@ -631,7 +645,8 @@ Rutas RESTful de Rails; los nombres siguen el dominio en español. Las de staff 
 | 5.7 | Fallos de IA + negocio parametrizable | ~1 semana | Generación con IA observable (estados `generando`/`fallido`, **Turbo Streams** en vivo, reintento manual, **fallback de modelo** si está ocupado, mensajes amables), config central `Negocio` (precios/duración/nombre por `config/negocio.yml`+ENV), rutina IA **sin cardio**, membresías a **30 días** fijos, **acceso premium sin mensualidad**, sin horario de acceso | Un fallo de la IA se ve en la cola con mensaje amable + Reintentar y estado en vivo; un premium entra sin membresía; los precios se cambian por config |
 | 5.7b | Editor de rutina + plantillas de ejercicio | ~0.5 semana | Rutina editable por día/ejercicio con autosave, plantillas de ejercicio por músculo (modal + "guardar como plantilla"), logo de marca parametrizable | El staff edita ejercicios inline y aplica plantillas; el miembro ve la rutina publicada |
 | 5.8 | Plan en vivo + UX del plan | ~1 semana | `/mi_plan` **en vivo** (Turbo Streams al editar el staff), miembro **registra qué comió** (kcal aprox + nota por comida → `registros_calorias.detalle`), **plantillas buscables**, **rediseño de la rutina semanal**, **navbar/menú responsive y profesional** | El miembro ve los cambios del staff sin recargar; registra su consumo por comida; el menú se ve cómodo en móvil |
-| 5.9 | Antropometría + plan básico con membresía | ~1 semana | Entidad **`mediciones`** completa (perímetros/diámetros/pliegues/% grasa) capturada por staff con historial; **medición obligatoria** en el alta de suscripción que alimenta el prompt de IA; **plan básico por reglas** incluido con la membresía (`GeneradorPlanBasico`, sin IA) | El staff toma la medición y sin ella no genera; el plan IA usa la antropometría; un miembro con membresía ve su plan básico |
+| 5.9 | Antropometría + plan básico con membresía | ~1 semana | Entidad **`mediciones`** completa (perímetros/diámetros/pliegues/% grasa) capturada por staff con historial; **medición obligatoria** en el alta de suscripción que alimenta el prompt de IA; **plan básico por reglas** incluido con la membresía (`GeneradorPlanBasico`, sin IA); **auto-registro de peso** del miembro (medición ligera solo-peso) que alimenta `/progreso` | El staff toma la medición y sin ella no genera; el plan IA usa la antropometría; un miembro con membresía ve su plan básico; el miembro registra su peso y lo ve en progreso |
+| 5.10 | Seguimiento de entrenamiento del miembro | ~1 semana | Entidad **`registros_entrenamiento`** (una por día): el miembro marca **Hecho/Pendiente + nota** por ejercicio en "Mi plan" con **selector de fecha** (hoy y días pasados), autosave dinámico sin recargar; sigue recibiendo en vivo los cambios del plan (5.8) | El miembro marca qué ejecutó/cambió por día, edita días pasados sin recargar y el seguimiento persiste |
 | 6 | Nutrición personalizada & Gustos | ~2 semanas | Catálogo `alimentos` (seed colombiano + CRUD admin), calificación de gustos (`/gustos`), armador de comidas con registro del día (`/armador`), gustos + recetas en el prompt de IA, benchmark de modelo Gemini, **editor de rutina + plantillas de ejercicios por músculo + animaciones SVG** | El miembro califica alimentos y arma su día viendo kcal en vivo; el registro alimenta `/progreso`; el plan IA de un premium no incluye ningún alimento `no_le_gusta` y cada comida trae receta |
 | 7 | Comunidad & Cierre | ~1 semana | Blog, novedades, pulido responsive, checklist MVP completo | Un miembro lee posts y novedades publicadas; todo el checklist §15 en verde |
 

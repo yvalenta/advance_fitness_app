@@ -18,6 +18,9 @@ Rails.application.routes.draw do
   # Progreso (SDD §09 — mitad adelantada de la Fase 3, ver nota §11)
   resource :progreso, only: :show, controller: "progresos"
 
+  # Auto-registro de peso del miembro (Fase 5.9): crea una medición propia.
+  resources :mediciones, only: :create
+
   # Planes y monetización (SDD §09, Fase 5)
   get "mi_plan", to: "planes_personalizados#show", as: :mi_plan
   get "upgrade", to: "planes#index", as: :upgrade
@@ -44,7 +47,10 @@ Rails.application.routes.draw do
 
   # Panel de administración (SDD §09) — protegido por Pundit, no solo por el namespace
   namespace :admin do
-    resources :users, only: %i[ index show ]
+    resources :users, only: %i[ index show ] do
+      # Antropometría con historial, tomada por el staff (Fase 5.9)
+      resources :mediciones, only: %i[ index new create ]
+    end
     resources :membresias, only: %i[ index new create edit update ] do
       resource :renovacion, only: :create, controller: "renovaciones"
     end

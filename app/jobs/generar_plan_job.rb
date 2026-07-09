@@ -16,16 +16,18 @@ class GenerarPlanJob < ApplicationJob
 
     plan.marcar_generando!
     objetivo = plan.user.objetivo_activo
+    medicion = plan.user.ultima_medicion
     resultado = GeneradorPlanIa.generar(
       edad: plan.user.edad,
       sexo: plan.user.sexo,
       talla_cm: plan.user.talla_cm.to_f,
-      peso_kg: objetivo&.peso_kg.to_f,
+      peso_kg: (medicion&.peso_kg || objetivo&.peso_kg).to_f,
       somatotipo: plan.user.somatotipo,
       nivel_actividad: plan.user.nivel_actividad.to_f,
       meta: objetivo&.nombre || "no definida",
       objetivo_kcal: objetivo&.objetivo_kcal,
-      tdee_kcal: objetivo&.tdee_kcal
+      tdee_kcal: objetivo&.tdee_kcal,
+      medicion: medicion
     )
 
     plan.completar!(

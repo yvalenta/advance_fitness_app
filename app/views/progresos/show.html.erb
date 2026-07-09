@@ -13,7 +13,7 @@
       <%= render "shared/metric_card",
             titulo: "Peso actual",
             valor: peso_actual ? "#{peso_actual} kg" : "—",
-            descripcion: delta_peso ? "#{delta_peso.positive? ? "+" : ""}#{delta_peso} kg desde tu primer objetivo" : "Se toma de tus objetivos fijados",
+            descripcion: delta_peso ? "#{delta_peso.positive? ? "+" : ""}#{delta_peso} kg desde el inicio" : (@fuente_peso == :mediciones ? "Registra tu peso para ver la tendencia" : "Se toma de tus objetivos fijados"),
             icono: :actividad,
             acento: "bg-ocean/15 text-ocean" %>
     </div>
@@ -35,6 +35,27 @@
     </div>
   </div>
 
+  <%# ── Registrar peso (Fase 5.9) ─────────────────────────────── %>
+  <%= form_with url: mediciones_path, class: "card animate-fade-up mt-4 border border-base-300 bg-base-100 shadow-sm" do |form| %>
+    <div class="card-body flex-row flex-wrap items-end gap-3">
+      <div class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-ocean/15 text-ocean">
+        <%= render "shared/icono", nombre: :actividad, clase: "size-5" %>
+      </div>
+      <label class="form-control">
+        <span class="label-text mb-1 text-xs font-semibold">Peso de hoy (kg)</span>
+        <%= form.number_field "medicion[peso_kg]", step: 0.1, min: 0, required: true, value: @ultima_medicion&.peso_kg,
+              class: "input input-bordered input-sm w-32" %>
+      </label>
+      <label class="form-control">
+        <span class="label-text mb-1 text-xs font-semibold">Grasa % (opcional)</span>
+        <%= form.number_field "medicion[grasa_pct]", step: 0.1, min: 0,
+              class: "input input-bordered input-sm w-32" %>
+      </label>
+      <%= form.submit "Registrar peso", class: "btn btn-primary btn-sm font-bold" %>
+      <p class="w-full text-xs text-steel-3 sm:flex-1 sm:text-right">Queda en tu historial de progreso.</p>
+    </div>
+  <% end %>
+
   <div class="mt-6 grid items-start gap-6 lg:grid-cols-2">
     <%# ── Tendencia de peso ─────────────────────────────────────── %>
     <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
@@ -44,7 +65,7 @@
             <%= render "shared/icono", nombre: :actividad, clase: "size-4" %>
           </span>
           Tendencia de peso
-          <span class="badge badge-ghost badge-sm ml-auto hidden sm:inline-flex">de tus objetivos</span>
+          <span class="badge badge-ghost badge-sm ml-auto hidden sm:inline-flex"><%= @fuente_peso == :mediciones ? "de tus mediciones" : "de tus objetivos" %></span>
         </h2>
         <% if @pesos.size >= 2 %>
           <% valores = @pesos.map(&:last) %>
@@ -83,26 +104,43 @@
             <div class="pointer-events-none absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-steel px-2.5 py-1 text-xs font-semibold text-volt shadow-lg"
                  hidden data-grafica-target="tooltip"></div>
 
-            <%# Detalle por punto: el objetivo que originó ese peso %>
-            <% @objetivos_historial.each_with_index do |objetivo, indice| %>
-              <div hidden data-grafica-target="detalle" data-indice="<%= indice %>"
-                   class="animate-fade-up mt-2 rounded-xl border border-ocean/30 bg-ocean/5 p-3 text-sm">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <p class="font-semibold">Objetivo fijado el <%= l objetivo.created_at.to_date, format: :long %></p>
-                  <span class="badge badge-sm badge-info"><%= objetivo.nombre %></span>
+            <%# Detalle por punto: la medición (Fase 5.9) o el objetivo que originó ese peso %>
+            <% if @fuente_peso == :mediciones %>
+              <% @mediciones.each_with_index do |medicion, indice| %>
+                <div hidden data-grafica-target="detalle" data-indice="<%= indice %>"
+                     class="animate-fade-up mt-2 rounded-xl border border-ocean/30 bg-ocean/5 p-3 text-sm">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <p class="font-semibold">Medición del <%= l medicion.fecha, format: :long %></p>
+                    <span class="badge badge-sm badge-info"><%= medicion.tomada_por_id == Current.user.id || medicion.tomada_por_id.nil? ? "tú" : "tu entrenador" %></span>
+                  </div>
+                  <p class="mt-1 text-steel-5">
+                    Peso <strong><%= medicion.peso_kg.to_f %> kg</strong>
+                    <% if medicion.imc %> · IMC <strong><%= medicion.imc %></strong><% end %>
+                    <% if medicion.grasa_pct %> · Grasa <strong><%= medicion.grasa_pct %>%</strong><% end %>
+                  </p>
                 </div>
-                <p class="mt-1 text-steel-5">
-                  Peso <strong><%= objetivo.peso_kg.to_f %> kg</strong> ·
-                  TDEE <strong><%= number_with_delimiter(objetivo.tdee_kcal, delimiter: ".") %> kcal</strong> ·
-                  objetivo diario <strong><%= number_with_delimiter(objetivo.objetivo_kcal, delimiter: ".") %> kcal</strong>
-                </p>
-                <p class="mt-1 text-xs text-steel-3">
-                  Este snapshot alimentó tus cálculos de nutrición desde esa fecha.
-                  <% if objetivo.activo? %>
-                    <%= link_to "Actualizar objetivo →", new_objetivo_path, class: "link font-semibold" %>
-                  <% end %>
-                </p>
-              </div>
+              <% end %>
+            <% else %>
+              <% @objetivos_historial.each_with_index do |objetivo, indice| %>
+                <div hidden data-grafica-target="detalle" data-indice="<%= indice %>"
+                     class="animate-fade-up mt-2 rounded-xl border border-ocean/30 bg-ocean/5 p-3 text-sm">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <p class="font-semibold">Objetivo fijado el <%= l objetivo.created_at.to_date, format: :long %></p>
+                    <span class="badge badge-sm badge-info"><%= objetivo.nombre %></span>
+                  </div>
+                  <p class="mt-1 text-steel-5">
+                    Peso <strong><%= objetivo.peso_kg.to_f %> kg</strong> ·
+                    TDEE <strong><%= number_with_delimiter(objetivo.tdee_kcal, delimiter: ".") %> kcal</strong> ·
+                    objetivo diario <strong><%= number_with_delimiter(objetivo.objetivo_kcal, delimiter: ".") %> kcal</strong>
+                  </p>
+                  <p class="mt-1 text-xs text-steel-3">
+                    Este snapshot alimentó tus cálculos de nutrición desde esa fecha.
+                    <% if objetivo.activo? %>
+                      <%= link_to "Actualizar objetivo →", new_objetivo_path, class: "link font-semibold" %>
+                    <% end %>
+                  </p>
+                </div>
+              <% end %>
             <% end %>
           </div>
           <p class="text-xs text-steel-3">Cada punto es el peso con el que fijaste un objetivo. Haz click para ver su detalle.</p>
@@ -110,8 +148,7 @@
           <div class="flex flex-col items-center gap-2 rounded-xl bg-base-200 py-10 text-center">
             <%= render "shared/icono", nombre: :actividad, clase: "size-8 text-steel-1" %>
             <p class="max-w-sm text-sm text-steel-3">
-              Necesitas al menos dos objetivos fijados para ver tu tendencia.
-              <%= link_to "Actualiza tu objetivo", new_objetivo_path, class: "link font-semibold" %> cuando cambie tu peso.
+              Registra tu peso al menos dos veces para ver tu tendencia. Usa el formulario de arriba cuando cambie tu peso.
             </p>
           </div>
         <% end %>

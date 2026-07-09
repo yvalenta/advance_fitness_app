@@ -9,6 +9,10 @@ class PlanesPersonalizadosController < ApplicationController
       authorize @plan, :show?
     else
       skip_authorization # vista free: solo contenido estático del propio usuario
+      # Plan básico incluido con la membresía activa (SDD Fase 5.9): reglas, sin IA.
+      if !Current.user.premium? && Current.user.membresia&.activa?
+        @plan_basico = GeneradorPlanBasico.para(Current.user)
+      end
     end
   end
 end

@@ -21,6 +21,18 @@
       </div>
     <% end %>
 
+    <% if @plan_basico %>
+      <div class="animate-fade-up mb-6">
+        <div class="mb-3 flex flex-wrap items-center gap-2">
+          <span class="badge badge-success gap-1 font-semibold">
+            <%= render "shared/icono", nombre: :check, clase: "size-3" %> Incluido con tu membresía
+          </span>
+          <span class="text-sm text-steel-5">Plan básico de fuerza según tu perfil. Para uno hecho por IA y aprobado por tu coach, <%= link_to "mejora tu plan", upgrade_path, class: "link font-semibold" %>.</span>
+        </div>
+        <%= render "planes_personalizados/rutina", rutina: @plan_basico %>
+      </div>
+    <% end %>
+
     <% guias = {
          "deficit" => [ [ "Cardio 3–4 veces por semana", "30–40 minutos en zona moderada: caminata rápida, elíptica o bici." ],
                         [ "Fuerza para conservar músculo", "Rutina de cuerpo completo 2–3 veces por semana." ],

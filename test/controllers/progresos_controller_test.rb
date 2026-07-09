@@ -35,7 +35,7 @@ class ProgresosControllerTest < ActionDispatch::IntegrationTest
     get progreso_path
 
     assert_response :success
-    assert_match "al menos dos objetivos", response.body
+    assert_match "Registra tu peso al menos dos veces", response.body
     assert_match "Fija tu objetivo calórico", response.body
     assert_match "Tus check-ins en recepción aparecerán aquí", response.body
   end

@@ -65,5 +65,28 @@
         <% end %>
       </div>
     </div>
+
+    <div class="card animate-fade-up fade-delay-2 border border-base-300 bg-base-100 shadow-md md:col-span-2">
+      <div class="card-body">
+        <h2 class="card-title text-base">
+          <span class="flex size-7 items-center justify-center rounded-lg bg-ocean/15 text-ocean">
+            <%= render "shared/icono", nombre: :actividad, clase: "size-4" %>
+          </span>
+          Antropometría
+        </h2>
+        <% if (ultima = @user.ultima_medicion) %>
+          <p class="text-sm text-steel-5">
+            Última medición el <%= l ultima.fecha, format: :long %> ·
+            <strong><%= ultima.peso_kg %> kg</strong><% if ultima.imc %> · IMC <%= ultima.imc %><% end %>
+          </p>
+        <% else %>
+          <p class="text-sm text-steel-3">Sin mediciones registradas.</p>
+        <% end %>
+        <div class="card-actions mt-1">
+          <%= link_to "Ver historial", admin_user_mediciones_path(@user), class: "btn btn-ghost btn-sm" %>
+          <%= link_to "Nueva medición", new_admin_user_medicion_path(@user), class: "btn btn-primary btn-sm font-bold" %>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
