@@ -80,4 +80,11 @@
       </div>
     <% end %>
   <% end %>
+
+  <% if @registro_seguimiento %>
+    <div class="animate-fade-up fade-delay-1 mt-6">
+      <%= render "planes_personalizados/seguimiento",
+            dia: @dia_seguimiento, fecha: @fecha_seguimiento, registro: @registro_seguimiento %>
+    </div>
+  <% end %>
 </div>

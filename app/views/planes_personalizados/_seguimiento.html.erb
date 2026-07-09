@@ -1,0 +1,52 @@
+<%# Seguimiento de entrenamiento del día (Fase 5.10). El turbo-frame permite %>
+<%# cambiar de fecha sin recargar la página. locals: (dia:, fecha:, registro:) %>
+<%= turbo_frame_tag "seguimiento" do %>
+  <div class="card border border-base-300 bg-base-100 shadow-md"
+       data-controller="seguimiento"
+       data-seguimiento-url-value="<%= registros_entrenamiento_path %>"
+       data-seguimiento-fecha-value="<%= fecha.iso8601 %>">
+    <div class="card-body">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="card-title text-base">
+          <span class="flex size-7 items-center justify-center rounded-lg bg-success/15 text-success">
+            <%= render "shared/icono", nombre: :check, clase: "size-4" %>
+          </span>
+          Seguimiento
+        </h2>
+        <%= form_with url: mi_plan_path, method: :get, data: { turbo_frame: "seguimiento" }, class: "flex items-center gap-2" do |form| %>
+          <span class="text-xs font-semibold text-steel-3">Día</span>
+          <%= form.date_field :fecha, value: fecha, max: Date.current, class: "input input-bordered input-sm",
+                data: { action: "change->seguimiento#cambiarFecha" } %>
+        <% end %>
+      </div>
+
+      <% ejercicios = Array(dia && dia["ejercicios"]) %>
+      <% if ejercicios.any? %>
+        <p class="text-sm text-steel-5">
+          Marca lo que ejecutaste el <%= l fecha, format: :long %><% if dia["enfoque"].present? %> · <span class="font-semibold"><%= dia["enfoque"] %></span><% end %>.
+          Si cambiaste algo, anótalo.
+        </p>
+        <div class="mt-1 flex flex-col gap-2">
+          <% ejercicios.each_with_index do |ejercicio, i| %>
+            <% estado = registro.estado_de(i) %>
+            <div class="flex flex-col gap-2 rounded-xl border border-base-300 p-3 transition-colors has-[:checked]:border-success has-[:checked]:bg-success/5"
+                 data-indice="<%= i %>" data-nombre="<%= ejercicio["nombre"] %>">
+              <label class="flex cursor-pointer items-center gap-3">
+                <input type="checkbox" class="checkbox checkbox-success checkbox-sm" <%= "checked" if estado["hecho"] %>
+                       data-action="change->seguimiento#marcar">
+                <span class="min-w-0 flex-1 font-medium"><%= ejercicio["nombre"] %></span>
+                <span class="shrink-0 text-xs text-steel-3"><%= ejercicio["series"] %>×<%= ejercicio["repeticiones"] %></span>
+                <span class="shrink-0 text-xs font-semibold text-success" data-seguimiento-target="estado"></span>
+              </label>
+              <input type="text" placeholder="¿Qué cambiaste? (peso, reps, sustitución…)" maxlength="120"
+                     value="<%= estado["nota"] %>" class="input input-bordered input-xs"
+                     data-action="change->seguimiento#marcar">
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="rounded-xl bg-base-200 px-3 py-4 text-center text-sm text-steel-3">Descanso ese día — no hay ejercicios para marcar.</p>
+      <% end %>
+    </div>
+  </div>
+<% end %>

@@ -21,6 +21,7 @@ class User < ApplicationRecord
   has_many :suscripciones, dependent: :destroy
   has_many :planes_personalizados, dependent: :destroy
   has_many :mediciones, dependent: :destroy
+  has_many :registros_entrenamiento, dependent: :destroy
 
   normalizes :email_address, with: ->(e) { e.strip.downcase }
 

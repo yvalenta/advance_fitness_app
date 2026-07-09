@@ -21,6 +21,9 @@ Rails.application.routes.draw do
   # Auto-registro de peso del miembro (Fase 5.9): crea una medición propia.
   resources :mediciones, only: :create
 
+  # Seguimiento de entrenamiento del miembro (Fase 5.10): upsert por fecha+ejercicio.
+  resources :registros_entrenamiento, only: :create
+
   # Planes y monetización (SDD §09, Fase 5)
   get "mi_plan", to: "planes_personalizados#show", as: :mi_plan
   get "upgrade", to: "planes#index", as: :upgrade

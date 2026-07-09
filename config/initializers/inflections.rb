@@ -10,6 +10,7 @@ ActiveSupport::Inflector.inflections(:en) do |inflect|
   inflect.irregular "medicion", "mediciones"
   inflect.irregular "objetivo_nutricional", "objetivos_nutricionales"
   inflect.irregular "registro_caloria", "registros_calorias"
+  inflect.irregular "registro_entrenamiento", "registros_entrenamiento"
   inflect.irregular "plan", "planes"
   inflect.irregular "suscripcion", "suscripciones"
   inflect.irregular "plan_personalizado", "planes_personalizados"
