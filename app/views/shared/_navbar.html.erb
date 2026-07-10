@@ -23,6 +23,8 @@
 %>
 
 <header class="gradient-hero sticky top-0 z-40 border-b border-white/10 shadow-lg">
+  <%# El punto de Borradores se actualiza en vivo con la cola (Fase 5.11) %>
+  <%= turbo_stream_from "planes_pendientes" if Current.user.entrenador? || Current.user.admin? %>
   <div class="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4">
     <%= link_to root_path, class: "flex shrink-0 items-center gap-2.5" do %>
       <span class="flex size-9 items-center justify-center rounded-xl bg-volt text-steel shadow-[0_0_18px_rgba(180,240,0,0.35)]">
@@ -51,6 +53,7 @@
                 <%= link_to ruta, class: "gap-3 #{"menu-active" if current_page?(ruta)}" do %>
                   <%= render "shared/icono", nombre: icono, clase: "size-4 text-steel-3" %>
                   <%= texto %>
+                  <%= render "shared/punto_borradores" if texto == "Borradores" %>
                 <% end %>
               </li>
             <% end %>
@@ -107,6 +110,7 @@
                 <%= link_to ruta, class: "gap-3 py-2.5 #{"menu-active" if current_page?(ruta)}" do %>
                   <%= render "shared/icono", nombre: icono, clase: "size-5 text-steel-3" %>
                   <span class="text-sm font-medium"><%= texto %></span>
+                  <%= render "shared/punto_borradores", id: "punto_borradores_movil" if texto == "Borradores" %>
                 <% end %>
               </li>
             <% end %>

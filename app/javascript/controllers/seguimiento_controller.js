@@ -1,22 +1,30 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Seguimiento de entrenamiento (Fase 5.10): marca Hecho/Pendiente + nota por
-// ejercicio del día y lo guarda sin recargar. El selector de fecha recarga solo
-// esta tarjeta (turbo-frame). No muta el plan del coach.
+// Seguimiento de entrenamiento inline (Fase 5.11): un check por ejercicio en
+// las tabs de la rutina semanal (la fecha viene del panel del día — semana
+// actual) y una "novedad" para toda la rutina del día. Guarda sin recargar y
+// no muta el plan del coach.
 export default class extends Controller {
-  static values = { url: String, fecha: String }
+  static targets = ["estado"]
+  static values = { url: String }
 
-  // Cambiar la fecha recarga el turbo-frame con la rutina de ese día.
-  cambiarFecha(event) {
-    event.target.form.requestSubmit()
+  marcar(event) {
+    const fila = event.target.closest("[data-indice]")
+    this.enviar(event.target, {
+      indice: fila.dataset.indice,
+      nombre: fila.dataset.nombre,
+      hecho: event.target.checked
+    })
   }
 
-  async marcar(event) {
-    const fila = event.target.closest("[data-indice]")
-    const check = fila.querySelector("input[type=checkbox]")
-    const nota = fila.querySelector("input[type=text]")
-    const estado = fila.querySelector("[data-seguimiento-target=estado]")
-    if (estado) estado.textContent = "Guardando…"
+  novedad(event) {
+    this.enviar(event.target, { novedad: event.target.value })
+  }
+
+  async enviar(origen, cuerpo) {
+    const fecha = origen.closest("[data-fecha]")?.dataset.fecha
+    if (!fecha) return
+    this.avisar("Guardando…")
 
     const respuesta = await fetch(this.urlValue, {
       method: "POST",
@@ -24,15 +32,13 @@ export default class extends Controller {
         "Content-Type": "application/json",
         "X-CSRF-Token": document.querySelector("meta[name='csrf-token']")?.content
       },
-      body: JSON.stringify({
-        fecha: this.fechaValue,
-        indice: fila.dataset.indice,
-        nombre: fila.dataset.nombre,
-        hecho: check.checked,
-        nota: nota?.value || ""
-      })
+      body: JSON.stringify({ fecha, ...cuerpo })
     })
 
-    if (estado) estado.textContent = respuesta.ok ? "Guardado ✓" : "Error al guardar"
+    this.avisar(respuesta.ok ? "Guardado ✓" : "Error al guardar")
+  }
+
+  avisar(texto) {
+    if (this.hasEstadoTarget) this.estadoTarget.textContent = texto
   }
 }

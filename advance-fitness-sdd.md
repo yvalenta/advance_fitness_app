@@ -68,7 +68,8 @@ Los requerimientos en bruto se organizan en cinco módulos. Cada requerimiento q
 | Historial de reingresos | Cada check-in se registra; un reingreso es un check-in tras membresía vencida y renovada | `accesos` |
 | Control de tiempo activo ("hace cuánto entrena") | Calculado: `Date.current - user.fecha_ingreso`, descontando períodos inactivos según `accesos` | `users`, `accesos` |
 | Horarios de acceso | `membresias.horario_acceso` (JSONB por día de semana); se valida en el check-in | `membresias` |
-| Plan básico incluido con la membresía | Rutina de fuerza armada **por reglas** (sin IA) según edad/talla/peso/objetivo desde `plantillas_ejercicio`; se muestra en "Mi plan" para miembros con membresía activa no premium (Fase 5.9) | `plantillas_ejercicio` (derivado, sin persistir) |
+| Plan sugerido incluido con la membresía | Rutina de fuerza armada **por reglas** (sin IA) según el **objetivo** del miembro desde `plantillas_ejercicio`; desde la Fase 5.11 se **persiste** como `plan_personalizado` (`generado_por: reglas`, aprobado de una vez) al crear la membresía — si el miembro no tiene objetivo, se le pregunta en "Mi plan" y ahí se genera. **Editable por el miembro y el staff** (músculos del día y ejercicios, popup con buscador y sesiones por músculo) | `planes_personalizados`, `plantillas_ejercicio` |
+| Membresía incluida con la suscripción | El alta de una suscripción personalizada **crea o reactiva** la membresía automáticamente, sin pago aparte (va incluida en el precio del plan) — Fase 5.11 | `membresias`, `suscripciones` |
 
 ### Módulo B — Salud y Biometría
 
@@ -94,7 +95,8 @@ Fórmulas estándar utilizadas (implementadas como POROs en `app/services`, puro
 
 | Requerimiento | Solución | Entidad |
 |---|---|---|
-| Registro de calorías consumidas | Registro diario simple: fecha + kcal totales | `registros_calorias` |
+| Registro de calorías consumidas | Registro diario simple: fecha + kcal totales; desde la Fase 5.11 las kcal de **días pasados** también son editables ("Últimos días") y hay **alertas en vivo** cuando lo editado se sube o se baja del objetivo (no alineado) | `registros_calorias` |
+| Objetivo diario ajustable | El miembro puede **editar manualmente** su `objetivo_kcal` activo (además del cálculo TDEE±) — Fase 5.11 | `objetivos_nutricionales` |
 | Déficit calórico (bajar de peso) | Objetivo = `TDEE − 500 kcal`; la app muestra cuántas kcal faltan por quemar hoy | `objetivos_nutricionales` |
 | Superávit calórico (masa muscular) | Objetivo = `TDEE + 300–500 kcal` según somatotipo | `objetivos_nutricionales` |
 | Catálogo de alimentos | Seed curado de ~120–150 alimentos comunes en Colombia con kcal/macros por porción; CRUD del admin para mantenerlo | `alimentos` |
@@ -328,6 +330,7 @@ Schema en **PostgreSQL** gestionado con **migraciones ActiveRecord** (snake_case
 | `periodo_inicio` / `periodo_fin` | `date` | Período que cubre |
 | `metodo` | `string` | enum: `efectivo` · `transferencia` · `tarjeta` |
 | `registrado_por_id` | `bigint` | FK → `users` (admin que registró) |
+| `anulado_en` / `anulado_por_id` | `datetime` / `bigint` | Fase 5.11 — "eliminar" un pago lo **anula** (figura como eliminado, con quién y cuándo); nunca se borra físico. Monto siempre **> $1.000 COP**. El admin puede **corregir** monto/método de un pago vigente; uno anulado ya no se toca |
 
 ### `accesos` — check-ins e historial de reingresos
 
@@ -456,7 +459,7 @@ Schema en **PostgreSQL** gestionado con **migraciones ActiveRecord** (snake_case
 | `user_id` | `bigint` | FK → `users` |
 | `rutina` | `jsonb` | Días → ejercicios → series/reps, generado por IA |
 | `plan_nutricional` | `jsonb` | Comidas → macros → kcal, generado por IA; desde la fase de gustos cada comida incluye `receta: { ingredientes: [{alimento, cantidad}], preparacion }` |
-| `generado_por` | `string` | enum: `ia` · `entrenador` |
+| `generado_por` | `string` | enum: `ia` · `entrenador` · `reglas` (plan sugerido de la membresía, Fase 5.11 — sin nutrición y aprobado sin revisor) |
 | `estado` | `string` | enum: `generando` · `borrador` · `aprobado` · `fallido` — el miembro solo ve aprobados; `generando`/`fallido` son la generación con IA (§10) |
 | `error_generacion` · `modelo_generacion` · `intentos` | `text`/`string`/`int` | Diagnóstico de la generación con IA (mensaje crudo, modelo que respondió, reintentos) — solo staff |
 | `aprobado_por_id` | `bigint` | FK → `users` (entrenador), nil en borrador |
@@ -595,7 +598,7 @@ Rutas RESTful de Rails; los nombres siguen el dominio en español. Las de staff 
 | Paso | Acción | Detalle |
 |---|---|---|
 | 1 | Ver oferta | El miembro abre "Mejorar plan": comparación Free vs. Personalizado desde `planes.beneficios`. |
-| 2 | Pagar + medir en recepción | MVP sin pasarela: el admin registra el pago, **toma la medición antropométrica** (obligatoria: peso, perímetros, diámetros, pliegues) y crea la `suscripcion` al plan personalizado en una sola transacción. |
+| 2 | Pagar + medir en recepción | MVP sin pasarela: el admin registra el pago, **toma la medición antropométrica** (obligatoria: peso, perímetros, diámetros, pliegues) y crea la `suscripcion` al plan personalizado en una sola transacción. La **membresía va incluida**: se crea o reactiva automáticamente, sin pago aparte (Fase 5.11). |
 | 3 | Generar con IA | Al crearse la suscripción se encola `GenerarPlanJob`: revalida la suscripción, arma el prompt con la **antropometría reciente**, biometría, somatotipo, objetivo y restricciones, y pide al proveedor de IA configurado un JSON de rutina semanal + plan nutricional. |
 | 4 | Revisión del entrenador | El plan queda en `borrador`. El entrenador lo edita en un **editor por comida con autosave**: nombre/descripción/kcal/macros se guardan al instante (estados guardando/guardado/error+reintentar), aplica `plantillas_comida` desde un **modal** o guarda comidas como plantillas nuevas. El JSON crudo queda como modo avanzado. |
 | 4b | Publicación y edición continua | **Publicar** (botón desacoplado de la edición) da visibilidad al miembro. Tras publicar, el **admin** puede seguir editando el plan desde Suscripciones —con el **historial** de planes del miembro— y los cambios se reflejan en vivo. |
@@ -647,6 +650,7 @@ Rutas RESTful de Rails; los nombres siguen el dominio en español. Las de staff 
 | 5.8 | Plan en vivo + UX del plan | ~1 semana | `/mi_plan` **en vivo** (Turbo Streams al editar el staff), miembro **registra qué comió** (kcal aprox + nota por comida → `registros_calorias.detalle`), **plantillas buscables**, **rediseño de la rutina semanal**, **navbar/menú responsive y profesional** | El miembro ve los cambios del staff sin recargar; registra su consumo por comida; el menú se ve cómodo en móvil |
 | 5.9 | Antropometría + plan básico con membresía | ~1 semana | Entidad **`mediciones`** completa (perímetros/diámetros/pliegues/% grasa) capturada por staff con historial; **medición obligatoria** en el alta de suscripción que alimenta el prompt de IA; **plan básico por reglas** incluido con la membresía (`GeneradorPlanBasico`, sin IA); **auto-registro de peso** del miembro (medición ligera solo-peso) que alimenta `/progreso` | El staff toma la medición y sin ella no genera; el plan IA usa la antropometría; un miembro con membresía ve su plan básico; el miembro registra su peso y lo ve en progreso |
 | 5.10 | Seguimiento de entrenamiento del miembro | ~1 semana | Entidad **`registros_entrenamiento`** (una por día): el miembro marca **Hecho/Pendiente + nota** por ejercicio en "Mi plan" con **selector de fecha** (hoy y días pasados), autosave dinámico sin recargar; sigue recibiendo en vivo los cambios del plan (5.8) | El miembro marca qué ejecutó/cambió por día, edita días pasados sin recargar y el seguimiento persiste |
+| 5.11 | Suscripción con membresía + plan sugerido editable + kcal | ~1 semana | `Plan.free/personalizado` **autocreados** sin seeds (hotfix "Plan debe existir"); la suscripción **crea/reactiva la membresía** (incluida); plan sugerido **persistido** (`generado_por: reglas`, 6 días según objetivo, semana repetida el mes) creado con la membresía o al fijar el objetivo, **editable por miembro y staff** con popup Stimulus (buscador + chips por músculo + **sesión completa**); **alertas de kcal** arriba/abajo del objetivo; **objetivo diario editable** y **historial de consumo editable** | Crear suscripción sin membresía funciona y la incluye; todo miembro con membresía ve su plan sugerido y lo edita; las alertas avisan cuando lo editado no se alinea con el objetivo |
 | 6 | Nutrición personalizada & Gustos | ~2 semanas | Catálogo `alimentos` (seed colombiano + CRUD admin), calificación de gustos (`/gustos`), armador de comidas con registro del día (`/armador`), gustos + recetas en el prompt de IA, benchmark de modelo Gemini, **editor de rutina + plantillas de ejercicios por músculo + animaciones SVG** | El miembro califica alimentos y arma su día viendo kcal en vivo; el registro alimenta `/progreso`; el plan IA de un premium no incluye ningún alimento `no_le_gusta` y cada comida trae receta |
 | 7 | Comunidad & Cierre | ~1 semana | Blog, novedades, pulido responsive, checklist MVP completo | Un miembro lee posts y novedades publicadas; todo el checklist §15 en verde |
 

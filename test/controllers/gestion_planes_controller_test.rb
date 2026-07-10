@@ -80,8 +80,9 @@ class GestionPlanesControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[data-plan-nutricional-target=kcal]"
     assert_select "input[data-plan-nutricional-target=nota]"
     assert_select "input[name=?]", "registro_caloria[detalle]"
-    # Fase 5.10: seguimiento de entrenamiento del día
-    assert_select "turbo-frame#seguimiento"
+    # Fase 5.11: seguimiento inline (check por ejercicio + novedad del día)
+    assert_match "seguimiento#marcar", response.body
+    assert_match "seguimiento#novedad", response.body
   end
 
   test "el modo avanzado guarda el JSON de la rutina" do

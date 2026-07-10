@@ -27,6 +27,15 @@ class RegistroEntrenamientoTest < ActiveSupport::TestCase
     assert_equal({}, registro.estado_de(5))
   end
 
+  test "la novedad del día convive con los checks (Fase 5.11)" do
+    registro = users(:one).registros_entrenamiento.create!(fecha: Date.current)
+    registro.marcar!(0, hecho: true, nombre: "Press")
+    registro.marcar_novedad!("  rodilla resentida  ")
+
+    assert_equal "rodilla resentida", registro.reload.novedad
+    assert_equal true, registro.estado_de(0)["hecho"]
+  end
+
   test "una fila por usuario y fecha" do
     users(:one).registros_entrenamiento.create!(fecha: Date.current)
     repetido = users(:one).registros_entrenamiento.new(fecha: Date.current)

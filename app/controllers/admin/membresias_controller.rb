@@ -26,6 +26,9 @@ class Admin::MembresiasController < ApplicationController
         periodo_fin: @membresia.fecha_vencimiento
       )
     end
+    # Plan sugerido incluido (Fase 5.11); si el miembro aún no tiene objetivo,
+    # Mi plan se lo pregunta y el plan nace al fijarlo.
+    PlanPersonalizado.asegurar_sugerido!(@membresia.user)
     redirect_to admin_membresias_path, notice: "Membresía creada para #{@membresia.user.nombre}."
   rescue ActiveRecord::RecordInvalid => error
     @membresia.errors.add(:base, error.message) if @membresia.errors.empty?

@@ -13,13 +13,14 @@ class PagoPolicy < ApplicationPolicy
     user.admin?
   end
 
-  # Historial financiero inmutable (SDD §08)
+  # Historial financiero auditable (SDD §08, Fase 5.11): el admin corrige un
+  # pago vigente o lo anula (figura como eliminado); nunca se borra físico.
   def update?
-    false
+    user.admin? && !record.anulado?
   end
 
   def destroy?
-    false
+    user.admin? && !record.anulado?
   end
 
   class Scope < ApplicationPolicy::Scope

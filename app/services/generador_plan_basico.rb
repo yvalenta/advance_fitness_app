@@ -1,35 +1,51 @@
-# Plan básico de entrenamiento incluido con la membresía (SDD §03/§11, Fase
-# 5.9). Sin IA: arma una rutina de fuerza desde las plantillas de ejercicio
-# sembradas, con reglas simples y deterministas. PORO puro (sin sesión ni
-# escritura): recibe un User y devuelve un hash `rutina` con la misma forma que
-# el plan de la IA, para reusar el partial de rutina de solo lectura.
+# Plan de entrenamiento sugerido incluido con la membresía (SDD §03/§11,
+# Fases 5.9/5.11). Sin IA: arma una rutina de fuerza de 6 días (lunes–sábado,
+# domingo descanso, la semana se repite durante el mes de la membresía) desde
+# las plantillas de ejercicio, con reglas deterministas según el objetivo del
+# miembro. PORO puro: recibe el User (+ objetivo) y devuelve el hash `rutina`
+# con la misma forma que el plan de la IA.
 module GeneradorPlanBasico
-  # Principiantes o mayores → full-body 3 días; el resto → split de 4 días.
-  DIAS_FULLBODY = %w[lunes miercoles viernes].freeze
-  FULLBODY = { pierna: 1, pecho: 1, espalda: 1, hombro: 1, core: 1 }.freeze
+  DIAS = %w[lunes martes miercoles jueves viernes sabado].freeze
 
-  SPLIT_4 = [
-    [ "lunes",   "Pecho y tríceps",  { pecho: 2, triceps: 1, hombro: 1 } ],
-    [ "martes",  "Espalda y bíceps", { espalda: 2, biceps: 1, core: 1 } ],
-    [ "jueves",  "Pierna y glúteo",  { pierna: 2, gluteo: 1, core: 1 } ],
-    [ "viernes", "Hombro y brazos",  { hombro: 2, triceps: 1, biceps: 1 } ]
+  # superavit → Push/Pull/Legs ×2 (hipertrofia)
+  PPL = [
+    [ "Empuje: pecho, hombro y tríceps", { pecho: 2, hombro: 1, triceps: 1 } ],
+    [ "Jalón: espalda y bíceps",         { espalda: 2, biceps: 1, core: 1 } ],
+    [ "Pierna y glúteo",                 { pierna: 2, gluteo: 1, core: 1 } ]
   ].freeze
 
-  def self.para(user)
+  # deficit → full-body alterno A/B ×3 (conserva músculo en déficit)
+  FULLBODY_AB = [
+    [ "Cuerpo completo A", { pierna: 1, pecho: 1, espalda: 1, core: 1 } ],
+    [ "Cuerpo completo B", { pierna: 1, hombro: 1, espalda: 1, gluteo: 1 } ]
+  ].freeze
+
+  # mantenimiento / sin objetivo → torso/pierna alterno
+  TORSO_PIERNA = [
+    [ "Torso: pecho, espalda y hombro", { pecho: 1, espalda: 1, hombro: 1, biceps: 1 } ],
+    [ "Pierna y core",                  { pierna: 2, gluteo: 1, core: 1 } ]
+  ].freeze
+
+  def self.para(user, objetivo: nil)
+    objetivo ||= user.objetivo_activo if user.respond_to?(:objetivo_activo) && user.persisted?
     biblioteca = PlantillaEjercicio.ordenadas.group_by(&:musculo)
-    dias =
-      if fullbody?(user)
-        DIAS_FULLBODY.each_with_index.map { |dia, i| dia_desde(dia, "Cuerpo completo", FULLBODY, biblioteca, offset: i) }
-      else
-        SPLIT_4.map { |dia, enfoque, receta| dia_desde(dia, enfoque, receta, biblioteca, offset: 0) }
-      end
+    plantilla_semana = segun_objetivo(objetivo&.tipo)
+
+    dias = DIAS.each_with_index.map do |dia, indice|
+      enfoque, receta = plantilla_semana[indice % plantilla_semana.size]
+      # El offset rota los ejercicios entre repeticiones del mismo enfoque para
+      # variar la semana (p. ej. Empuje del lunes ≠ Empuje del jueves).
+      dia_desde(dia, enfoque, receta, biblioteca, offset: indice / plantilla_semana.size)
+    end
     { "dias" => dias }
   end
 
-  # Sin edad conocida o desde los 50, se prioriza una rutina más conservadora.
-  def self.fullbody?(user)
-    edad = user.edad
-    edad.nil? || edad >= 50
+  def self.segun_objetivo(tipo)
+    case tipo
+    when "superavit" then PPL
+    when "deficit" then FULLBODY_AB
+    else TORSO_PIERNA
+    end
   end
 
   def self.dia_desde(dia, enfoque, receta, biblioteca, offset:)

@@ -8,9 +8,12 @@ import { Controller } from "@hotwired/stimulus"
 export default class extends Controller {
   static targets = [
     "comida", "consumidas", "barra", "estado", "boton", "kcalInput",
-    "segmento", "tarjeta", "kcal", "nota", "detalle"
+    "segmento", "tarjeta", "kcal", "nota", "detalle", "alerta", "hint"
   ]
   static values = { objetivo: Number }
+
+  // Tolerancia antes de alertar desviación contra el objetivo (Fase 5.11)
+  static TOLERANCIA = 0.05
 
   connect() {
     // Despliega la barra de macros (los anchos finales vienen en data-pct)
@@ -39,6 +42,52 @@ export default class extends Controller {
     if (this.hasDetalleTarget) {
       this.detalleTarget.value = JSON.stringify({ comidas: marcadas.map((comida) => this.detalleDe(comida)) })
     }
+    this.alertar(total, completas)
+    this.actualizarHints()
+  }
+
+  // Alerta viva (Fase 5.11): editar por encima de lo sugerido alerta en rojo;
+  // quedarse por debajo (con todo marcado) avisa que no está alineado.
+  alertar(total, completas) {
+    if (!this.hasAlertaTarget || this.objetivoValue <= 0) return
+
+    const tolerancia = this.objetivoValue * this.constructor.TOLERANCIA
+    const delta = total - this.objetivoValue
+    const alerta = this.alertaTarget
+
+    if (total > 0 && delta > tolerancia) {
+      alerta.hidden = false
+      alerta.className = "mt-2 rounded-lg bg-error/10 px-3 py-2 text-xs font-semibold text-error"
+      alerta.textContent = `+${delta.toLocaleString("es-CO")} kcal sobre lo sugerido — no alineado con tu objetivo.`
+    } else if (completas && delta < -tolerancia) {
+      alerta.hidden = false
+      alerta.className = "mt-2 rounded-lg bg-warning/10 px-3 py-2 text-xs font-semibold text-warning"
+      alerta.textContent = `Te faltan ${Math.abs(delta).toLocaleString("es-CO")} kcal para tu objetivo — por debajo de lo planificado.`
+    } else {
+      alerta.hidden = true
+    }
+  }
+
+  // Hint por comida cuando la kcal editada difiere de la sugerida del plan
+  actualizarHints() {
+    this.hintTargets.forEach((hint) => {
+      const tarjeta = hint.closest("[data-plan-nutricional-target='tarjeta']")
+      const check = tarjeta?.querySelector("[data-plan-nutricional-target='comida']")
+      if (!check?.checked) { hint.hidden = true; return }
+
+      const delta = this.kcalDe(check) - Number(check.dataset.kcal)
+      if (delta > 0) {
+        hint.hidden = false
+        hint.className = "w-full text-xs font-semibold text-error"
+        hint.textContent = `+${delta.toLocaleString("es-CO")} kcal sobre lo sugerido en esta comida.`
+      } else if (delta < 0) {
+        hint.hidden = false
+        hint.className = "w-full text-xs font-semibold text-warning"
+        hint.textContent = `${Math.abs(delta).toLocaleString("es-CO")} kcal por debajo de lo sugerido en esta comida.`
+      } else {
+        hint.hidden = true
+      }
+    })
   }
 
   // Las kcal de una comida marcada: el ajuste del miembro si existe, si no las

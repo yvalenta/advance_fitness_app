@@ -1,11 +1,31 @@
-# Autosave del enfoque de un día de la rutina (SDD Fase 5.7b).
+# Autosave del enfoque de un día de la rutina (SDD Fase 5.7b) y aplicación de
+# una sesión completa por músculo (Fase 5.11): reemplaza los ejercicios del día
+# y refresca solo ese panel vía Turbo Stream.
 class GestionDiasController < ApplicationController
   def update
     @plan = PlanPersonalizado.find(params[:plan_personalizado_id])
     authorize @plan, :editar?
-    @plan.actualizar_enfoque!(params[:id].to_i, params.dig(:dia, :enfoque).to_s)
-    render json: { ok: true }
-  rescue IndexError, KeyError
+    indice = params[:id].to_i
+
+    if (musculo = params.dig(:dia, :sesion_musculo)).present?
+      aplicar_sesion(indice, musculo)
+    else
+      @plan.actualizar_enfoque!(indice, params.dig(:dia, :enfoque).to_s)
+      render json: { ok: true }
+    end
+  rescue IndexError, KeyError, ActiveRecord::RecordNotFound
     render json: { error: "El día ya no existe." }, status: :not_found
   end
+
+  private
+    def aplicar_sesion(indice, musculo)
+      plantillas = PlantillaEjercicio.ordenadas.where(musculo: musculo).to_a
+      @plan.aplicar_sesion!(indice, musculo, plantillas)
+
+      render turbo_stream: turbo_stream.replace(
+        "dia_editor_#{indice}",
+        partial: "planes_personalizados/dia_editor",
+        locals: { plan: @plan, dia: @plan.dias.fetch(indice), indice: indice }
+      )
+    end
 end

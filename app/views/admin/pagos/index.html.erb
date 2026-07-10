@@ -2,7 +2,7 @@
 
 <%= render "shared/encabezado",
       titulo: "Pagos",
-      descripcion: "Historial financiero inmutable: los pagos se corrigen con registros nuevos, nunca se editan." %>
+      descripcion: "Historial auditable: los pagos se corrigen o se anulan dejando rastro — nunca desaparecen." %>
 
 <div class="mx-auto -mt-8 w-full max-w-6xl px-4 pb-12">
   <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
@@ -12,12 +12,12 @@
           <table class="table">
             <thead>
               <tr class="text-xs uppercase tracking-wider text-steel-3">
-                <th>Fecha</th><th>Miembro</th><th>Período</th><th>Monto</th><th>Método</th><th>Registró</th>
+                <th>Fecha</th><th>Miembro</th><th>Período</th><th>Monto</th><th>Método</th><th>Registró</th><th></th>
               </tr>
             </thead>
             <tbody>
               <% @pagos.each do |pago| %>
-                <tr class="hover:bg-base-200">
+                <tr class="<%= pago.anulado? ? "opacity-50" : "hover:bg-base-200" %>">
                   <td class="text-sm"><%= l pago.fecha_pago %></td>
                   <td>
                     <div class="flex items-center gap-2">
@@ -26,9 +26,21 @@
                     </div>
                   </td>
                   <td class="text-xs text-steel-5"><%= l pago.periodo_inicio %> — <%= l pago.periodo_fin %></td>
-                  <td class="font-display font-bold"><%= cop pago.monto %></td>
+                  <td class="font-display font-bold <%= "line-through" if pago.anulado? %>"><%= cop pago.monto %></td>
                   <td><span class="badge badge-sm badge-ghost"><%= pago.metodo %></span></td>
                   <td class="text-xs text-steel-3"><%= pago.registrado_por.nombre %></td>
+                  <td class="text-right">
+                    <% if pago.anulado? %>
+                      <span class="badge badge-sm badge-error" title="Anulado el <%= l pago.anulado_en.to_date %> por <%= pago.anulado_por&.nombre %>">eliminado</span>
+                    <% else %>
+                      <div class="flex justify-end gap-1">
+                        <%= link_to "Editar", edit_admin_pago_path(pago), class: "btn btn-ghost btn-xs" %>
+                        <%= button_to "Eliminar", admin_pago_path(pago), method: :delete,
+                              class: "btn btn-ghost btn-xs text-error",
+                              data: { turbo_confirm: "El pago quedará en el historial marcado como eliminado. ¿Continuar?" } %>
+                      </div>
+                    <% end %>
+                  </td>
                 </tr>
               <% end %>
             </tbody>

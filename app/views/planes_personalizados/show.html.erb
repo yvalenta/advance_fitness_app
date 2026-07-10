@@ -2,9 +2,9 @@
 
 <%= render "shared/encabezado",
       eyebrow: "Mi plan",
-      titulo: @plan ? "Tu plan personalizado" : "Tu plan Free",
-      descripcion: @plan ? "Generado con IA para tu perfil y aprobado por #{@plan.aprobado_por&.nombre || "tu entrenador"}." : "Guías generales según tu objetivo.",
-      accion: (@plan ? nil : link_to("Mejorar mi plan", upgrade_path, class: "btn btn-primary btn-sm font-bold")) %>
+      titulo: @plan ? (@plan.reglas? ? "Tu plan de entrenamiento" : "Tu plan personalizado") : "Tu plan Free",
+      descripcion: @plan ? (@plan.reglas? ? "Incluido con tu membresía según tu meta. Puedes personalizarlo." : "Generado con IA para tu perfil y aprobado por #{@plan.aprobado_por&.nombre || "tu entrenador"}.") : "Guías generales según tu objetivo.",
+      accion: ((@plan.nil? || @plan.reglas?) ? link_to("Mejorar mi plan", upgrade_path, class: "btn btn-primary btn-sm font-bold") : nil) %>
 
 <div class="mx-auto -mt-8 w-full max-w-4xl px-4 pb-12">
   <% if @plan %>
@@ -12,24 +12,40 @@
     <div class="animate-fade-up">
       <%= render "planes_personalizados/plan", plan: @plan, usuario: Current.user %>
     </div>
+
+    <%# Edición del plan sugerido por su dueño (Fase 5.11) — fuera del div del
+        broadcast para que el refresco en vivo no pise lo que se edita. %>
+    <% if @editable %>
+      <div class="animate-fade-up fade-delay-1 mt-6">
+        <div class="mb-2 flex items-center gap-2">
+          <span class="badge badge-success gap-1 font-semibold">
+            <%= render "shared/icono", nombre: :check, clase: "size-3" %> Incluido con tu membresía
+          </span>
+          <span class="text-sm text-steel-5">Personalízalo: cambia los músculos del día y elige ejercicios de la biblioteca.</span>
+        </div>
+        <%= render "planes_personalizados/editor_rutina", plan: @plan, plantillas: @plantillas_ejercicio %>
+      </div>
+    <% end %>
   <% else %>
+    <% if @falta_meta %>
+      <div class="card animate-fade-up mb-6 border-2 border-volt/50 bg-base-100 shadow-md">
+        <div class="card-body flex-row flex-wrap items-center gap-4">
+          <span class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-volt/15 text-volt-d">
+            <%= render "shared/icono", nombre: :rayo, clase: "size-6" %>
+          </span>
+          <div class="min-w-0 flex-1">
+            <h2 class="font-display text-lg font-bold">¿Cuál es tu meta?</h2>
+            <p class="text-sm text-steel-5">Tu membresía incluye un plan de entrenamiento sugerido. Dinos tu objetivo (bajar de peso, mantenerte o ganar masa) y lo armamos al instante.</p>
+          </div>
+          <%= link_to "Fijar mi meta", new_objetivo_path, class: "btn btn-primary font-bold" %>
+        </div>
+      </div>
+    <% end %>
     <% if @pendiente %>
       <div class="alert alert-info animate-fade-up mb-6 shadow-md">
         <%= render "shared/icono", nombre: :reloj, clase: "size-5 shrink-0" %>
         <span class="text-sm">Tu plan personalizado está en preparación: la IA ya lo generó o lo está generando,
         y tu entrenador lo revisará antes de publicarlo. Te aparecerá aquí apenas esté aprobado.</span>
-      </div>
-    <% end %>
-
-    <% if @plan_basico %>
-      <div class="animate-fade-up mb-6">
-        <div class="mb-3 flex flex-wrap items-center gap-2">
-          <span class="badge badge-success gap-1 font-semibold">
-            <%= render "shared/icono", nombre: :check, clase: "size-3" %> Incluido con tu membresía
-          </span>
-          <span class="text-sm text-steel-5">Plan básico de fuerza según tu perfil. Para uno hecho por IA y aprobado por tu coach, <%= link_to "mejora tu plan", upgrade_path, class: "link font-semibold" %>.</span>
-        </div>
-        <%= render "planes_personalizados/rutina", rutina: @plan_basico %>
       </div>
     <% end %>
 
@@ -81,10 +97,4 @@
     <% end %>
   <% end %>
 
-  <% if @registro_seguimiento %>
-    <div class="animate-fade-up fade-delay-1 mt-6">
-      <%= render "planes_personalizados/seguimiento",
-            dia: @dia_seguimiento, fecha: @fecha_seguimiento, registro: @registro_seguimiento %>
-    </div>
-  <% end %>
 </div>

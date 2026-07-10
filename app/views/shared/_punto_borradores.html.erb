@@ -1,0 +1,9 @@
+<%# Punto de notificación de la cola de borradores (Fase 5.11): visible solo %>
+<%# si hay planes pendientes; se refresca en vivo por el stream planes_pendientes. %>
+<%# Sin strict-locals: el broadcast del modelo inyecta el local plan_personalizado. %>
+<% id = local_assigns.fetch(:id, "punto_borradores") %>
+<span id="<%= id %>" class="inline-flex w-2 justify-center">
+  <% if PlanPersonalizado.pendientes.exists? %>
+    <span class="size-2 animate-pulse rounded-full bg-error" title="Borradores pendientes"></span>
+  <% end %>
+</span>

@@ -6,11 +6,15 @@ import { Controller } from "@hotwired/stimulus"
 // "Guardar como plantilla" crea una plantilla nueva desde la card. Convive con
 // "autosave" en el mismo elemento.
 export default class extends Controller {
-  static targets = ["dialogo", "grupo", "buscador"]
+  static targets = ["dialogo", "grupo", "buscador", "chip", "vacio"]
+
+  connect() {
+    this.tipo = "todos"
+  }
 
   abrir(event) {
     this.destino = event.target.closest("[data-autosave-target='card']")
-    if (this.hasBuscadorTarget) { this.buscadorTarget.value = ""; this.filtrar() }
+    if (this.hasBuscadorTarget) { this.buscadorTarget.value = ""; this.tipo = "todos"; this.pintarChips(); this.filtrar() }
     this.dialogoTarget.showModal()
     this.buscadorTarget?.focus()
   }
@@ -19,18 +23,44 @@ export default class extends Controller {
     this.dialogoTarget.close()
   }
 
-  // Búsqueda en vivo: oculta botones que no coinciden y los grupos que quedan
-  // vacíos. Ignora mayúsculas y acentos.
+  // Búsqueda en vivo (texto + chip de tipo): oculta tarjetas que no coinciden
+  // y las secciones que quedan vacías. Ignora mayúsculas y acentos.
   filtrar() {
     const consulta = this.normalizar(this.buscadorTarget.value)
+    let visiblesTotal = 0
+
     this.grupoTargets.forEach((grupo) => {
+      const seccion = grupo.closest("[data-seccion-tipo]") || grupo.parentElement
+      if (this.tipo !== "todos" && grupo.dataset.tipo !== this.tipo) {
+        seccion.hidden = true
+        return
+      }
       let visibles = 0
       grupo.querySelectorAll("button").forEach((boton) => {
         const coincide = this.normalizar(boton.textContent).includes(consulta)
         boton.hidden = !coincide
         if (coincide) visibles++
       })
-      grupo.parentElement.hidden = visibles === 0
+      seccion.hidden = visibles === 0
+      visiblesTotal += visibles
+    })
+
+    if (this.hasVacioTarget) this.vacioTarget.classList.toggle("hidden", visiblesTotal > 0)
+  }
+
+  filtrarTipo(event) {
+    this.tipo = event.currentTarget.dataset.tipo
+    this.pintarChips()
+    this.filtrar()
+  }
+
+  pintarChips() {
+    this.chipTargets.forEach((chip) => {
+      const activo = chip.dataset.tipo === this.tipo
+      chip.classList.toggle("btn-primary", activo)
+      chip.classList.toggle("btn-ghost", !activo)
+      chip.classList.toggle("border", !activo)
+      chip.classList.toggle("border-base-300", !activo)
     })
   }
 
@@ -88,14 +118,14 @@ export default class extends Controller {
     if (!grupo) return
     const boton = document.createElement("button")
     boton.type = "button"
-    boton.className = "btn btn-ghost btn-sm w-full justify-between font-normal"
+    boton.className = "group flex flex-col gap-1 rounded-xl border border-base-300 px-3 py-2 text-left text-sm transition-colors hover:border-volt-d/50 hover:bg-volt/5"
     boton.dataset.action = "modal-plantillas#aplicar"
     boton.dataset.descripcion = plantilla.descripcion
     boton.dataset.kcal = plantilla.kcal
     boton.dataset.p = plantilla.proteinas_g
     boton.dataset.c = plantilla.carbohidratos_g
     boton.dataset.g = plantilla.grasas_g
-    boton.innerHTML = `<span>${plantilla.nombre}</span><span class="text-xs text-steel-3">${plantilla.kcal} kcal</span>`
+    boton.innerHTML = `<span class="flex w-full items-center justify-between gap-2"><span class="min-w-0 flex-1 truncate font-medium">${plantilla.nombre}</span><span class="shrink-0 rounded-full bg-pulse/15 px-2 py-0.5 text-xs font-bold text-pulse">${plantilla.kcal} kcal</span></span><span class="text-xs text-steel-3">P ${plantilla.proteinas_g}g · C ${plantilla.carbohidratos_g}g · G ${plantilla.grasas_g}g</span>`
     grupo.appendChild(boton)
   }
 

@@ -27,7 +27,7 @@ Todo comando corre en Docker vía dip; no se ejecuta `rails`/`bundle` en el host
 ## Convenciones de código
 - Modelos y tablas de dominio en **español** (plurales en `config/initializers/inflections.rb`); `users`/`sessions` del generador de auth quedan en inglés.
 - `app/services`: POROs puros (IMC, TDEE, somatotipo) — sin acceso a base ni a sesión. `app/policies`: Pundit. Controllers delgados.
-- Seguridad: strong params siempre; `users.rol` jamás asignable por mass-assignment; historial de pagos inmutable.
+- Seguridad: strong params siempre; `users.rol` jamás asignable por mass-assignment; historial de pagos **auditable**: se corrige o se anula dejando rastro (`anulado_en`/`anulado_por`), jamás se borra físico.
 - UI y datos en español; moneda COP sin decimales; fechas formato `es-CO`.
 - Tests minitest en cada fase (models, policies, controllers, system); una fase se cierra con `dip test`, `dip rubocop` y `dip brakeman` en verde.
 - Commits por fase de avance del proyecto (Fase 1: base + auth, Fase 2: membresías…, según SDD §11).

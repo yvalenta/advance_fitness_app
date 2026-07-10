@@ -9,6 +9,11 @@ class ObjetivoNutricionalPolicy < ApplicationPolicy
     user.present?
   end
 
+  # Ajuste manual del objetivo diario (Fase 5.11): solo el dueño
+  def update?
+    propio?
+  end
+
   private
 
   def propio?

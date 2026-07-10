@@ -3,7 +3,9 @@ class PlanPersonalizado < ApplicationRecord
   # borrador revisable (SDD §07/§10, Fase 5.7).
   ESTADOS = %w[generando borrador aprobado fallido].freeze
   EN_PROCESO = %w[generando fallido].freeze
-  GENERADORES = %w[ia entrenador].freeze
+  # "reglas" = plan sugerido incluido con la membresía (Fase 5.11): solo
+  # entrenamiento, aprobado de una vez y editable por el propio miembro.
+  GENERADORES = %w[ia entrenador reglas].freeze
   CAMPOS_COMIDA = %w[nombre descripcion kcal proteinas_g carbohidratos_g grasas_g].freeze
   CAMPOS_EJERCICIO = %w[nombre series repeticiones descanso_seg].freeze
 
@@ -12,8 +14,10 @@ class PlanPersonalizado < ApplicationRecord
 
   validates :estado, inclusion: { in: ESTADOS }
   validates :generado_por, inclusion: { in: GENERADORES }
-  validates :rutina, :plan_nutricional, presence: true, unless: :en_proceso?
-  validates :aprobado_por, presence: true, if: :aprobado?
+  validates :rutina, presence: true, unless: :en_proceso?
+  # El plan sugerido por reglas es solo entrenamiento y no pasa por revisión
+  validates :plan_nutricional, presence: true, unless: -> { en_proceso? || reglas? }
+  validates :aprobado_por, presence: true, if: -> { aprobado? && !reglas? }
 
   scope :borradores, -> { where(estado: "borrador") }
   scope :aprobados, -> { where(estado: "aprobado") }
@@ -33,6 +37,23 @@ class PlanPersonalizado < ApplicationRecord
   def generando? = estado == "generando"
   def fallido? = estado == "fallido"
   def en_proceso? = estado.in?(EN_PROCESO)
+  def reglas? = generado_por == "reglas"
+
+  # Plan sugerido incluido con la membresía (Fase 5.11): se crea una sola vez
+  # por miembro (si no hay ya ningún plan) con la rutina de reglas según su
+  # objetivo. Sin objetivo no se crea: Mi plan le pregunta la meta al miembro
+  # y el plan nace al fijarla. Devuelve el plan o nil si no aplica.
+  def self.asegurar_sugerido!(user)
+    return if user.planes_personalizados.exists?
+    return unless user.membresia&.activa?
+
+    objetivo = user.objetivo_activo
+    return unless objetivo
+
+    create!(user: user, generado_por: "reglas", estado: "aprobado",
+            rutina: GeneradorPlanBasico.para(user, objetivo: objetivo),
+            plan_nutricional: {})
+  end
 
   # ── Generación con IA ──────────────────────────────────────────────────
   def marcar_generando!
@@ -108,6 +129,20 @@ class PlanPersonalizado < ApplicationRecord
     con_dia!(dia_indice) { |dia| dia["enfoque"] = texto.to_s.strip }
   end
 
+  # Sesión completa por músculo (Fase 5.11): reemplaza el enfoque y TODOS los
+  # ejercicios del día con la biblioteca de plantillas de ese músculo.
+  def aplicar_sesion!(dia_indice, musculo, plantillas)
+    raise ActiveRecord::RecordNotFound, "Sin plantillas para #{musculo}" if plantillas.empty?
+
+    con_dia!(dia_indice) do |dia|
+      dia["enfoque"] = PlantillaEjercicio::NOMBRES_MUSCULO.fetch(musculo, musculo.to_s.capitalize)
+      dia["ejercicios"] = plantillas.map do |plantilla|
+        { "nombre" => plantilla.nombre, "series" => plantilla.series || 3,
+          "repeticiones" => plantilla.repeticiones, "descanso_seg" => plantilla.descanso_seg || 60 }
+      end
+    end
+  end
+
   private
 
     # En cola del entrenador = necesita atención (generando/borrador/fallido)
@@ -118,6 +153,7 @@ class PlanPersonalizado < ApplicationRecord
 
       broadcast_prepend_to("planes_pendientes", target: "planes_pendientes",
                            partial: "entrenador/borradores/fila", locals: { plan: self })
+      difundir_punto
     end
 
     def difundir_cambio
@@ -126,6 +162,15 @@ class PlanPersonalizado < ApplicationRecord
                              partial: "entrenador/borradores/fila", locals: { plan: self })
       else
         broadcast_remove_to("planes_pendientes", target: self)
+      end
+      difundir_punto
+    end
+
+    # Punto de notificación del navbar (Fase 5.11): se refresca con la cola
+    def difundir_punto
+      %w[punto_borradores punto_borradores_movil].each do |id|
+        broadcast_replace_to("planes_pendientes", target: id,
+                             partial: "shared/punto_borradores", locals: { id: id })
       end
     end
 

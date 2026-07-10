@@ -12,7 +12,11 @@ class PlanPersonalizadoPolicy < ApplicationPolicy
   def aprobar? = revisar?
 
   # Editor de plan (SDD Fase 5.6): el entrenador edita antes de publicar y el
-  # admin también después, desde Suscripciones. Publicar da visibilidad.
-  def editar? = user.staff?
+  # admin también después, desde Suscripciones. Desde la Fase 5.11 el miembro
+  # edita su PROPIO plan sugerido (reglas); los de IA siguen siendo del staff.
+  def editar?
+    user.staff? || (record.user_id == user.id && record.reglas?)
+  end
+
   def publicar? = revisar?
 end

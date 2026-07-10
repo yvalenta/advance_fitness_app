@@ -7,9 +7,13 @@ class RegistrosEntrenamientoController < ApplicationController
     @registro = Current.user.registros_entrenamiento.find_or_initialize_by(fecha: fecha)
     authorize @registro
 
-    @registro.marcar!(params[:indice],
-                      hecho: ActiveModel::Type::Boolean.new.cast(params[:hecho]),
-                      nota: params[:nota], nombre: params[:nombre])
+    if params.key?(:novedad)
+      @registro.marcar_novedad!(params[:novedad])
+    else
+      @registro.marcar!(params[:indice],
+                        hecho: ActiveModel::Type::Boolean.new.cast(params[:hecho]),
+                        nota: params[:nota], nombre: params[:nombre])
+    end
     head :ok
   end
 

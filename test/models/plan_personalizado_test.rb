@@ -169,4 +169,51 @@ class PlanPersonalizadoTest < ActiveSupport::TestCase
       plan.actualizar_comida!(0, { "kcal" => "450" })
     end
   end
+
+  # ── Plan sugerido con la membresía (Fase 5.11) ─────────────────────────
+  test "asegurar_sugerido! crea el plan reglas aprobado con membresía y objetivo" do
+    ObjetivoNutricional.fijar_para(users(:one), tipo: "superavit", peso_kg: 70)
+
+    plan = PlanPersonalizado.asegurar_sugerido!(users(:one))
+
+    assert plan.reglas?
+    assert plan.aprobado?
+    assert_nil plan.aprobado_por
+    assert_equal 6, plan.dias.size
+    assert_equal({}, plan.plan_nutricional)
+  end
+
+  test "asegurar_sugerido! no crea sin objetivo ni duplica si ya hay un plan" do
+    assert_nil PlanPersonalizado.asegurar_sugerido!(users(:one)) # sin objetivo
+
+    ObjetivoNutricional.fijar_para(users(:one), tipo: "deficit", peso_kg: 70)
+    crear_plan # ya existe un plan del miembro
+    assert_no_difference "PlanPersonalizado.count" do
+      assert_nil PlanPersonalizado.asegurar_sugerido!(users(:one))
+    end
+  end
+
+  test "asegurar_sugerido! no crea sin membresía activa" do
+    ObjetivoNutricional.fijar_para(users(:one), tipo: "deficit", peso_kg: 70)
+    users(:one).membresia.update!(estado: "vencida")
+
+    assert_nil PlanPersonalizado.asegurar_sugerido!(users(:one))
+  end
+
+  test "aplicar_sesion! reemplaza enfoque y ejercicios del día con el músculo" do
+    plan = plan_con_rutina
+    plantillas = [ plantillas_ejercicio(:press_banca) ]
+
+    plan.aplicar_sesion!(0, "pecho", plantillas)
+
+    dia = plan.reload.dias[0]
+    assert_equal "Pecho", dia["enfoque"]
+    assert_equal [ "Press de banca con barra" ], dia["ejercicios"].map { |e| e["nombre"] }
+    assert_equal "espalda", plan.dias[1]["enfoque"] # otro día intacto
+  end
+
+  test "aplicar_sesion! sin plantillas levanta RecordNotFound" do
+    plan = plan_con_rutina
+    assert_raises(ActiveRecord::RecordNotFound) { plan.aplicar_sesion!(0, "gluteo", []) }
+  end
 end

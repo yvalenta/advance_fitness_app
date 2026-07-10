@@ -37,8 +37,10 @@ class MembresiaTest < ActiveSupport::TestCase
     assert_not membresia.valid?
   end
 
-  test "los pagos son inmutables" do
+  # Fase 5.11: el historial pasó de inmutable a auditable — un monto irrisorio
+  # sigue sin ser válido y la anulación reemplaza al borrado (ver pago_test).
+  test "los pagos no aceptan montos irrisorios" do
     pago = pagos(:inicial_one)
-    assert_raises(ActiveRecord::ReadOnlyRecord) { pago.update!(monto: 1) }
+    assert_raises(ActiveRecord::RecordInvalid) { pago.update!(monto: 1) }
   end
 end

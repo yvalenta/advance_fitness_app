@@ -12,7 +12,7 @@ Rails.application.routes.draw do
 
   # Nutrición y objetivos (SDD §09, Fase 4)
   resource :perfil, only: %i[ edit update ], controller: "perfiles"
-  resource :objetivo, only: %i[ show new create ], controller: "objetivos"
+  resource :objetivo, only: %i[ show new create update ], controller: "objetivos"
   resources :registros_calorias, only: :create
 
   # Progreso (SDD §09 — mitad adelantada de la Fase 3, ver nota §11)
@@ -57,7 +57,7 @@ Rails.application.routes.draw do
     resources :membresias, only: %i[ index new create edit update ] do
       resource :renovacion, only: :create, controller: "renovaciones"
     end
-    resources :pagos, only: :index
+    resources :pagos, only: %i[ index edit update destroy ]
     resources :checkins, only: %i[ index create ]
     resources :suscripciones, only: %i[ index new create update ]
   end

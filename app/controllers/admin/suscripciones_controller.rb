@@ -23,11 +23,12 @@ class Admin::SuscripcionesController < ApplicationController
       @suscripcion.save!
       @medicion.user = @suscripcion.user
       @medicion.save!
+      asegurar_membresia(@suscripcion)
     end
 
     encolar_generacion(@suscripcion.user)
     redirect_to admin_suscripciones_path,
-                notice: "Suscripción creada con su medición. El plan con IA se está generando y quedará en revisión del entrenador."
+                notice: "Suscripción creada con su medición y membresía incluida. El plan con IA se está generando y quedará en revisión del entrenador."
   rescue ActiveRecord::RecordInvalid
     render :new, status: :unprocessable_entity
   end
@@ -54,5 +55,21 @@ class Admin::SuscripcionesController < ApplicationController
 
     def medicion_params
       params.expect(medicion: [ :fecha, :notas, *Medicion::MEDIDAS ])
+    end
+
+    # La membresía va incluida con el plan personalizado (SDD Flujo B, 5.11):
+    # sin membresía se crea activa; vencida/suspendida se reactiva y extiende.
+    # Sin pago aparte: el precio del plan la cubre.
+    def asegurar_membresia(suscripcion)
+      membresia = suscripcion.user.membresia
+      inicio = suscripcion.fecha_inicio || Date.current
+
+      if membresia.nil?
+        Membresia.create!(user: suscripcion.user, estado: "activa", fecha_inicio: inicio,
+                          fecha_vencimiento: inicio + Membresia.duracion)
+      elsif !membresia.activa?
+        membresia.update!(estado: "activa", fecha_inicio: Date.current,
+                          fecha_vencimiento: Date.current + Membresia.duracion)
+      end
     end
 end

@@ -40,7 +40,8 @@
         <% end %>
 
         <div class="rounded-xl bg-volt/10 p-3 text-sm text-steel-5">
-          Plan: <strong>Personalizado (<%= cop Plan.personalizado&.precio.to_i %>/mes)</strong>.
+          Plan: <strong>Personalizado (<%= cop Plan.personalizado.precio.to_i %>/mes)</strong> —
+          <strong>incluye la membresía</strong> (se crea o reactiva automáticamente, sin pago aparte).
           El pago se registra en recepción; al guardar, la IA genera el plan y queda en
           <em>borrador</em> hasta que el entrenador lo apruebe.
         </div>

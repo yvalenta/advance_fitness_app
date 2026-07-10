@@ -16,8 +16,10 @@
 <% propio = plan.user_id == usuario&.id %>
 
 <div id="<%= dom_id(plan, :mi_plan) %>" class="flex flex-col gap-6">
-  <%= render "planes_personalizados/rutina", rutina: plan.rutina %>
+  <%= render "planes_personalizados/rutina", rutina: plan.rutina, plan: plan, usuario: usuario %>
 
+  <%# El plan sugerido por reglas es solo entrenamiento: sin comidas no hay card %>
+  <% if comidas.any? %>
   <div class="card border border-base-300 bg-base-100 shadow-md"
        data-controller="plan-nutricional"
        data-plan-nutricional-objetivo-value="<%= objetivo_dia %>">
@@ -64,6 +66,8 @@
           <div class="h-full rounded-full bg-volt transition-[width] duration-500 ease-out" style="width: 0%"
                data-plan-nutricional-target="barra"></div>
         </div>
+        <%# Alerta viva (Fase 5.11): editar kcal por encima o por debajo del objetivo %>
+        <p hidden class="mt-2 rounded-lg px-3 py-2 text-xs font-semibold" data-plan-nutricional-target="alerta"></p>
       </div>
 
       <% if propio %>
@@ -119,6 +123,7 @@
                 <input type="text" placeholder="¿Qué comiste / cambiaste? (opcional)" maxlength="120"
                        data-plan-nutricional-target="nota" data-action="input->plan-nutricional#actualizar"
                        class="input input-bordered input-xs min-w-0 flex-1">
+                <p hidden class="w-full text-xs font-semibold" data-plan-nutricional-target="hint"></p>
               </div>
             <% end %>
           </div>
@@ -137,4 +142,5 @@
       <% end %>
     </div>
   </div>
+  <% end %>
 </div>

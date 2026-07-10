@@ -41,6 +41,35 @@ class Admin::SuscripcionesControllerTest < ActionDispatch::IntegrationTest
     assert_enqueued_with(job: GenerarPlanJob, args: [ plan.id ])
   end
 
+  # Fase 5.11: la membresía va incluida con la suscripción
+  test "el alta reactiva la membresía vencida del miembro" do
+    sign_in_as users(:admin)
+
+    post admin_suscripciones_path, params: {
+      suscripcion: { user_id: users(:two).id, fecha_inicio: Date.current },
+      medicion: { peso_kg: 68 }
+    }
+
+    membresia = users(:two).membresia.reload
+    assert membresia.activa?
+    assert_equal Date.current + Membresia.duracion, membresia.fecha_vencimiento
+  end
+
+  test "el alta crea la membresía si el miembro no tiene (incluida, sin pago)" do
+    users(:entrenador).update!(rol: "miembro") # un user sin membresía
+    sign_in_as users(:admin)
+
+    assert_difference "Membresia.count", 1 do
+      assert_no_difference "Pago.count" do
+        post admin_suscripciones_path, params: {
+          suscripcion: { user_id: users(:entrenador).id, fecha_inicio: Date.current },
+          medicion: { peso_kg: 80 }
+        }
+      end
+    end
+    assert users(:entrenador).membresia.activa?
+  end
+
   test "sin peso en la medición no crea la suscripción ni encola" do
     sign_in_as users(:admin)
 

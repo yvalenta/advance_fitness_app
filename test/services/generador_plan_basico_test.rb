@@ -3,28 +3,47 @@ require "test_helper"
 class GeneradorPlanBasicoTest < ActiveSupport::TestCase
   setup do
     %w[pecho espalda pierna hombro biceps triceps core gluteo].each do |musculo|
-      PlantillaEjercicio.create!(musculo: musculo, nombre: "Ej #{musculo}",
-                                 series: 3, repeticiones: "10", descanso_seg: 60)
+      PlantillaEjercicio.find_or_create_by!(musculo: musculo, nombre: "Ej #{musculo}") do |p|
+        p.series = 3
+        p.repeticiones = "10"
+        p.descanso_seg = 60
+      end
     end
   end
 
-  test "principiante mayor recibe full-body de 3 días con ejercicios" do
-    rutina = GeneradorPlanBasico.para(User.new(fecha_nacimiento: 55.years.ago.to_date))
+  def objetivo(tipo) = ObjetivoNutricional.new(tipo: tipo)
 
-    assert_equal %w[lunes miercoles viernes], rutina["dias"].map { |dia| dia["dia"] }
-    assert rutina["dias"].all? { |dia| dia["ejercicios"].any? }
+  test "superavit arma 6 días Push/Pull/Legs con ejercicios" do
+    rutina = GeneradorPlanBasico.para(users(:one), objetivo: objetivo("superavit"))
+
+    assert_equal %w[lunes martes miercoles jueves viernes sabado], rutina["dias"].map { |d| d["dia"] }
+    assert_match(/Empuje/, rutina["dias"][0]["enfoque"])
+    assert_match(/Jalón/, rutina["dias"][1]["enfoque"])
+    assert rutina["dias"].all? { |d| d["ejercicios"].any? }
   end
 
-  test "adulto joven recibe split de 4 días con la forma de ejercicio válida" do
-    rutina = GeneradorPlanBasico.para(User.new(fecha_nacimiento: 28.years.ago.to_date))
+  test "deficit arma 6 días full-body alterno" do
+    rutina = GeneradorPlanBasico.para(users(:one), objetivo: objetivo("deficit"))
 
-    assert_equal 4, rutina["dias"].size
+    assert_equal 6, rutina["dias"].size
+    assert rutina["dias"].all? { |d| d["enfoque"].include?("Cuerpo completo") }
+  end
+
+  test "sin objetivo usa torso/pierna y la forma de ejercicio es válida" do
+    rutina = GeneradorPlanBasico.para(User.new)
+
+    assert_equal 6, rutina["dias"].size
     ejercicio = rutina["dias"].first["ejercicios"].first
-    assert_equal %w[nombre series repeticiones descanso_seg].sort, ejercicio.keys.sort
+    assert_equal %w[descanso_seg nombre repeticiones series], ejercicio.keys.sort
     assert ejercicio["nombre"].present?
   end
 
-  test "sin edad conocida usa full-body" do
-    assert GeneradorPlanBasico.fullbody?(User.new(fecha_nacimiento: nil))
+  test "la semana rota ejercicios entre repeticiones del mismo enfoque" do
+    2.times { |i| PlantillaEjercicio.find_or_create_by!(musculo: "pecho", nombre: "Press extra #{i}") { |p| p.repeticiones = "8" } }
+    rutina = GeneradorPlanBasico.para(users(:one), objetivo: objetivo("superavit"))
+
+    lunes = rutina["dias"][0]["ejercicios"].map { |e| e["nombre"] }
+    jueves = rutina["dias"][3]["ejercicios"].map { |e| e["nombre"] }
+    assert_not_equal lunes, jueves
   end
 end

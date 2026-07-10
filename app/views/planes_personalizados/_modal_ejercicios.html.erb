@@ -1,41 +1,69 @@
-<%# Modal selector de plantillas de ejercicio, agrupadas por músculo (5.7b). %>
-<%# locals: (plantillas:) %>
+<%# Popup de biblioteca de ejercicios (rediseño 5.11): buscador + chips por %>
+<%# músculo + tarjetas con series×reps + "Usar sesión completa" que reemplaza %>
+<%# el día entero. locals: (plantillas:) %>
 <dialog class="modal" data-modal-ejercicios-target="dialogo">
-  <div class="modal-box max-w-lg">
-    <div class="mb-3 flex items-center justify-between">
-      <h3 class="font-display text-lg font-bold">Elegir un ejercicio</h3>
-      <button type="button" class="btn btn-circle btn-ghost btn-sm" data-action="modal-ejercicios#cerrar" aria-label="Cerrar">✕</button>
-    </div>
+  <div class="modal-box flex max-h-[85vh] max-w-2xl flex-col p-0">
+    <header class="sticky top-0 z-10 border-b border-base-200 bg-base-100 p-4 pb-3">
+      <div class="mb-3 flex items-center justify-between">
+        <h3 class="font-display text-lg font-bold">Biblioteca de ejercicios</h3>
+        <button type="button" class="btn btn-circle btn-ghost btn-sm" data-action="modal-ejercicios#cerrar" aria-label="Cerrar">✕</button>
+      </div>
 
-    <% if plantillas.any? %>
-      <label class="input input-bordered input-sm mb-3 flex items-center gap-2">
+      <label class="input input-bordered input-sm flex items-center gap-2">
         <%= render "shared/icono", nombre: :busqueda, clase: "size-4 text-steel-3" %>
-        <input type="search" class="grow" placeholder="Buscar ejercicio o músculo…"
+        <input type="search" class="grow" placeholder="Buscar ejercicio…"
                data-modal-ejercicios-target="buscador" data-action="input->modal-ejercicios#filtrar">
       </label>
 
-      <div class="flex max-h-[60vh] flex-col gap-4 overflow-y-auto pr-1">
+      <%# Chips de filtro por músculo %>
+      <div class="mt-2.5 flex flex-wrap gap-1.5">
+        <button type="button" class="btn btn-xs rounded-full btn-primary" data-musculo="todos"
+                data-modal-ejercicios-target="chip" data-action="modal-ejercicios#filtrarMusculo">Todos</button>
+        <% PlantillaEjercicio::MUSCULOS.each do |musculo| %>
+          <% next if plantillas.none? { |p| p.musculo == musculo } %>
+          <button type="button" class="btn btn-ghost btn-xs rounded-full border border-base-300" data-musculo="<%= musculo %>"
+                  data-modal-ejercicios-target="chip" data-action="modal-ejercicios#filtrarMusculo">
+            <%= PlantillaEjercicio::NOMBRES_MUSCULO[musculo] %>
+          </button>
+        <% end %>
+      </div>
+    </header>
+
+    <% if plantillas.any? %>
+      <div class="flex flex-col gap-5 overflow-y-auto p-4">
         <% PlantillaEjercicio::MUSCULOS.each do |musculo| %>
           <% del_musculo = plantillas.select { |p| p.musculo == musculo } %>
           <% next if del_musculo.empty? %>
-          <div>
-            <p class="eyebrow mb-1.5 text-steel-3"><%= PlantillaEjercicio::NOMBRES_MUSCULO[musculo] %></p>
-            <div class="flex flex-col gap-1" data-modal-ejercicios-target="grupo" data-musculo="<%= musculo %>">
+          <div data-seccion-musculo="<%= musculo %>">
+            <div class="mb-2 flex items-center justify-between gap-2">
+              <p class="eyebrow text-steel-3"><%= PlantillaEjercicio::NOMBRES_MUSCULO[musculo] %></p>
+              <button type="button"
+                      class="btn btn-outline btn-xs gap-1 border-volt-d/40 text-volt-d hover:border-volt-d hover:bg-volt/10"
+                      data-action="modal-ejercicios#aplicarSesion" data-musculo="<%= musculo %>">
+                <%= render "shared/icono", nombre: :rayo, clase: "size-3" %>
+                Usar sesión completa (<%= del_musculo.size %>)
+              </button>
+            </div>
+            <div class="grid gap-1.5 sm:grid-cols-2" data-modal-ejercicios-target="grupo" data-musculo="<%= musculo %>">
               <% del_musculo.each do |p| %>
-                <button type="button" class="btn btn-ghost btn-sm w-full justify-between font-normal"
+                <button type="button"
+                        class="group flex items-center justify-between gap-2 rounded-xl border border-base-300 px-3 py-2 text-left text-sm transition-colors hover:border-volt-d/50 hover:bg-volt/5"
                         data-action="modal-ejercicios#aplicar"
                         data-nombre="<%= p.nombre %>" data-series="<%= p.series %>"
                         data-repeticiones="<%= p.repeticiones %>" data-descanso="<%= p.descanso_seg %>">
-                  <span><%= p.nombre %></span>
-                  <span class="text-xs text-steel-3"><%= p.series %>×<%= p.repeticiones %></span>
+                  <span class="min-w-0 flex-1 truncate font-medium"><%= p.nombre %></span>
+                  <span class="shrink-0 rounded-full bg-volt/15 px-2 py-0.5 text-xs font-bold text-volt-d"><%= p.series %>×<%= p.repeticiones %></span>
                 </button>
               <% end %>
             </div>
           </div>
         <% end %>
+        <p class="hidden py-6 text-center text-sm text-steel-3" data-modal-ejercicios-target="vacio">
+          Nada coincide con tu búsqueda.
+        </p>
       </div>
     <% else %>
-      <p class="py-6 text-center text-sm text-steel-3">Aún no hay plantillas de ejercicio.</p>
+      <p class="p-8 text-center text-sm text-steel-3">Aún no hay plantillas de ejercicio.</p>
     <% end %>
   </div>
   <form method="dialog" class="modal-backdrop"><button aria-label="Cerrar">cerrar</button></form>

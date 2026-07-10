@@ -1,14 +1,21 @@
 import { Controller } from "@hotwired/stimulus"
+import { Turbo } from "@hotwired/turbo-rails"
 
-// Selector de plantillas de EJERCICIO en un modal (<dialog> DaisyUI), agrupadas
-// por músculo. Espeja modal_plantillas pero con los campos de ejercicio.
-// Convive con "autosave" en el mismo elemento.
+// Biblioteca de ejercicios en un popup (5.7b, rediseño 5.11): buscador en vivo,
+// chips de filtro por músculo, aplicar UN ejercicio a la card destino o la
+// SESIÓN completa de un músculo al día entero (Turbo Stream refresca solo ese
+// panel). Convive con "autosave" en el mismo elemento.
 export default class extends Controller {
-  static targets = ["dialogo", "grupo", "buscador"]
+  static targets = ["dialogo", "grupo", "buscador", "chip", "vacio"]
+
+  connect() {
+    this.musculo = "todos"
+  }
 
   abrir(event) {
     this.destino = event.target.closest("[data-autosave-target='card']")
-    if (this.hasBuscadorTarget) { this.buscadorTarget.value = ""; this.filtrar() }
+    this.diaUrl = event.target.closest("[data-dia-url]")?.dataset.diaUrl
+    if (this.hasBuscadorTarget) { this.buscadorTarget.value = ""; this.musculo = "todos"; this.pintarChips(); this.filtrar() }
     this.dialogoTarget.showModal()
     this.buscadorTarget?.focus()
   }
@@ -17,17 +24,43 @@ export default class extends Controller {
     this.dialogoTarget.close()
   }
 
-  // Búsqueda en vivo por músculo/nombre: oculta botones y grupos vacíos.
+  // ── Filtros: texto + músculo ──────────────────────────────────────────
   filtrar() {
     const consulta = this.normalizar(this.buscadorTarget.value)
+    let visiblesTotal = 0
+
     this.grupoTargets.forEach((grupo) => {
+      const seccion = grupo.closest("[data-seccion-musculo]")
+      if (this.musculo !== "todos" && grupo.dataset.musculo !== this.musculo) {
+        seccion.hidden = true
+        return
+      }
       let visibles = 0
-      grupo.querySelectorAll("button").forEach((boton) => {
+      grupo.querySelectorAll("button[data-nombre]").forEach((boton) => {
         const coincide = this.normalizar(boton.textContent).includes(consulta)
         boton.hidden = !coincide
         if (coincide) visibles++
       })
-      grupo.parentElement.hidden = visibles === 0
+      seccion.hidden = visibles === 0
+      visiblesTotal += visibles
+    })
+
+    if (this.hasVacioTarget) this.vacioTarget.classList.toggle("hidden", visiblesTotal > 0)
+  }
+
+  filtrarMusculo(event) {
+    this.musculo = event.currentTarget.dataset.musculo
+    this.pintarChips()
+    this.filtrar()
+  }
+
+  pintarChips() {
+    this.chipTargets.forEach((chip) => {
+      const activo = chip.dataset.musculo === this.musculo
+      chip.classList.toggle("btn-primary", activo)
+      chip.classList.toggle("btn-ghost", !activo)
+      chip.classList.toggle("border", !activo)
+      chip.classList.toggle("border-base-300", !activo)
     })
   }
 
@@ -35,6 +68,7 @@ export default class extends Controller {
     return (texto || "").toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "").trim()
   }
 
+  // ── Aplicar un ejercicio a la card destino ────────────────────────────
   aplicar(event) {
     const o = event.currentTarget.dataset
     if (!this.destino) return
@@ -48,6 +82,32 @@ export default class extends Controller {
       ?.dispatchEvent(new Event("input", { bubbles: true }))
   }
 
+  // ── Sesión completa: reemplaza el día entero (Fase 5.11) ──────────────
+  async aplicarSesion(event) {
+    if (!this.diaUrl) return
+    const boton = event.currentTarget
+    boton.disabled = true
+
+    const respuesta = await fetch(this.diaUrl, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "text/vnd.turbo-stream.html",
+        "X-CSRF-Token": document.querySelector("meta[name='csrf-token']")?.content
+      },
+      body: JSON.stringify({ dia: { sesion_musculo: boton.dataset.musculo } })
+    })
+
+    boton.disabled = false
+    if (respuesta.ok) {
+      Turbo.renderStreamMessage(await respuesta.text())
+      this.cerrar()
+    } else {
+      this.confirmar(boton, "No se pudo aplicar")
+    }
+  }
+
+  // ── Guardar la card destino como plantilla nueva ──────────────────────
   async guardarPlantilla(event) {
     const boton = event.currentTarget
     const card = boton.closest("[data-autosave-target='card']")
@@ -83,13 +143,13 @@ export default class extends Controller {
     if (!grupo) return
     const boton = document.createElement("button")
     boton.type = "button"
-    boton.className = "btn btn-ghost btn-sm w-full justify-between font-normal"
+    boton.className = "group flex items-center justify-between gap-2 rounded-xl border border-base-300 px-3 py-2 text-left text-sm transition-colors hover:border-volt-d/50 hover:bg-volt/5"
     boton.dataset.action = "modal-ejercicios#aplicar"
     boton.dataset.nombre = plantilla.nombre
     boton.dataset.series = plantilla.series
     boton.dataset.repeticiones = plantilla.repeticiones
     boton.dataset.descanso = plantilla.descanso_seg
-    boton.innerHTML = `<span>${plantilla.nombre}</span><span class="text-xs text-steel-3">${plantilla.series}×${plantilla.repeticiones}</span>`
+    boton.innerHTML = `<span class="min-w-0 flex-1 truncate font-medium">${plantilla.nombre}</span><span class="shrink-0 rounded-full bg-volt/15 px-2 py-0.5 text-xs font-bold text-volt-d">${plantilla.series}×${plantilla.repeticiones}</span>`
     grupo.appendChild(boton)
   }
 

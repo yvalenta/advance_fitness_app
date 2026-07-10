@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_09_130001) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_10_120001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -82,6 +82,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_09_130001) do
   end
 
   create_table "pagos", force: :cascade do |t|
+    t.datetime "anulado_en"
+    t.bigint "anulado_por_id"
     t.datetime "created_at", null: false
     t.date "fecha_pago", null: false
     t.bigint "membresia_id", null: false
@@ -91,6 +93,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_09_130001) do
     t.date "periodo_inicio", null: false
     t.bigint "registrado_por_id", null: false
     t.datetime "updated_at", null: false
+    t.index ["anulado_por_id"], name: "index_pagos_on_anulado_por_id"
     t.index ["membresia_id"], name: "index_pagos_on_membresia_id"
     t.index ["registrado_por_id"], name: "index_pagos_on_registrado_por_id"
   end
@@ -216,6 +219,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_09_130001) do
   add_foreign_key "membresias", "users"
   add_foreign_key "objetivos_nutricionales", "users"
   add_foreign_key "pagos", "membresias"
+  add_foreign_key "pagos", "users", column: "anulado_por_id"
   add_foreign_key "pagos", "users", column: "registrado_por_id"
   add_foreign_key "planes_personalizados", "users"
   add_foreign_key "planes_personalizados", "users", column: "aprobado_por_id"

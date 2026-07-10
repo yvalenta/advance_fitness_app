@@ -20,4 +20,26 @@ class RegistrosCaloriasControllerTest < ActionDispatch::IntegrationTest
     assert_equal 200, registro.kcal_consumidas
     assert_equal({}, registro.detalle)
   end
+
+  # Fase 5.11: el historial es editable por fecha
+  test "corrige las kcal de un día pasado sin duplicar" do
+    RegistroCaloria.registrar(users(:one), kcal: 1500, fecha: Date.yesterday)
+    sign_in_as users(:one)
+
+    assert_no_difference "RegistroCaloria.count" do
+      post registros_calorias_path,
+           params: { registro_caloria: { kcal_consumidas: 1800, fecha: Date.yesterday.iso8601 } }
+    end
+    assert_equal 1800, users(:one).registros_calorias.find_by(fecha: Date.yesterday).kcal_consumidas
+  end
+
+  test "no permite registrar un día futuro" do
+    sign_in_as users(:one)
+
+    assert_no_difference "RegistroCaloria.count" do
+      post registros_calorias_path,
+           params: { registro_caloria: { kcal_consumidas: 1800, fecha: Date.tomorrow.iso8601 } }
+    end
+    assert_redirected_to objetivo_path
+  end
 end

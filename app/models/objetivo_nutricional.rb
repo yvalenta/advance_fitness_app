@@ -26,6 +26,12 @@ class ObjetivoNutricional < ApplicationRecord
 
   def nombre = NOMBRES.fetch(tipo, tipo)
 
+  # El miembro puede ajustar a mano su objetivo diario (Fase 5.11); esto
+  # detecta si el valor vigente difiere del calculado con su snapshot.
+  def ajustado_manualmente?
+    objetivo_kcal != ObjetivoCalorico.kcal(tdee: tdee_kcal, tipo: tipo, somatotipo: user.somatotipo)
+  end
+
   def kcal_restantes(consumidas)
     objetivo_kcal - consumidas.to_i
   end

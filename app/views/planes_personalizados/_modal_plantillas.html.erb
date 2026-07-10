@@ -1,42 +1,64 @@
-<%# Modal selector de plantillas de comida (SDD Fase 5.6). Vive dentro del %>
-<%# editor (controlador modal-plantillas). %>
-<%# locals: (plantillas:) %>
+<%# Popup de biblioteca de comidas (rediseño 5.11, espeja el de ejercicios): %>
+<%# buscador + chips por tipo + tarjetas con kcal y macros. locals: (plantillas:) %>
 <dialog class="modal" data-modal-plantillas-target="dialogo">
-  <div class="modal-box max-w-lg">
-    <div class="mb-3 flex items-center justify-between">
-      <h3 class="font-display text-lg font-bold">Elegir una comida de ejemplo</h3>
-      <button type="button" class="btn btn-circle btn-ghost btn-sm" data-action="modal-plantillas#cerrar" aria-label="Cerrar">✕</button>
-    </div>
+  <div class="modal-box flex max-h-[85vh] max-w-2xl flex-col p-0">
+    <header class="sticky top-0 z-10 border-b border-base-200 bg-base-100 p-4 pb-3">
+      <div class="mb-3 flex items-center justify-between">
+        <h3 class="font-display text-lg font-bold">Biblioteca de comidas</h3>
+        <button type="button" class="btn btn-circle btn-ghost btn-sm" data-action="modal-plantillas#cerrar" aria-label="Cerrar">✕</button>
+      </div>
 
-    <% if plantillas.any? %>
-      <label class="input input-bordered input-sm mb-3 flex items-center gap-2">
+      <label class="input input-bordered input-sm flex items-center gap-2">
         <%= render "shared/icono", nombre: :busqueda, clase: "size-4 text-steel-3" %>
         <input type="search" class="grow" placeholder="Buscar comida…"
                data-modal-plantillas-target="buscador" data-action="input->modal-plantillas#filtrar">
       </label>
 
-      <div class="flex max-h-[60vh] flex-col gap-4 overflow-y-auto pr-1">
+      <%# Chips de filtro por tipo de comida %>
+      <div class="mt-2.5 flex flex-wrap gap-1.5">
+        <button type="button" class="btn btn-xs rounded-full btn-primary" data-tipo="todos"
+                data-modal-plantillas-target="chip" data-action="modal-plantillas#filtrarTipo">Todas</button>
         <% PlantillaComida::TIPOS.each do |tipo| %>
-          <% del_tipo = plantillas.select { |plantilla| plantilla.tipo == tipo } %>
-          <div>
-            <p class="eyebrow mb-1.5 text-steel-3"><%= PlantillaComida::NOMBRES_TIPO[tipo] %></p>
-            <div class="flex flex-col gap-1" data-modal-plantillas-target="grupo" data-tipo="<%= tipo %>">
+          <% next if plantillas.none? { |p| p.tipo == tipo } %>
+          <button type="button" class="btn btn-ghost btn-xs rounded-full border border-base-300" data-tipo="<%= tipo %>"
+                  data-modal-plantillas-target="chip" data-action="modal-plantillas#filtrarTipo">
+            <%= PlantillaComida::NOMBRES_TIPO[tipo] %>
+          </button>
+        <% end %>
+      </div>
+    </header>
+
+    <% if plantillas.any? %>
+      <div class="flex flex-col gap-5 overflow-y-auto p-4">
+        <% PlantillaComida::TIPOS.each do |tipo| %>
+          <% del_tipo = plantillas.select { |p| p.tipo == tipo } %>
+          <% next if del_tipo.empty? %>
+          <div data-seccion-tipo="<%= tipo %>">
+            <p class="eyebrow mb-2 text-steel-3"><%= PlantillaComida::NOMBRES_TIPO[tipo] %></p>
+            <div class="grid gap-1.5 sm:grid-cols-2" data-modal-plantillas-target="grupo" data-tipo="<%= tipo %>">
               <% del_tipo.each do |plantilla| %>
-                <button type="button" class="btn btn-ghost btn-sm w-full justify-between font-normal"
+                <button type="button"
+                        class="group flex flex-col gap-1 rounded-xl border border-base-300 px-3 py-2 text-left text-sm transition-colors hover:border-volt-d/50 hover:bg-volt/5"
                         data-action="modal-plantillas#aplicar"
                         data-descripcion="<%= plantilla.descripcion %>" data-kcal="<%= plantilla.kcal %>"
                         data-p="<%= plantilla.proteinas_g.to_f %>" data-c="<%= plantilla.carbohidratos_g.to_f %>"
                         data-g="<%= plantilla.grasas_g.to_f %>">
-                  <span><%= plantilla.nombre %></span>
-                  <span class="text-xs text-steel-3"><%= plantilla.kcal %> kcal</span>
+                  <span class="flex w-full items-center justify-between gap-2">
+                    <span class="min-w-0 flex-1 truncate font-medium"><%= plantilla.nombre %></span>
+                    <span class="shrink-0 rounded-full bg-pulse/15 px-2 py-0.5 text-xs font-bold text-pulse"><%= plantilla.kcal %> kcal</span>
+                  </span>
+                  <span class="text-xs text-steel-3">P <%= plantilla.proteinas_g.to_f %>g · C <%= plantilla.carbohidratos_g.to_f %>g · G <%= plantilla.grasas_g.to_f %>g</span>
                 </button>
               <% end %>
             </div>
           </div>
         <% end %>
+        <p class="hidden py-6 text-center text-sm text-steel-3" data-modal-plantillas-target="vacio">
+          Nada coincide con tu búsqueda.
+        </p>
       </div>
     <% else %>
-      <p class="py-6 text-center text-sm text-steel-3">Aún no hay plantillas. Guarda una comida como plantilla para reutilizarla.</p>
+      <p class="p-8 text-center text-sm text-steel-3">Aún no hay plantillas. Guarda una comida como plantilla para reutilizarla.</p>
     <% end %>
   </div>
   <form method="dialog" class="modal-backdrop"><button aria-label="Cerrar">cerrar</button></form>
