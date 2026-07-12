@@ -54,4 +54,17 @@ class GestionComidasControllerTest < ActionDispatch::IntegrationTest
     end
     assert_response :redirect
   end
+
+  # Fase 5.12: el miembro edita la RUTINA de su plan de IA una vez publicado,
+  # pero la NUTRICIÓN de un plan de IA sigue siendo exclusiva del staff.
+  test "ni publicado el miembro edita la nutrición de su plan de IA" do
+    publicado = PlanPersonalizado.create!(user: users(:one), generado_por: "ia", estado: "aprobado",
+                                          aprobado_por: users(:entrenador), rutina: RUTINA, plan_nutricional: NUTRICION)
+    sign_in_as users(:one)
+
+    assert_no_changes -> { publicado.reload.comidas.first["kcal"] } do
+      patch plan_personalizado_comida_path(publicado, 0), as: :json, params: { comida: { kcal: "999" } }
+    end
+    assert_response :redirect
+  end
 end

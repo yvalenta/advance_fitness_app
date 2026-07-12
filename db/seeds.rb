@@ -25,7 +25,7 @@ end
 
 # Catálogo de planes (SDD §07 — monetización). Idempotente; los precios se
 # sincronizan desde la config del negocio en cada corrida (update! no solo create).
-Plan.find_or_create_by!(codigo: "free").update!(
+Plan.find_or_initialize_by(codigo: "free").update!(
   nombre: "Free",
   precio: 0,
   beneficios: [
@@ -36,7 +36,7 @@ Plan.find_or_create_by!(codigo: "free").update!(
   ]
 )
 
-Plan.find_or_create_by!(codigo: "personalizado").update!(
+Plan.find_or_initialize_by(codigo: "personalizado").update!(
   nombre: "Personalizado",
   precio: Negocio.precio_personalizado,
   beneficios: [

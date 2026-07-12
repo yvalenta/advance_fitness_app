@@ -6,9 +6,11 @@ x-app: &app
     - .:/rails
     - bundle:/usr/local/bundle
   environment:
-    # Dentro de los contenedores manda el Postgres del compose; el
-    # DATABASE_URL de Supabase del .env queda para producción/host.
-    DATABASE_URL: postgres://postgres:postgres@db:5432/advance_fitness_app_development
+    # Base de desarrollo: por defecto el Postgres del compose. Si en .env se
+    # define DEV_DATABASE_URL (p. ej. el pooler de Supabase de producción),
+    # los contenedores apuntan allá. ⚠️ Con Supabase activo NO correr
+    # db:drop / db:reset / dip provision. Los tests SIEMPRE van a la base local.
+    DATABASE_URL: ${DEV_DATABASE_URL:-postgres://postgres:postgres@db:5432/advance_fitness_app_development}
     TEST_DATABASE_URL: postgres://postgres:postgres@db:5432/advance_fitness_app_test
     # GenerarPlanJob (Fase 5): compose las toma del .env del host si existen
     IA_PROVEEDOR: ${IA_PROVEEDOR:-}

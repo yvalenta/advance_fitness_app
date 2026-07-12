@@ -35,24 +35,63 @@
     </div>
   </div>
 
-  <%# ── Registrar peso (Fase 5.9) ─────────────────────────────── %>
+  <%# ── Registrar peso (Fase 5.9; fecha elegible desde 5.12) ────────────── %>
   <%= form_with url: mediciones_path, class: "card animate-fade-up mt-4 border border-base-300 bg-base-100 shadow-sm" do |form| %>
     <div class="card-body flex-row flex-wrap items-end gap-3">
       <div class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-ocean/15 text-ocean">
         <%= render "shared/icono", nombre: :actividad, clase: "size-5" %>
       </div>
       <label class="form-control">
-        <span class="label-text mb-1 text-xs font-semibold">Peso de hoy (kg)</span>
+        <span class="label-text mb-1 text-xs font-semibold">Fecha</span>
+        <%= form.date_field "medicion[fecha]", value: Date.current, max: Date.current,
+              class: "input input-bordered input-sm" %>
+      </label>
+      <label class="form-control">
+        <span class="label-text mb-1 text-xs font-semibold">Peso (kg)</span>
         <%= form.number_field "medicion[peso_kg]", step: 0.1, min: 0, required: true, value: @ultima_medicion&.peso_kg,
-              class: "input input-bordered input-sm w-32" %>
+              class: "input input-bordered input-sm w-28" %>
       </label>
       <label class="form-control">
         <span class="label-text mb-1 text-xs font-semibold">Grasa % (opcional)</span>
         <%= form.number_field "medicion[grasa_pct]", step: 0.1, min: 0,
-              class: "input input-bordered input-sm w-32" %>
+              class: "input input-bordered input-sm w-28" %>
       </label>
       <%= form.submit "Registrar peso", class: "btn btn-primary btn-sm font-bold" %>
-      <p class="w-full text-xs text-steel-3 sm:flex-1 sm:text-right">Queda en tu historial de progreso.</p>
+      <p class="w-full text-xs text-steel-3 sm:flex-1 sm:text-right">Agrega un peso pasado o corrige uno ya registrado eligiendo su fecha.</p>
+    </div>
+  <% end %>
+
+  <%# ── Historial de pesos editable (Fase 5.12) ──────────────────────────── %>
+  <% if @mediciones.any? %>
+    <div class="card animate-fade-up fade-delay-1 mt-4 border border-base-300 bg-base-100 shadow-sm">
+      <div class="card-body">
+        <h2 class="card-title text-base">
+          <span class="flex size-7 items-center justify-center rounded-lg bg-base-200 text-steel-5">
+            <%= render "shared/icono", nombre: :calendario, clase: "size-4" %>
+          </span>
+          Tus últimos pesos
+        </h2>
+        <ul class="flex flex-col divide-y divide-base-200 text-sm">
+          <% @mediciones.reverse_each do |medicion| %>
+            <li class="flex flex-wrap items-center justify-between gap-2 py-2">
+              <span class="text-steel-5"><%= l medicion.fecha, format: :long %></span>
+              <%= form_with url: mediciones_path, class: "flex items-center gap-1.5" do %>
+                <input type="hidden" name="medicion[fecha]" value="<%= medicion.fecha.iso8601 %>">
+                <input type="number" name="medicion[peso_kg]" value="<%= medicion.peso_kg %>"
+                       min="0" step="0.1" required aria-label="Peso del <%= l medicion.fecha %>"
+                       class="input input-bordered input-xs w-20 text-right font-mono">
+                <span class="text-xs text-steel-3">kg</span>
+                <button type="submit" class="btn btn-ghost btn-xs" title="Guardar corrección">
+                  <%= render "shared/icono", nombre: :check, clase: "size-3.5" %>
+                </button>
+              <% end %>
+              <% if medicion.imc %>
+                <span class="badge badge-sm badge-ghost">IMC <%= medicion.imc %></span>
+              <% end %>
+            </li>
+          <% end %>
+        </ul>
+      </div>
     </div>
   <% end %>
 

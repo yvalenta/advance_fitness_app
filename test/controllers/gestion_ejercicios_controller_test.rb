@@ -43,11 +43,24 @@ class GestionEjerciciosControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
-  test "un miembro no puede editar la rutina" do
+  test "un miembro no puede editar la rutina de un plan sin publicar" do
     sign_in_as users(:one)
     assert_no_changes -> { @plan.reload.ejercicios_de(0).first["series"] } do
       patch plan_personalizado_dia_ejercicio_path(@plan, 0, 0), as: :json, params: { ejercicio: { series: "9" } }
     end
     assert_response :redirect
+  end
+
+  # Fase 5.12: publicado, el dueño edita la rutina aunque sea de IA
+  test "el dueño edita un ejercicio de su plan de IA ya publicado" do
+    publicado = PlanPersonalizado.create!(user: users(:one), generado_por: "ia", estado: "aprobado",
+                                          aprobado_por: users(:entrenador), rutina: RUTINA,
+                                          plan_nutricional: { "kcal_diarias" => 0, "comidas" => [] })
+    sign_in_as users(:one)
+
+    patch plan_personalizado_dia_ejercicio_path(publicado, 0, 0), as: :json, params: { ejercicio: { series: "9" } }
+
+    assert_response :success
+    assert_equal 9, publicado.reload.ejercicios_de(0).first["series"]
   end
 end

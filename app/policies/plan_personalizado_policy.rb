@@ -11,11 +11,20 @@ class PlanPersonalizadoPolicy < ApplicationPolicy
   def revisar? = user.entrenador? || user.admin?
   def aprobar? = revisar?
 
-  # Editor de plan (SDD Fase 5.6): el entrenador edita antes de publicar y el
-  # admin también después, desde Suscripciones. Desde la Fase 5.11 el miembro
-  # edita su PROPIO plan sugerido (reglas); los de IA siguen siendo del staff.
+  # Editor completo (JSON crudo) y NUTRICIÓN (SDD Fase 5.6): el entrenador
+  # edita antes de publicar y el admin también después, desde Suscripciones.
+  # Desde la Fase 5.11 el miembro edita la nutrición de su PROPIO plan
+  # sugerido (reglas, aunque nace vacía); la de un plan de IA sigue siendo
+  # solo del staff.
   def editar?
     user.staff? || (record.user_id == user.id && record.reglas?)
+  end
+
+  # RUTINA (días/ejercicios): desde la Fase 5.12 el miembro edita la rutina de
+  # CUALQUIERA de sus planes publicados (sugerido o de IA) — músculos del día,
+  # ejercicios y sesiones. La nutrición del plan de IA sigue siendo del staff.
+  def editar_rutina?
+    user.staff? || (record.user_id == user.id && record.aprobado?)
   end
 
   def publicar? = revisar?

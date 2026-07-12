@@ -12,19 +12,18 @@ class PlanesPersonalizadosController < ApplicationController
 
     if @plan
       authorize @plan, :show?
-      preparar_edicion_sugerido
+      preparar_edicion_rutina
     else
       skip_authorization # vista free: solo contenido estático del propio usuario
     end
   end
 
   private
-    # El plan sugerido (reglas) es editable por su dueño (Fase 5.11): el editor
-    # inline necesita las plantillas del popup.
-    def preparar_edicion_sugerido
-      return unless @plan.reglas?
-
-      @editable = PlanPersonalizadoPolicy.new(Current.user, @plan).editar?
+    # La rutina de CUALQUIER plan publicado propio es editable por su dueño
+    # (Fase 5.12: sugerido o de IA); el editor inline necesita las plantillas
+    # del popup. La nutrición del plan de IA sigue siendo solo del staff.
+    def preparar_edicion_rutina
+      @editable = PlanPersonalizadoPolicy.new(Current.user, @plan).editar_rutina?
       @plantillas_ejercicio = PlantillaEjercicio.ordenadas if @editable
     end
 end

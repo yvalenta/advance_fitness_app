@@ -49,17 +49,40 @@ class GestionDiasControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Pecho fuerte", plan.reload.dias[0]["enfoque"]
   end
 
-  test "el miembro NO edita su plan de IA ni el plan reglas de otro" do
+  test "el miembro NO edita su plan de IA aún en borrador (sin publicar)" do
     sign_in_as users(:one)
 
-    # Su propio plan pero generado por IA (borrador del flujo premium)
+    # @plan es "borrador" por defecto: aún no visible/editable para el miembro
     patch plan_personalizado_dia_path(@plan, 0), as: :json, params: { dia: { enfoque: "hackeo" } }
     assert_response :redirect
     assert_equal "pecho", @plan.reload.dias[0]["enfoque"]
+  end
 
-    ajeno = PlanPersonalizado.create!(user: users(:two), generado_por: "reglas",
-                                      estado: "aprobado", rutina: RUTINA, plan_nutricional: {})
-    patch plan_personalizado_dia_path(ajeno, 0), as: :json, params: { dia: { enfoque: "hackeo" } }
+  test "el miembro NO edita el plan (ni reglas ni IA) aprobado de otro" do
+    sign_in_as users(:one)
+
+    ajeno_reglas = PlanPersonalizado.create!(user: users(:two), generado_por: "reglas",
+                                             estado: "aprobado", rutina: RUTINA, plan_nutricional: {})
+    patch plan_personalizado_dia_path(ajeno_reglas, 0), as: :json, params: { dia: { enfoque: "hackeo" } }
     assert_response :redirect
+
+    ajeno_ia = PlanPersonalizado.create!(user: users(:two), generado_por: "ia", estado: "aprobado",
+                                         aprobado_por: users(:entrenador), rutina: RUTINA,
+                                         plan_nutricional: { "kcal_diarias" => 0, "comidas" => [] })
+    patch plan_personalizado_dia_path(ajeno_ia, 0), as: :json, params: { dia: { enfoque: "hackeo" } }
+    assert_response :redirect
+  end
+
+  # Fase 5.12: la rutina de un plan de IA (una vez publicado) también es
+  # editable por su dueño; solo la nutrición sigue siendo del staff.
+  test "el miembro edita la rutina de su plan de IA ya publicado" do
+    plan = PlanPersonalizado.create!(user: users(:one), generado_por: "ia", estado: "aprobado",
+                                     aprobado_por: users(:entrenador), rutina: RUTINA,
+                                     plan_nutricional: { "kcal_diarias" => 0, "comidas" => [] })
+    sign_in_as users(:one)
+
+    patch plan_personalizado_dia_path(plan, 0), as: :json, params: { dia: { enfoque: "Pecho fuerte" } }
+    assert_response :success
+    assert_equal "Pecho fuerte", plan.reload.dias[0]["enfoque"]
   end
 end

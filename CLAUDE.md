@@ -23,6 +23,8 @@ Todo comando corre en Docker vía dip; no se ejecuta `rails`/`bundle` en el host
 - Lint y seguridad: `dip rubocop` · `dip brakeman`
 - Postgres: `dip psql` · Shell: `dip bash`
 - `Dockerfile.dev` + `docker-compose.yml` (web + db postgres:17-alpine) son el entorno dev; el `Dockerfile` raíz es solo producción.
+- **Dev opcional contra Supabase (Fase 5.12):** si `.env` define `DEV_DATABASE_URL` (pooler de Supabase), `dip rails s`/`c` apuntan allá — útil para probar con datos reales. **Los tests SIEMPRE van a la base local** (`TEST_DATABASE_URL`, fija en `docker-compose.yml`, nunca Supabase). ⚠️ Con `DEV_DATABASE_URL` activo **nunca** correr `db:drop`/`db:reset`/`dip provision` (apuntarían a producción); para regenerar `schema.rb` limpio usa `dip compose run --rm -e RAILS_ENV=test web bin/rails db:migrate` (fuerza el entorno test → base local). Comenta la línea en `.env` para volver al Postgres local.
+- `lib/tasks/demo.rake` (`dip rails demo:sembrar`): siembra objetivos, mediciones (peso) y check-ins **idempotentes** para los usuarios reales existentes (excluye `rol: entrenador/admin` y emails `@example.com`); no pisa datos ya cargados.
 
 ## Convenciones de código
 - Modelos y tablas de dominio en **español** (plurales en `config/initializers/inflections.rb`); `users`/`sessions` del generador de auth quedan en inglés.

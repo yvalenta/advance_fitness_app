@@ -29,7 +29,7 @@ class GestionEjerciciosController < ApplicationController
 
     def cargar_plan
       @plan = PlanPersonalizado.find(params[:plan_personalizado_id])
-      authorize @plan, :editar?
+      authorize @plan, :editar_rutina?
     end
 
     def dia_indice = params[:dia_id].to_i

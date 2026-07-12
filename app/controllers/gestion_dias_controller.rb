@@ -4,7 +4,7 @@
 class GestionDiasController < ApplicationController
   def update
     @plan = PlanPersonalizado.find(params[:plan_personalizado_id])
-    authorize @plan, :editar?
+    authorize @plan, :editar_rutina?
     indice = params[:id].to_i
 
     if (musculo = params.dig(:dia, :sesion_musculo)).present?
