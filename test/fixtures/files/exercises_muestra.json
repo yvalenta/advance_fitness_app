@@ -1,0 +1,86 @@
+[
+  {
+    "id": "0001",
+    "name": "3/4 sit-up",
+    "category": "waist",
+    "body_part": "waist",
+    "equipment": "body weight",
+    "instructions": {
+      "en": "Lie flat on your back with your knees bent.",
+      "es": "Túmbate sobre tu espalda con las rodillas flexionadas. Activando el abdomen, levanta lentamente la parte superior del cuerpo."
+    },
+    "instruction_steps": {
+      "en": ["Lie flat on your back with your knees bent.", "Slowly lift your upper body."],
+      "es": ["Túmbate sobre tu espalda con las rodillas flexionadas.", "Activando el abdomen, levanta lentamente la parte superior del cuerpo."]
+    },
+    "muscle_group": "hip flexors",
+    "secondary_muscles": ["hip flexors", "lower back"],
+    "target": "abs",
+    "image": "images/0001-2gPfomN.jpg",
+    "gif_url": "videos/0001-2gPfomN.gif",
+    "media_id": "2gPfomN",
+    "created_at": "2026-03-18T12:31:32.854798+00:00",
+    "attribution": "© Gym visual — https://gymvisual.com/"
+  },
+  {
+    "id": "0025",
+    "name": "barbell bench press",
+    "category": "chest",
+    "body_part": "chest",
+    "equipment": "barbell",
+    "instructions": {
+      "en": "Lie on a flat bench.",
+      "es": "Acuéstate en un banco plano con los pies apoyados en el suelo. Baja la barra hasta el pecho y empuja hacia arriba."
+    },
+    "instruction_steps": {
+      "en": ["Lie on a flat bench.", "Lower the bar to your chest.", "Push the bar back up."],
+      "es": ["Acuéstate en un banco plano con los pies apoyados en el suelo.", "Baja la barra hasta el pecho.", "Empuja la barra hacia arriba."]
+    },
+    "muscle_group": "pectorals",
+    "secondary_muscles": ["triceps", "shoulders"],
+    "target": "pectorals",
+    "image": "images/0025-AbC1234.jpg",
+    "gif_url": "videos/0025-AbC1234.gif",
+    "media_id": "AbC1234",
+    "created_at": "2026-03-18T12:31:32.854798+00:00",
+    "attribution": "© Gym visual — https://gymvisual.com/"
+  },
+  {
+    "id": "0031",
+    "name": "barbell curl",
+    "category": "upper arms",
+    "body_part": "upper arms",
+    "equipment": "barbell",
+    "instructions": {
+      "en": "Stand up straight holding a barbell.",
+      "es": "Ponte de pie sosteniendo una barra con agarre supino. Flexiona los codos llevando la barra hacia los hombros."
+    },
+    "muscle_group": "biceps brachii",
+    "secondary_muscles": ["forearms"],
+    "target": "biceps",
+    "image": "images/0031-XyZ5678.jpg",
+    "gif_url": "videos/0031-XyZ5678.gif",
+    "media_id": "XyZ5678",
+    "created_at": "2026-03-18T12:31:32.854798+00:00",
+    "attribution": "© Gym visual — https://gymvisual.com/"
+  },
+  {
+    "id": "1160",
+    "name": "run",
+    "category": "cardio",
+    "body_part": "cardio",
+    "equipment": "body weight",
+    "instructions": {
+      "en": "Run at a steady pace.",
+      "es": "Corre a un ritmo constante manteniendo una postura erguida."
+    },
+    "muscle_group": "cardiovascular system",
+    "secondary_muscles": ["quads", "calves"],
+    "target": "cardiovascular system",
+    "image": "images/1160-QwE9012.jpg",
+    "gif_url": "videos/1160-QwE9012.gif",
+    "media_id": "QwE9012",
+    "created_at": "2026-03-18T12:31:32.854798+00:00",
+    "attribution": "© Gym visual — https://gymvisual.com/"
+  }
+]

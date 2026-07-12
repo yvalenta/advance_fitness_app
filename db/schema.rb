@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_10_120001) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_12_120001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -23,6 +23,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_10_120001) do
     t.bigint "user_id", null: false
     t.index ["user_id", "fecha_hora"], name: "index_accesos_on_user_id_and_fecha_hora"
     t.index ["user_id"], name: "index_accesos_on_user_id"
+  end
+
+  create_table "ejercicios", force: :cascade do |t|
+    t.string "atribucion", default: "© Gym visual", null: false
+    t.string "categoria", null: false
+    t.datetime "created_at", null: false
+    t.string "dataset_id", null: false
+    t.string "equipo"
+    t.string "gif_ruta"
+    t.string "imagen_ruta"
+    t.jsonb "instrucciones", default: [], null: false
+    t.string "musculo", null: false
+    t.jsonb "musculos_secundarios", default: [], null: false
+    t.string "nombre", null: false
+    t.string "nombre_en", null: false
+    t.string "nombre_normalizado", null: false
+    t.string "objetivo"
+    t.datetime "updated_at", null: false
+    t.index ["dataset_id"], name: "index_ejercicios_on_dataset_id", unique: true
+    t.index ["musculo"], name: "index_ejercicios_on_musculo"
+    t.index ["nombre_normalizado"], name: "index_ejercicios_on_nombre_normalizado"
   end
 
   create_table "mediciones", force: :cascade do |t|
