@@ -10,4 +10,18 @@ namespace :ejercicios do
     puts "✓ Ejercicios — creados: #{resumen[:creados]} · actualizados: #{resumen[:actualizados]} · " \
          "sin cambio: #{resumen[:sin_cambio]} · total en base: #{Ejercicio.count}"
   end
+
+  desc "Pre-descarga el media (gif + imagen) de los ejercicios enlazados a plantillas"
+  task precalentar_media: :environment do
+    ejercicios = Ejercicio.joins(:plantillas_ejercicio).distinct
+    ejercicios.find_each do |ejercicio|
+      [ ejercicio.gif_ruta, ejercicio.imagen_ruta ].compact_blank.each do |ruta|
+        Ejercicios::MediaCache.asegurar!(ruta)
+      rescue Ejercicios::MediaCache::MediaNoDisponible => e
+        puts "✗ #{ejercicio.nombre} (#{ruta}): #{e.message}"
+      end
+      puts "✓ #{ejercicio.nombre}"
+    end
+    puts "Media en caché: #{Dir.glob(Ejercicios::MediaCache::RAIZ.join('**/*')).count { |f| File.file?(f) }} archivos"
+  end
 end

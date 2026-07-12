@@ -1,0 +1,15 @@
+{
+  "ignored_warnings": [
+    {
+      "warning_type": "File Access",
+      "warning_code": 16,
+      "fingerprint": "3d681d15283c894d457dcd4fe132c8fc9732673ded47333d0e84c51fcb7c444a",
+      "check_name": "SendFile",
+      "message": "Model attribute used in file name",
+      "file": "app/controllers/ejercicios_controller.rb",
+      "note": "Falso positivo (Fase 6.2): la ruta viene del registro Ejercicio (importado del dataset, no de params) y Ejercicios::MediaCache.ruta_segura la confina bajo storage/ejercicios_media con expand_path + verificación de prefijo antes de servirla."
+    }
+  ],
+  "updated": "2026-07-12",
+  "brakeman_version": "8.0.5"
+}

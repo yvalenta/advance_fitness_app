@@ -24,6 +24,13 @@ Rails.application.routes.draw do
   # Seguimiento de entrenamiento del miembro (Fase 5.10): upsert por fecha+ejercicio.
   resources :registros_entrenamiento, only: :create
 
+  # Catálogo visual de ejercicios (Fase 6): búsqueda, popup de ayuda y media
+  # (GIF/imagen del dataset) servida por proxy con caché en el volumen.
+  resources :ejercicios, only: :index do
+    collection { get :ayuda }
+    member { get "media/:tipo", action: :media, as: :media, constraints: { tipo: /gif|imagen/ } }
+  end
+
   # Planes y monetización (SDD §09, Fase 5)
   get "mi_plan", to: "planes_personalizados#show", as: :mi_plan
   get "upgrade", to: "planes#index", as: :upgrade
