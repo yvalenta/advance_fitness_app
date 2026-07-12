@@ -1,0 +1,5 @@
+# Ruby del HOST para correr `dip` (gema) y otras herramientas locales — no es
+# el Ruby de la app (ese vive solo en Docker, ver .ruby-version/Dockerfile*).
+# Fase 5.15: separado a propósito para no exigir instalar Ruby 4.0.5 en el
+# host solo para poder correr `dip`.
+ruby 3.4.5

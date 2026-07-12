@@ -8,7 +8,7 @@
 | Versión | 2.0 — Open Spec (transición de stack: SPA React + Supabase → monolito Rails 8.1) |
 | Estado | Definición inicial |
 | Repositorio | `git@github.com:yvalenta/advance_fitness_app.git` — nuevo, construido de cero |
-| Stack | Rails 8.1.3 · Ruby 3.4.5 · PostgreSQL 17 · Hotwire · Tailwind · Pundit · Solid stack |
+| Stack | Rails 8.1.3 · Ruby 4.0.5 · PostgreSQL 17 · Hotwire · Tailwind · Pundit · Solid stack |
 | Entorno local | dip 8 + Docker Compose (`dip provision`, `dip rails s`, `dip test`) |
 | Actualizado | Julio 2026 |
 | Documento de referencia | Restaurante Resplandor POS — SDD v1.0 · [`docs/rails8_analysis.md`](./docs/rails8_analysis.md) |
@@ -128,7 +128,7 @@ Monolito Rails con **cero dependencias de Node** (importmap + binario standalone
 
 | Tecnología | Versión | Rol | Notas |
 |---|---|---|---|
-| Ruby | 3.4.5 | Lenguaje | `.ruby-version`; YJIT + jemalloc en contenedores |
+| Ruby | 4.0.5 | Lenguaje | `.ruby-version`; YJIT + jemalloc en contenedores (ZJIT disponible pero experimental — se activará en 4.1) |
 | Rails | 8.1.3 | Framework full-stack | `rails new … --database=postgresql --css=tailwind --asset-pipeline=propshaft --javascript=importmap` |
 | PostgreSQL | 17 | Base de datos única | Docker Compose en desarrollo/test; datos anidados en JSONB |
 | Propshaft | — | Asset pipeline | Sin transpilación; assets con digest |
@@ -654,6 +654,7 @@ Rutas RESTful de Rails; los nombres siguen el dominio en español. Las de staff 
 | 5.12 | Dev sobre Supabase + datos demo + pesos y rutina del miembro | ~0.5 semana | Entorno dev apuntando opcionalmente a **Supabase** (`DEV_DATABASE_URL`, tests siempre locales); tarea **`demo:sembrar`** (objetivos, pesos y check-ins idempotentes para usuarios reales); el miembro **agrega/corrige sus pesos** por fecha y **edita la rutina** de su plan publicado (reglas o IA) | Local corre contra Supabase sin romper tests; los usuarios reales tienen datos coherentes; el miembro corrige un peso pasado y ajusta su rutina |
 | 5.13 | Pulido de check-in: tildes, responsive y resumen del miembro | ~0.3 semana | Fix de **tildes corrompidas** en eyebrows con default (el valor por defecto salía de la firma de *strict locals*, que corrompe literales no-ASCII); badges (`badge_estado`, "en/fuera de horario") ya no se parten en dos líneas en móvil (`whitespace-nowrap`); **popup de resumen** al hacer click/tab en un miembro en Check-in (membresía, **peso rápido editable/upsert**, botón de check-in, link directo a su ficha); ficha del miembro (`admin/users/show`) suma una card de **Plan** | "Administración" se ve bien en cualquier navegador; el badge de horario no se corta en pantallas angostas; clic en un miembro abre su resumen sin salir de Check-in y desde ahí se llega a su plan |
 | 5.14 | Copy sin "IA" de cara al negocio | ~0.1 semana | El copy de cara al miembro y al staff deja de decir "generado/generación con IA" — se habla de plan **analizado y diseñado** según el perfil/información del miembro (marca, dashboard, Mi plan, editor de staff, cola de borradores, alta de suscripción, mediciones). Nuevo helper `origen_plan(plan)` traduce `generado_por` (`ia`→"análisis automático", `reglas`→"plan de membresía", `entrenador`→"entrenador") para las 4 vistas de staff que antes imprimían el valor crudo | Ningún texto de cara al usuario menciona "IA"; el origen del plan se lee en lenguaje natural en las vistas de staff |
+| 5.15 | Upgrade a Ruby 4.0.5 | ~0.2 semana | `.ruby-version` y las imágenes Docker (dev y producción) suben de 3.4.5 a **4.0.5**; verificación completa de compatibilidad (sin uso de Ractor/CGI/IO.popen con pipes que 4.0 removió; `logger`/`ostruct` ya resueltos como gemas reales vía Bundler, no default gems; Puma 8 y Bundler 4 ya cumplían el mínimo) — sin necesidad de ajustes de código; `.tool-versions` fija Ruby 3.4.5 solo para `dip` (herramienta del host, no de la app); **YJIT habilitado de verdad en producción** (`RUBY_YJIT_ENABLE=1` en el `Dockerfile`, la mención previa en el SDD era aspiracional) | `dip test` · `dip rubocop` · `dip brakeman` en verde sobre Ruby 4.0.5; ambos `Dockerfile`s compilan limpio (incluida `assets:precompile`); CI (`ruby/setup-ruby`) toma la versión de `.ruby-version` automáticamente |
 | 5.11 | Suscripción con membresía + plan sugerido editable + kcal | ~1 semana | `Plan.free/personalizado` **autocreados** sin seeds (hotfix "Plan debe existir"); la suscripción **crea/reactiva la membresía** (incluida); plan sugerido **persistido** (`generado_por: reglas`, 6 días según objetivo, semana repetida el mes) creado con la membresía o al fijar el objetivo, **editable por miembro y staff** con popup Stimulus (buscador + chips por músculo + **sesión completa**); **alertas de kcal** arriba/abajo del objetivo; **objetivo diario editable** y **historial de consumo editable** | Crear suscripción sin membresía funciona y la incluye; todo miembro con membresía ve su plan sugerido y lo edita; las alertas avisan cuando lo editado no se alinea con el objetivo |
 | 6 | Nutrición personalizada & Gustos | ~2 semanas | Catálogo `alimentos` (seed colombiano + CRUD admin), calificación de gustos (`/gustos`), armador de comidas con registro del día (`/armador`), gustos + recetas en el prompt de IA, benchmark de modelo Gemini, **editor de rutina + plantillas de ejercicios por músculo + animaciones SVG** | El miembro califica alimentos y arma su día viendo kcal en vivo; el registro alimenta `/progreso`; el plan IA de un premium no incluye ningún alimento `no_le_gusta` y cada comida trae receta |
 | 7 | Comunidad & Cierre | ~1 semana | Blog, novedades, pulido responsive, checklist MVP completo | Un miembro lee posts y novedades publicadas; todo el checklist §15 en verde |
@@ -674,7 +675,7 @@ Estas decisiones están cerradas. Reabrirlas durante el MVP genera deuda técnic
 
 | Decisión | Valor | Por qué |
 |---|---|---|
-| Framework | Rails 8.1 monolito (Ruby 3.4.5) | Un solo lenguaje para dominio server-side; auth, jobs, cache y cable incluidos |
+| Framework | Rails 8.1 monolito (Ruby 4.0.5) | Un solo lenguaje para dominio server-side; auth, jobs, cache y cable incluidos |
 | Frontend | Hotwire (Turbo + Stimulus) + importmap — **sin Node, sin bundler JS** | Server-rendered; cero build step de JavaScript |
 | Estilos | Tailwind CSS v4 (`tailwindcss-rails`, binario standalone) | Tokens CSS-first en `@theme`; mismos tokens de la v1.x |
 | Componentes UI | DaisyUI 5 (CSS-only, vendored — sin Node) | Look tipo shadcn en clases CSS puras; Stimulus cubre el rol de Alpine.js y ActiveModel el de zod |

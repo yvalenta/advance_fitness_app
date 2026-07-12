@@ -1,7 +1,7 @@
 # Imagen de DESARROLLO — la de producción es ./Dockerfile (Kamal).
 # Se usa vía docker-compose + dip (dip provision, dip rails s, dip test…).
 
-ARG RUBY_VERSION=3.4.5
+ARG RUBY_VERSION=4.0.5
 FROM docker.io/library/ruby:$RUBY_VERSION-slim
 
 WORKDIR /rails

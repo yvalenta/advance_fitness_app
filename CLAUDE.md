@@ -7,7 +7,7 @@
 - Proyectos de referencia (solo lectura, para adaptar funcionalidades, nunca copiar): landing en `/Users/yonatan/Developer/advance_fitness` y Resplandor POS en `/Users/yonatan/Developer/resplandor`.
 
 ## Stack (decisión cerrada — SDD §12)
-- **Rails 8.1.3 · Ruby 3.4.5 · PostgreSQL 17** (monolito server-rendered).
+- **Rails 8.1.3 · Ruby 4.0.5 · PostgreSQL 17** (monolito server-rendered).
 - Frontend: Hotwire (Turbo + Stimulus) + importmap — **sin Node, sin package.json**. Estilos: `tailwindcss-rails` v4, tokens en `@theme` (`app/assets/tailwind/application.css`).
 - Auth nativa de Rails 8 (`has_secure_password` + sesiones); Google OAuth como segundo método. Autorización: **Pundit** (una policy por modelo, `verify_authorized`).
 - Background/cache/cable: **Solid Queue · Solid Cache · Solid Cable** sobre Postgres — **sin Redis**.
