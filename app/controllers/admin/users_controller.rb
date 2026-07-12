@@ -8,5 +8,6 @@ class Admin::UsersController < ApplicationController
     @user = User.find(params[:id])
     authorize @user
     @accesos = @user.accesos.recientes.limit(10)
+    @plan = @user.plan_actual
   end
 end

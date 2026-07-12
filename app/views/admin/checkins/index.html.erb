@@ -4,7 +4,7 @@
       titulo: "Check-in",
       descripcion: "Busca al miembro, valida su membresía y registra el acceso." %>
 
-<div class="mx-auto -mt-8 w-full max-w-6xl px-4 pb-12">
+<div class="mx-auto -mt-8 w-full max-w-6xl px-4 pb-12" data-controller="resumen-miembro">
   <div class="grid items-start gap-6 lg:grid-cols-2">
     <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
       <div class="card-body">
@@ -26,7 +26,15 @@
         <% end %>
 
         <% @miembros.each do |miembro| %>
-          <div class="card-hover mt-3 flex items-center justify-between gap-3 rounded-xl border border-base-300 p-3">
+          <div class="card-hover mt-3 flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-base-300 p-3"
+               role="button" tabindex="0"
+               data-action="click->resumen-miembro#abrir keydown.enter->resumen-miembro#abrir"
+               data-resumen-miembro-id-param="<%= miembro.id %>"
+               data-resumen-miembro-nombre-param="<%= nombre_visible(miembro) %>"
+               data-resumen-miembro-estado-param="<%= resumen_membresia(miembro) %>"
+               data-resumen-miembro-peso-actual-param="<%= miembro.ultima_medicion&.peso_kg %>"
+               data-resumen-miembro-medicion-url-param="<%= admin_user_mediciones_path(miembro) %>"
+               data-resumen-miembro-perfil-url-param="<%= admin_user_path(miembro) %>">
             <div class="flex min-w-0 items-center gap-3">
               <%= render "shared/avatar", user: miembro, clase: "size-11 text-sm" %>
               <div class="min-w-0">
@@ -41,7 +49,9 @@
                 </p>
               </div>
             </div>
-            <%= button_to admin_checkins_path, params: { user_id: miembro.id }, class: "btn btn-primary btn-sm shrink-0 font-bold" do %>
+            <%= button_to admin_checkins_path, params: { user_id: miembro.id },
+                  class: "btn btn-primary btn-sm shrink-0 font-bold",
+                  data: { action: "resumen-miembro#detener" } do %>
               <%= render "shared/icono", nombre: :rayo, clase: "size-4" %>
               Registrar
             <% end %>
@@ -66,22 +76,29 @@
               </thead>
               <tbody>
                 <% @accesos.each do |acceso| %>
-                  <tr class="hover:bg-base-200">
+                  <tr class="cursor-pointer hover:bg-base-200" tabindex="0"
+                      data-action="click->resumen-miembro#abrir keydown.enter->resumen-miembro#abrir"
+                      data-resumen-miembro-id-param="<%= acceso.user.id %>"
+                      data-resumen-miembro-nombre-param="<%= nombre_visible(acceso.user) %>"
+                      data-resumen-miembro-estado-param="<%= resumen_membresia(acceso.user) %>"
+                      data-resumen-miembro-peso-actual-param="<%= acceso.user.ultima_medicion&.peso_kg %>"
+                      data-resumen-miembro-medicion-url-param="<%= admin_user_mediciones_path(acceso.user) %>"
+                      data-resumen-miembro-perfil-url-param="<%= admin_user_path(acceso.user) %>">
                     <td>
                       <div class="flex items-center gap-2">
                         <%= render "shared/avatar", user: acceso.user, clase: "size-7 text-[10px]" %>
                         <span class="font-medium"><%= nombre_visible(acceso.user) %></span>
                       </div>
                     </td>
-                    <td><%= badge_estado(acceso.tipo) %></td>
-                    <td>
+                    <td class="whitespace-nowrap"><%= badge_estado(acceso.tipo) %></td>
+                    <td class="whitespace-nowrap">
                       <% if acceso.dentro_de_horario? %>
-                        <span class="badge badge-sm badge-success">en horario</span>
+                        <span class="badge badge-sm badge-success whitespace-nowrap">en horario</span>
                       <% else %>
-                        <span class="badge badge-sm badge-error">fuera de horario</span>
+                        <span class="badge badge-sm badge-error whitespace-nowrap">fuera de horario</span>
                       <% end %>
                     </td>
-                    <td class="text-xs text-steel-3"><%= l acceso.fecha_hora, format: :short %></td>
+                    <td class="whitespace-nowrap text-xs text-steel-3"><%= l acceso.fecha_hora, format: :short %></td>
                   </tr>
                 <% end %>
               </tbody>
@@ -96,4 +113,35 @@
       </div>
     </div>
   </div>
+
+  <%# ── Popup de resumen (Fase 5.13): un solo dialog, poblado por JS ── %>
+  <dialog class="modal" data-resumen-miembro-target="dialogo">
+    <div class="modal-box max-w-sm">
+      <div class="mb-1 flex items-center justify-between">
+        <h3 class="font-display text-lg font-bold" data-resumen-miembro-target="nombre"></h3>
+        <button type="button" class="btn btn-circle btn-ghost btn-sm" data-action="resumen-miembro#cerrar" aria-label="Cerrar">✕</button>
+      </div>
+      <p class="text-xs text-steel-3" data-resumen-miembro-target="estado"></p>
+
+      <div class="mt-4 flex flex-col gap-3">
+        <%= form_with url: "#", method: :post, data: { resumen_miembro_target: "pesoForm" }, class: "flex items-end gap-2" do |form| %>
+          <label class="form-control flex-1">
+            <span class="label-text mb-1 text-xs font-semibold">Peso rápido (kg)</span>
+            <%= form.number_field "medicion[peso_kg]", step: 0.1, min: 0, required: true,
+                  class: "input input-bordered input-sm w-full", data: { resumen_miembro_target: "pesoInput" } %>
+          </label>
+          <%= form.submit "Guardar", class: "btn btn-primary btn-sm font-bold" %>
+        <% end %>
+
+        <%= form_with url: admin_checkins_path, method: :post, data: { resumen_miembro_target: "checkinForm" } do |form| %>
+          <%= form.hidden_field :user_id, data: { resumen_miembro_target: "checkinInput" } %>
+          <%= form.submit "Registrar check-in", class: "btn btn-outline btn-sm w-full font-bold" %>
+        <% end %>
+
+        <%= link_to "Ver perfil, antropometría y plan →", "#", data: { resumen_miembro_target: "perfilLink" },
+              class: "link text-center text-sm font-semibold" %>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button aria-label="Cerrar">cerrar</button></form>
+  </dialog>
 </div>

@@ -66,6 +66,30 @@
       </div>
     </div>
 
+    <div class="card animate-fade-up fade-delay-2 border border-base-300 bg-base-100 shadow-md">
+      <div class="card-body">
+        <h2 class="card-title text-base">
+          <span class="flex size-7 items-center justify-center rounded-lg bg-pulse/15 text-pulse">
+            <%= render "shared/icono", nombre: :fuego, clase: "size-4" %>
+          </span>
+          Plan
+        </h2>
+        <% if @plan %>
+          <p class="flex flex-wrap items-center gap-1.5">
+            <span class="badge badge-sm <%= @plan.aprobado? ? "badge-success" : "badge-warning" %>">
+              <%= @plan.aprobado? ? "publicado" : @plan.estado %>
+            </span>
+            <span class="text-xs text-steel-3">generado por <%= @plan.generado_por %></span>
+          </p>
+          <div class="card-actions mt-1">
+            <%= link_to "Ver / editar plan →", plan_personalizado_path(@plan), class: "btn btn-primary btn-sm font-bold" %>
+          </div>
+        <% else %>
+          <p class="text-sm text-steel-3">Sin plan aún.</p>
+        <% end %>
+      </div>
+    </div>
+
     <div class="card animate-fade-up fade-delay-2 border border-base-300 bg-base-100 shadow-md md:col-span-2">
       <div class="card-body">
         <h2 class="card-title text-base">

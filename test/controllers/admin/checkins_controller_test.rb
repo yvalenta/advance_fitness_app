@@ -46,4 +46,27 @@ class Admin::CheckinsControllerTest < ActionDispatch::IntegrationTest
     end
     assert_match(/plan personalizado/, flash[:notice])
   end
+
+  # Fase 5.13: cada fila de miembro trae los datos para el popup de resumen
+  # (peso rápido, check-in, ficha) sin romper el acento del eyebrow.
+  test "el índice trae el popup de resumen con los data-* por miembro" do
+    sign_in_as users(:entrenador)
+
+    get admin_checkins_path(q: "Uno")
+
+    assert_response :success
+    assert_match "Administración", response.body
+    assert_select "dialog[data-resumen-miembro-target=dialogo]"
+    assert_select "[data-resumen-miembro-id-param=?]", users(:one).id.to_s
+    assert_select "[data-resumen-miembro-medicion-url-param=?]", admin_user_mediciones_path(users(:one))
+    assert_select "[data-resumen-miembro-perfil-url-param=?]", admin_user_path(users(:one))
+  end
+
+  test "el badge de horario no se corta en una sola línea" do
+    Acceso.registrar_para(users(:one), users(:one).membresia, ahora: Time.current)
+    sign_in_as users(:entrenador)
+
+    get admin_checkins_path
+    assert_select "span.badge.whitespace-nowrap", minimum: 1
+  end
 end

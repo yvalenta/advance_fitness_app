@@ -12,8 +12,14 @@ class Admin::MedicionesController < ApplicationController
   end
 
   # Antropometría con historial: la toma el staff (SDD Flujo B / Fase 5.9).
+  # Upsert por fecha (Fase 5.13): permite corregir una medición del mismo día
+  # (p. ej. el peso rápido del popup de check-in) sin chocar con el índice
+  # único user_id+fecha ni duplicar el historial.
   def create
-    @medicion = @miembro.mediciones.new(medicion_params.merge(tomada_por: Current.user))
+    datos = medicion_params
+    fecha = datos[:fecha].presence || Date.current
+    @medicion = @miembro.mediciones.find_or_initialize_by(fecha: fecha)
+    @medicion.assign_attributes(datos.except(:fecha).merge(tomada_por: Current.user))
     authorize @medicion
 
     if @medicion.save

@@ -12,7 +12,7 @@ module ApplicationHelper
       "checkin" => "badge-ghost",
       "reingreso" => "badge-info"
     }.fetch(estado, "badge-ghost")
-    tag.span(estado, class: "badge badge-sm #{clase}")
+    tag.span(estado, class: "badge badge-sm whitespace-nowrap #{clase}")
   end
 
   # Iniciales para el avatar (nombre o, en su defecto, correo)
@@ -23,6 +23,14 @@ module ApplicationHelper
 
   def nombre_visible(user)
     user.nombre.presence || user.email_address
+  end
+
+  # Resumen corto de membresía para el popup de resumen del miembro (Fase 5.13)
+  def resumen_membresia(user)
+    membresia = user.membresia
+    return "Sin membresía" unless membresia
+
+    "#{membresia.estado.capitalize} · vence #{l membresia.fecha_vencimiento}"
   end
 
   # Link del navbar con estado activo

@@ -15,7 +15,10 @@
         </div>
       <% end %>
 
-      <%= form_with model: [ @miembro, @medicion ], class: "flex flex-col gap-4" do |form| %>
+      <%# url explícita: @medicion puede venir de find_or_initialize_by y estar %>
+      <%# persistida (edición same-day), no hay ruta PATCH — siempre POST/create. %>
+      <%= form_with model: [ @miembro, @medicion ], url: admin_user_mediciones_path(@miembro),
+            method: :post, class: "flex flex-col gap-4" do |form| %>
         <label class="form-control max-w-xs">
           <span class="label-text mb-1 text-xs font-semibold">Fecha</span>
           <%= form.date_field :fecha, required: true, class: "input input-bordered w-full" %>

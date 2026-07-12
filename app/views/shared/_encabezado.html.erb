@@ -1,5 +1,8 @@
 <%# Cabecera oscura de sección %>
-<%# locals: (titulo:, descripcion: nil, eyebrow: "Administración", accion: nil) %>
+<%# locals: (titulo:, descripcion: nil, eyebrow: nil, accion: nil) %>
+<%# El default de eyebrow NO va en la firma de locals de arriba: Rails la %>
+<%# extrae por un path que corrompe literales no-ASCII (tildes → mojibake). %>
+<% eyebrow ||= "Administración" %>
 <div class="gradient-hero relative overflow-hidden">
   <div class="trama-puntos absolute inset-0"></div>
   <div class="relative mx-auto flex w-full max-w-6xl flex-wrap items-end justify-between gap-4 px-4 pb-14 pt-10">
