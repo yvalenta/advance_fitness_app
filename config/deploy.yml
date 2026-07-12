@@ -7,39 +7,39 @@ image: advance_fitness_app
 # Deploy to these servers.
 servers:
   web:
-    - 192.168.0.1
-  # job:
-  #   hosts:
-  #     - 192.168.0.1
-  #   cmd: bin/jobs
+    hosts:
+      - 192.168.40.253
+    # Sin puertos públicos: el servidor ya se expone con un túnel nombrado de
+    # Cloudflare (docker-lab/docker-compose.yml, contenedor "cloudflared") que
+    # apunta a http://rails-app:80 en la red docker "docker-lab_proxy-network".
+    # Nos unimos a esa misma red con el mismo alias en vez de levantar
+    # kamal-proxy (que necesitaría los puertos 80/443 del host).
+    proxy: false
+    options:
+      network: docker-lab_proxy-network
+      network-alias: rails-app
 
-# Enable SSL auto certification via Let's Encrypt and allow for multiple apps on a single web server.
-# If used with Cloudflare, set encryption mode in SSL/TLS setting to "Full" to enable CF-to-app encryption.
-#
-# Using an SSL proxy like this requires turning on config.assume_ssl and config.force_ssl in production.rb!
-#
-# Don't use this when deploying to multiple web servers (then you have to terminate SSL at your load balancer).
-#
-# proxy:
-#   ssl: true
-#   host: app.example.com
+# Sin kamal-proxy (ver servers.web.proxy: false arriba) — el túnel de
+# Cloudflare ya termina SSL y enruta por nombre de contenedor.
 
 # Where you keep your container images.
 registry:
-  # Alternatives: hub.docker.com / registry.digitalocean.com / ghcr.io / ...
+  # "localhost:<puerto>" es un caso especial de Kamal ("registro local", sin
+  # auth): levanta un registry temporal en la máquina donde corre `bin/kamal`
+  # (esta Mac) y abre un túnel SSH inverso para que el builder remoto y el
+  # propio servidor lo alcancen — así funciona el patrón oficial de build
+  # remoto (builder.remote) para compilar amd64 desde una Mac arm64.
   server: localhost:5555
-
-  # Needed for authenticated registries.
-  # username: your-user
-
-  # Always use an access token rather than real password when possible.
-  # password:
-  #   - KAMAL_REGISTRY_PASSWORD
 
 # Inject ENV variables into containers (secrets come from .kamal/secrets).
 env:
   secret:
     - RAILS_MASTER_KEY
+    - DATABASE_URL
+    - GOOGLE_CLIENT_ID
+    - GOOGLE_CLIENT_SECRET
+    - GEMINI_API_KEY
+    - IA_PROVEEDOR
   clear:
     # Run the Solid Queue Supervisor inside the web server's Puma process to do jobs.
     # When you start using multiple servers, you should split out job processing to a dedicated machine.
@@ -50,10 +50,6 @@ env:
 
     # Set number of cores available to the application on each server (default: 1).
     # WEB_CONCURRENCY: 2
-
-    # Match this to any external database server to configure Active Record correctly
-    # Use advance_fitness_app-db for a db accessory server on same machine via local kamal docker network.
-    # DB_HOST: 192.168.0.2
 
     # Log everything from Rails
     # RAILS_LOG_LEVEL: debug
@@ -80,19 +76,14 @@ asset_path: /rails/public/assets
 builder:
   arch: amd64
 
-  # # Build image via remote server (useful for faster amd64 builds on arm64 computers)
-  # remote: ssh://docker@docker-builder-server
-  #
-  # # Pass arguments and secrets to the Docker build process
-  # args:
-  #   RUBY_VERSION: ruby-3.4.5
-  # secrets:
-  #   - GITHUB_TOKEN
-  #   - RAILS_MASTER_KEY
+  # Build en el propio servidor (x86_64) en vez de en esta Mac (arm64): evita
+  # emulación QEMU lenta y usa el builder buildx que ya estaba provisionado
+  # ahí (kamal-local-registry), junto al registry local en localhost:5555.
+  remote: ssh://ynt@192.168.40.253
 
-# Use a different ssh user than root
-# ssh:
-#   user: app
+# Usuario no-root con acceso al grupo docker en el servidor.
+ssh:
+  user: ynt
 
 # Use accessory services (secrets come from .kamal/secrets).
 # accessories:

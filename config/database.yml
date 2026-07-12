@@ -58,20 +58,18 @@ test:
 # for a full overview on how database connection configuration can be specified.
 #
 production:
+  # Con varias bases lógicas (primary/cache/queue/cable), Rails NO aplica
+  # DATABASE_URL a menos que cada una lo declare explícitamente (ver
+  # comentario arriba). Todas comparten la misma base física de Supabase.
   primary: &primary_production
     <<: *default
-    database: advance_fitness_app_production
-    username: advance_fitness_app
-    password: <%= ENV["ADVANCE_FITNESS_APP_DATABASE_PASSWORD"] %>
+    url: <%= ENV["DATABASE_URL"] %>
   cache:
     <<: *primary_production
-    database: advance_fitness_app_production_cache
     migrations_paths: db/cache_migrate
   queue:
     <<: *primary_production
-    database: advance_fitness_app_production_queue
     migrations_paths: db/queue_migrate
   cable:
     <<: *primary_production
-    database: advance_fitness_app_production_cable
     migrations_paths: db/cable_migrate
