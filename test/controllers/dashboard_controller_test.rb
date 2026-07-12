@@ -14,5 +14,8 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     # El saludo usa solo el primer nombre del miembro
     assert_select "h1", text: /#{user.nombre.split.first}/
+    # Fase 5.14: copy sin menciones a "IA" de cara al miembro
+    assert_match "Planes personalizados", response.body
+    assert_no_match(/\bIA\b/, response.body)
   end
 end

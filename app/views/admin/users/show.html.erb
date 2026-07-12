@@ -79,7 +79,7 @@
             <span class="badge badge-sm <%= @plan.aprobado? ? "badge-success" : "badge-warning" %>">
               <%= @plan.aprobado? ? "publicado" : @plan.estado %>
             </span>
-            <span class="text-xs text-steel-3">generado por <%= @plan.generado_por %></span>
+            <span class="text-xs text-steel-3">origen: <%= origen_plan(@plan) %></span>
           </p>
           <div class="card-actions mt-1">
             <%= link_to "Ver / editar plan →", plan_personalizado_path(@plan), class: "btn btn-primary btn-sm font-bold" %>

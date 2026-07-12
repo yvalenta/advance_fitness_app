@@ -6,7 +6,7 @@
     <%= render "shared/avatar", user: @plan.user, clase: "size-14 text-lg" %>
     <div class="min-w-0">
       <div class="mb-1 flex items-center gap-2">
-        <p class="eyebrow text-volt">Plan · generado por <%= @plan.generado_por %></p>
+        <p class="eyebrow text-volt">Plan · <%= origen_plan(@plan) %></p>
         <span class="badge badge-sm <%= @plan.aprobado? ? "badge-success" : "badge-warning" %>">
           <%= @plan.aprobado? ? "Publicado" : "Borrador" %>
         </span>
@@ -30,7 +30,7 @@
         <div class="card-body items-center gap-3 py-12 text-center">
           <% if @plan.generando? %>
             <span class="loading loading-spinner loading-lg text-ocean"></span>
-            <h2 class="font-display text-lg font-bold">Generando el plan con IA…</h2>
+            <h2 class="font-display text-lg font-bold">Analizando tu información para armar el plan…</h2>
             <p class="text-sm text-steel-5">En la <%= link_to "cola de borradores", entrenador_borradores_path, class: "link" %> verás en vivo cuando esté listo.</p>
           <% else %>
             <span class="flex size-12 items-center justify-center rounded-2xl bg-error/15 text-error">
@@ -72,7 +72,7 @@
                   <%= l version.created_at.to_date %>
                 </p>
                 <p class="text-xs text-steel-3">
-                  <%= version.aprobado? ? "publicado" : "borrador" %> · por <%= version.generado_por %>
+                  <%= version.aprobado? ? "publicado" : "borrador" %> · <%= origen_plan(version) %>
                   <%= "· aprobó #{nombre_visible(version.aprobado_por)}" if version.aprobado_por %>
                 </p>
               </div>

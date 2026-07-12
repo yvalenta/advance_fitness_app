@@ -3,7 +3,7 @@
 <%= render "shared/encabezado",
       eyebrow: "Mi plan",
       titulo: @plan ? (@plan.reglas? ? "Tu plan de entrenamiento" : "Tu plan personalizado") : "Tu plan Free",
-      descripcion: @plan ? (@plan.reglas? ? "Incluido con tu membresía según tu meta. Puedes personalizarlo." : "Generado con IA para tu perfil y aprobado por #{@plan.aprobado_por&.nombre || "tu entrenador"}.") : "Guías generales según tu objetivo.",
+      descripcion: @plan ? (@plan.reglas? ? "Incluido con tu membresía según tu meta. Puedes personalizarlo." : "Analizado y diseñado según tu perfil, aprobado por #{@plan.aprobado_por&.nombre || "tu entrenador"}.") : "Guías generales según tu objetivo.",
       accion: ((@plan.nil? || @plan.reglas?) ? link_to("Mejorar mi plan", upgrade_path, class: "btn btn-primary btn-sm font-bold") : nil) %>
 
 <div class="mx-auto -mt-8 w-full max-w-4xl px-4 pb-12">
@@ -46,7 +46,7 @@
     <% if @pendiente %>
       <div class="alert alert-info animate-fade-up mb-6 shadow-md">
         <%= render "shared/icono", nombre: :reloj, clase: "size-5 shrink-0" %>
-        <span class="text-sm">Tu plan personalizado está en preparación: la IA ya lo generó o lo está generando,
+        <span class="text-sm">Tu plan personalizado está en preparación: ya se analizó tu información o se está analizando,
         y tu entrenador lo revisará antes de publicarlo. Te aparecerá aquí apenas esté aprobado.</span>
       </div>
     <% end %>
@@ -90,7 +90,7 @@
         <div class="relative flex flex-wrap items-center justify-between gap-4">
           <div>
             <p class="eyebrow text-volt">Plan personalizado</p>
-            <p class="mt-1 font-display text-xl font-bold text-white">Rutina y dieta generadas con IA, aprobadas por tu coach</p>
+            <p class="mt-1 font-display text-xl font-bold text-white">Rutina y dieta analizadas y diseñadas según tu información, aprobadas por tu coach</p>
             <p class="mt-1 text-sm text-white/60">Hechas para tu somatotipo, tu objetivo y tu semana real.</p>
           </div>
           <%= link_to "Conocer el plan", upgrade_path, class: "btn btn-primary font-bold" %>

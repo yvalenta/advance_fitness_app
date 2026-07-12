@@ -2,7 +2,7 @@
 
 <%= render "shared/encabezado",
       titulo: "Nueva suscripción",
-      descripcion: "Alta del plan Personalizado pagado en recepción. Al guardar se encola la generación con IA." %>
+      descripcion: "Alta del plan Personalizado pagado en recepción. Al guardar se encola el análisis del plan." %>
 
 <div class="mx-auto -mt-8 w-full max-w-2xl px-4 pb-12">
   <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
@@ -34,7 +34,7 @@
         </div>
 
         <div class="divider text-xs font-semibold text-steel-3">Medición antropométrica (obligatoria)</div>
-        <p class="-mt-2 text-xs text-steel-3">Se toma al momento del alta y alimenta el plan de IA. El peso es obligatorio; el resto, opcional.</p>
+        <p class="-mt-2 text-xs text-steel-3">Se toma al momento del alta y alimenta el análisis del plan. El peso es obligatorio; el resto, opcional.</p>
         <%= fields_for :medicion, @medicion do |medicion_form| %>
           <%= render "admin/mediciones/campos", form: medicion_form %>
         <% end %>
@@ -42,7 +42,7 @@
         <div class="rounded-xl bg-volt/10 p-3 text-sm text-steel-5">
           Plan: <strong>Personalizado (<%= cop Plan.personalizado.precio.to_i %>/mes)</strong> —
           <strong>incluye la membresía</strong> (se crea o reactiva automáticamente, sin pago aparte).
-          El pago se registra en recepción; al guardar, la IA genera el plan y queda en
+          El pago se registra en recepción; al guardar, se analiza y genera el plan y queda en
           <em>borrador</em> hasta que el entrenador lo apruebe.
         </div>
 

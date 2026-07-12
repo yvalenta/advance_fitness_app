@@ -22,5 +22,8 @@ class Entrenador::BorradoresControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match "Usuario Uno", response.body
     assert_select "a[href=?]", plan_personalizado_path(@plan)
+    # Fase 5.14: sin "generado por ia" crudo ni menciones a IA en el copy
+    assert_match "Origen: análisis automático", response.body
+    assert_no_match(/\bIA\b/, response.body)
   end
 end

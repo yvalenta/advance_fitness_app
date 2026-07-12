@@ -9,7 +9,7 @@
       <div class="min-w-0">
         <p class="truncate font-semibold"><%= nombre_visible(plan.user) %></p>
         <p class="text-xs text-steel-3">
-          Generado por <%= plan.generado_por %> · <%= l plan.created_at, format: :short %>
+          Origen: <%= origen_plan(plan) %> · <%= l plan.created_at, format: :short %>
           <% if (objetivo = plan.user.objetivo_activo) %>
             · meta: <%= objetivo.nombre.downcase %> (<%= objetivo.objetivo_kcal %> kcal)
           <% end %>

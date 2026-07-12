@@ -33,6 +33,18 @@ module ApplicationHelper
     "#{membresia.estado.capitalize} · vence #{l membresia.fecha_vencimiento}"
   end
 
+  # Traduce PlanPersonalizado#generado_por para vistas de staff (Fase 5.14):
+  # evita repetir "ia"/"reglas" crudo y la palabra "IA" en el copy de cara al negocio.
+  ORIGENES_PLAN = {
+    "ia" => "análisis automático",
+    "reglas" => "plan de membresía",
+    "entrenador" => "entrenador"
+  }.freeze
+
+  def origen_plan(plan)
+    ORIGENES_PLAN.fetch(plan.generado_por, plan.generado_por)
+  end
+
   # Link del navbar con estado activo
   def nav_link(texto, ruta)
     activo = current_page?(ruta)

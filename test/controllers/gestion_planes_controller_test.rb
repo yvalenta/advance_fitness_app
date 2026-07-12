@@ -83,6 +83,9 @@ class GestionPlanesControllerTest < ActionDispatch::IntegrationTest
     # Fase 5.11: seguimiento inline (check por ejercicio + novedad del día)
     assert_match "seguimiento#marcar", response.body
     assert_match "seguimiento#novedad", response.body
+    # Fase 5.14: copy sin menciones a "IA" de cara al miembro
+    assert_match "Analizado y diseñado según tu perfil", response.body
+    assert_no_match(/\bIA\b/, response.body)
   end
 
   test "el modo avanzado guarda el JSON de la rutina" do
