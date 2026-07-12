@@ -23,6 +23,9 @@ class GestionPlanesControllerTest < ActionDispatch::IntegrationTest
     assert_select "input[name='ejercicio[nombre]'][value=?]", "Press banca"
     assert_select "input[name='dia[enfoque]']"
     assert_select "dialog[data-modal-ejercicios-target=dialogo]"
+    # Fase 5.16: cierre de fondo manual (evita fuga de click al navbar)
+    assert_select "dialog[data-action*=cerrarEnBackdrop]"
+    assert_select "form[method=dialog]", count: 0
   end
 
   test "el admin también puede abrir el editor" do

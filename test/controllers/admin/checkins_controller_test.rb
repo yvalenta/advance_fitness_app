@@ -60,6 +60,10 @@ class Admin::CheckinsControllerTest < ActionDispatch::IntegrationTest
     assert_select "[data-resumen-miembro-id-param=?]", users(:one).id.to_s
     assert_select "[data-resumen-miembro-medicion-url-param=?]", admin_user_mediciones_path(users(:one))
     assert_select "[data-resumen-miembro-perfil-url-param=?]", admin_user_path(users(:one))
+    # Fase 5.16: cierre de fondo manual, no <form method="dialog"> (dejaba
+    # pasar el click al navbar detrás al cerrarse)
+    assert_select "dialog[data-action*=cerrarEnBackdrop]"
+    assert_select "form[method=dialog]", count: 0
   end
 
   test "el badge de horario no se corta en una sola línea" do

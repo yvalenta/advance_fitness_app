@@ -1,7 +1,10 @@
 <%# Popup de biblioteca de ejercicios (rediseño 5.11): buscador + chips por %>
 <%# músculo + tarjetas con series×reps + "Usar sesión completa" que reemplaza %>
 <%# el día entero. locals: (plantillas:) %>
-<dialog class="modal" data-modal-ejercicios-target="dialogo">
+<%# Cierre por click en el fondo vía JS, no <form method="dialog"> (Fase %>
+<%# 5.16): evita que el submit del backdrop deje pasar el click al elemento %>
+<%# que queda debajo al cerrarse. %>
+<dialog class="modal" data-modal-ejercicios-target="dialogo" data-action="click->modal-ejercicios#cerrarEnBackdrop">
   <div class="modal-box flex max-h-[85vh] max-w-2xl flex-col p-0">
     <header class="sticky top-0 z-10 border-b border-base-200 bg-base-100 p-4 pb-3">
       <div class="mb-3 flex items-center justify-between">
@@ -66,5 +69,5 @@
       <p class="p-8 text-center text-sm text-steel-3">Aún no hay plantillas de ejercicio.</p>
     <% end %>
   </div>
-  <form method="dialog" class="modal-backdrop"><button aria-label="Cerrar">cerrar</button></form>
+  <div class="modal-backdrop"></div>
 </dialog>

@@ -23,6 +23,14 @@ export default class extends Controller {
     this.dialogoTarget.close()
   }
 
+  // Cerrar al hacer click en el fondo (fuera de la caja). Cierre manual en
+  // vez de un <form method="dialog"> (Fase 5.16): el submit del formulario
+  // deja "filtrar" parte del click al elemento que queda debajo al cerrarse
+  // — p. ej. el menú del navbar detrás del popup.
+  cerrarEnBackdrop(event) {
+    if (!event.target.closest(".modal-box")) this.dialogoTarget.close()
+  }
+
   // Evita que el click en un control dentro de la fila (p. ej. "Registrar")
   // también dispare la apertura del popup.
   detener(event) {

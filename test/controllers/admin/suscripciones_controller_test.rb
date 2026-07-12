@@ -70,6 +70,27 @@ class Admin::SuscripcionesControllerTest < ActionDispatch::IntegrationTest
     assert users(:entrenador).membresia.activa?
   end
 
+  # Fase 5.16: reintentar el alta el mismo día (p. ej. tras un fallo previo)
+  # no debe chocar con el índice único user_id+fecha de mediciones.
+  test "si el miembro ya tiene medición hoy, el alta la corrige en vez de fallar" do
+    users(:one).mediciones.create!(fecha: Date.current, peso_kg: 70, tomada_por: users(:admin))
+    sign_in_as users(:admin)
+
+    assert_difference [ "Suscripcion.count", "PlanPersonalizado.count" ], 1 do
+      assert_no_difference "Medicion.count" do
+        post admin_suscripciones_path, params: {
+          suscripcion: { user_id: users(:one).id, fecha_inicio: Date.current },
+          medicion: { peso_kg: 73.5 }
+        }
+      end
+    end
+
+    assert_response :redirect
+    assert users(:one).suscripciones.last.activa?
+    assert_equal 73.5, users(:one).ultima_medicion.peso_kg.to_f
+    assert users(:one).membresia.activa? # la regla de negocio sigue aplicando
+  end
+
   test "sin peso en la medición no crea la suscripción ni encola" do
     sign_in_as users(:admin)
 

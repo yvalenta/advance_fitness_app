@@ -16,8 +16,13 @@ class Admin::SuscripcionesController < ApplicationController
   def create
     authorize Suscripcion, :create?
     datos = params.expect(suscripcion: %i[user_id fecha_inicio fecha_fin])
+    medicion_datos = medicion_params
     @suscripcion = Suscripcion.new(datos.merge(plan: Plan.personalizado, estado: "activa"))
-    @medicion = Medicion.new(medicion_params.merge(user_id: datos[:user_id], tomada_por: Current.user))
+    # Upsert por fecha (como el resto de flujos de medición, Fase 5.12/5.13):
+    # reintentar el alta el mismo día corrige la medición en vez de chocar
+    # con el índice único user_id+fecha y abortar toda la suscripción.
+    @medicion = Medicion.find_or_initialize_by(user_id: datos[:user_id], fecha: medicion_datos[:fecha].presence || Date.current)
+    @medicion.assign_attributes(medicion_datos.except(:fecha).merge(tomada_por: Current.user))
 
     Suscripcion.transaction do
       @suscripcion.save!

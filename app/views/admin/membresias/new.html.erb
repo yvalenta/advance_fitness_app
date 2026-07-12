@@ -50,7 +50,7 @@
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="form-control">
               <span class="label-text mb-1 text-xs font-semibold">Monto (COP)</span>
-              <%= number_field_tag "membresia[monto]", Negocio.precio_mensualidad, min: 1, step: 1000, required: true,
+              <%= number_field_tag "membresia[monto]", Negocio.precio_mensualidad, min: 1000, step: 1000, required: true,
                     placeholder: number_with_delimiter(Negocio.precio_mensualidad, delimiter: "."), class: "input input-bordered w-full" %>
             </label>
             <label class="form-control">

@@ -23,6 +23,13 @@ export default class extends Controller {
     this.dialogoTarget.close()
   }
 
+  // Cerrar al hacer click en el fondo. Cierre manual, no <form method="dialog">
+  // (Fase 5.16): evita que el submit del backdrop deje pasar el click al
+  // elemento que queda debajo al cerrarse.
+  cerrarEnBackdrop(event) {
+    if (!event.target.closest(".modal-box")) this.dialogoTarget.close()
+  }
+
   // Búsqueda en vivo (texto + chip de tipo): oculta tarjetas que no coinciden
   // y las secciones que quedan vacías. Ignora mayúsculas y acentos.
   filtrar() {

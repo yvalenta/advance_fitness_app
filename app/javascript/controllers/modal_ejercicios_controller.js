@@ -24,6 +24,13 @@ export default class extends Controller {
     this.dialogoTarget.close()
   }
 
+  // Cerrar al hacer click en el fondo. Cierre manual, no <form method="dialog">
+  // (Fase 5.16): evita que el submit del backdrop deje pasar el click al
+  // elemento que queda debajo al cerrarse.
+  cerrarEnBackdrop(event) {
+    if (!event.target.closest(".modal-box")) this.dialogoTarget.close()
+  }
+
   // ── Filtros: texto + músculo ──────────────────────────────────────────
   filtrar() {
     const consulta = this.normalizar(this.buscadorTarget.value)

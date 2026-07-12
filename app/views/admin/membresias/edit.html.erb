@@ -27,7 +27,7 @@
       <%= form_with url: admin_membresia_renovacion_path(@membresia), method: :post, class: "flex flex-wrap items-end gap-3" do %>
         <label class="form-control flex-1 basis-40">
           <span class="label-text mb-1 text-xs font-semibold">Monto (COP)</span>
-          <%= number_field_tag :monto, nil, min: 1, step: 1000, required: true, placeholder: "80.000", class: "input input-bordered w-full" %>
+          <%= number_field_tag :monto, nil, min: 1000, step: 1000, required: true, placeholder: "80.000", class: "input input-bordered w-full" %>
         </label>
         <label class="form-control flex-1 basis-36">
           <span class="label-text mb-1 text-xs font-semibold">Método</span>
