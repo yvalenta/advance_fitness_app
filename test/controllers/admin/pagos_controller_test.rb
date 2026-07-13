@@ -59,6 +59,15 @@ class Admin::PagosControllerTest < ActionDispatch::IntegrationTest
     assert_match "80.000", response.body
   end
 
+  # El link al miembro vive dentro del turbo_frame del buscador; sin
+  # data-turbo-frame="_top" Turbo lo trata como navegación DE frame y
+  # revienta con "Content missing" (Fase 6.14).
+  test "el link al miembro rompe el turbo_frame del buscador" do
+    sign_in_as users(:admin)
+    get admin_pagos_path
+    assert_select "a[href=?][data-turbo-frame=?]", admin_user_path(pagos(:inicial_one).membresia.user), "_top"
+  end
+
   test "el entrenador no corrige ni elimina pagos" do
     sign_in_as users(:entrenador)
 

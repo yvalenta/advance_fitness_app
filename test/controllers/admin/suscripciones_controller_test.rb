@@ -117,6 +117,16 @@ class Admin::SuscripcionesControllerTest < ActionDispatch::IntegrationTest
     assert_no_match users(:two).email_address, response.body
   end
 
+  test "el link al miembro rompe el turbo_frame del buscador" do
+    suscripcion = Suscripcion.create!(user: users(:one), plan: planes(:personalizado),
+                                      estado: "activa", fecha_inicio: Date.current)
+    sign_in_as users(:admin)
+
+    get admin_suscripciones_path
+
+    assert_select "a[href=?][data-turbo-frame=?]", admin_user_path(suscripcion.user), "_top"
+  end
+
   test "cancelar deja al miembro sin premium" do
     sign_in_as users(:admin)
     suscripcion = Suscripcion.create!(user: users(:one), plan: planes(:personalizado),

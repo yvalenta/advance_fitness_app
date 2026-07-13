@@ -30,6 +30,10 @@ class PlanPersonalizado < ApplicationRecord
   scope :fallidos, -> { where(estado: "fallido") }
   # Lo que el entrenador debe atender en su cola
   scope :pendientes, -> { where(estado: %w[generando borrador fallido]) }
+  # Un plan real tarda segundos; más de esto casi siempre es un worker que
+  # murió a mitad de camino (p. ej. un deploy) sin dejar rastro del error.
+  MINUTOS_ANTES_DE_ESTANCARSE = 10
+  scope :estancados, -> { where(estado: "generando").where(updated_at: ...MINUTOS_ANTES_DE_ESTANCARSE.minutes.ago) }
 
   # Turbo Streams: la cola del entrenador se actualiza en vivo (SDD §14, 5.7)
   after_create_commit :difundir_alta

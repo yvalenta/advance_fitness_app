@@ -23,3 +23,8 @@ production:
     class: ActivarSuscripcionesProgramadasJob
     queue: default
     schedule: at 4:05am every day
+
+  liberar_planes_estancados:
+    class: LiberarPlanesEstancadosJob
+    queue: default
+    schedule: every 5 minutes

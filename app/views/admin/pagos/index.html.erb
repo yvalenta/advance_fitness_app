@@ -37,7 +37,7 @@
                   <tr class="<%= pago.anulado? ? "opacity-50" : "hover:bg-base-200" %>">
                     <td class="text-sm"><%= l pago.fecha_pago %></td>
                     <td>
-                      <%= link_to admin_user_path(pago.membresia.user), class: "flex items-center gap-2 hover:underline" do %>
+                      <%= link_to admin_user_path(pago.membresia.user), data: { turbo_frame: "_top" }, class: "flex items-center gap-2 hover:underline" do %>
                         <%= render "shared/avatar", user: pago.membresia.user, clase: "size-7 text-[10px]" %>
                         <span class="font-medium"><%= nombre_visible(pago.membresia.user) %></span>
                       <% end %>

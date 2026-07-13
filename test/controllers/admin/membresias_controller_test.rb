@@ -66,6 +66,12 @@ class Admin::MembresiasControllerTest < ActionDispatch::IntegrationTest
     assert_no_match users(:two).email_address, response.body
   end
 
+  test "el link al miembro rompe el turbo_frame del buscador" do
+    sign_in_as users(:admin)
+    get admin_membresias_path
+    assert_select "a[href=?][data-turbo-frame=?]", admin_user_path(membresias(:vencida_two).user), "_top"
+  end
+
   test "un entrenador no puede renovar (solo admin registra pagos)" do
     sign_in_as users(:entrenador)
 
