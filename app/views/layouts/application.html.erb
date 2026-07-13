@@ -35,17 +35,22 @@
     <% end %>
 
     <% if flash[:alert].present? || flash[:notice].present? %>
-      <div class="toast toast-top toast-center z-50 w-full max-w-lg px-4 pt-16">
+      <%# pointer-events-none: el contenedor cubre toda la navbar (toast-top
+          w-full) pero no debe bloquear sus clics — solo cada caja visible
+          (pointer-events-auto) los captura. Se cierra solo a los 5s. %>
+      <div class="toast toast-top toast-center z-50 w-full max-w-lg px-4 pt-16 pointer-events-none" data-controller="toast">
         <% if (mensaje = flash[:alert]) %>
-          <div role="alert" class="alert alert-error shadow-lg" id="alert">
+          <div role="alert" class="alert alert-error pointer-events-auto shadow-lg" id="alert" data-toast-target="item">
             <%= render "shared/icono", nombre: :alerta, clase: "size-5 shrink-0" %>
             <span class="text-sm font-medium"><%= mensaje %></span>
+            <button type="button" class="btn btn-ghost btn-xs btn-circle" data-action="toast#cerrar" aria-label="Cerrar">✕</button>
           </div>
         <% end %>
         <% if (mensaje = flash[:notice]) %>
-          <div role="alert" class="alert alert-success shadow-lg" id="notice">
+          <div role="alert" class="alert alert-success pointer-events-auto shadow-lg" id="notice" data-toast-target="item">
             <%= render "shared/icono", nombre: :check, clase: "size-5 shrink-0" %>
             <span class="text-sm font-medium"><%= mensaje %></span>
+            <button type="button" class="btn btn-ghost btn-xs btn-circle" data-action="toast#cerrar" aria-label="Cerrar">✕</button>
           </div>
         <% end %>
       </div>
