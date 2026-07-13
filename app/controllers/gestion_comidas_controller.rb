@@ -1,13 +1,13 @@
-# Autosave por comida del editor de plan (SDD Fase 5.6). Responde JSON para
-# que el controlador Stimulus muestre estados (guardando/guardado/error) y
-# recalcule totales sin recargar. El :id de la comida es su índice en el
+# Autosave por comida del editor de plan (SDD Fase 5.6). La edición de
+# campos responde JSON; alta/baja responden turbo_stream (Fase 6.9, en vivo
+# sin recargar, igual que la rutina). El :id de la comida es su índice en el
 # array jsonb plan_nutricional["comidas"].
 class GestionComidasController < ApplicationController
   before_action :cargar_plan
 
   def create
     @plan.agregar_comida!(comida_params)
-    render json: cuerpo, status: :created
+    render_editor
   end
 
   def update
@@ -19,12 +19,20 @@ class GestionComidasController < ApplicationController
 
   def destroy
     @plan.eliminar_comida!(params[:id].to_i)
-    render json: cuerpo
+    render_editor
   rescue ActiveRecord::RecordNotFound
-    render json: { error: "La comida ya no existe." }, status: :not_found
+    head :not_found
   end
 
   private
+
+    def render_editor
+      render turbo_stream: turbo_stream.replace(
+        "editor_nutricional",
+        partial: "planes_personalizados/editor",
+        locals: { plan: @plan, plantillas: PlantillaComida.ordenadas }
+      )
+    end
 
     def cargar_plan
       @plan = PlanPersonalizado.find(params[:plan_personalizado_id])

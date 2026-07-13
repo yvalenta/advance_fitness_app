@@ -54,5 +54,18 @@
     <main>
       <%= yield %>
     </main>
+
+    <%# Confirmación global (Fase 6.9): reemplaza window.confirm/data-turbo-
+        confirm, que no hacen nada en iOS con la app agregada a inicio. %>
+    <dialog class="modal" data-controller="confirmacion" data-action="click->confirmacion#cerrarEnBackdrop">
+      <div class="modal-box max-w-sm">
+        <p class="text-sm font-medium" data-confirmacion-target="mensaje"></p>
+        <div class="modal-action">
+          <button type="button" class="btn btn-ghost btn-sm" data-action="confirmacion#cancelar">Cancelar</button>
+          <button type="button" class="btn btn-error btn-sm" data-action="confirmacion#aceptar" data-confirmacion-target="aceptar">Confirmar</button>
+        </div>
+      </div>
+      <div class="modal-backdrop"></div>
+    </dialog>
   </body>
 </html>

@@ -2,6 +2,8 @@
 # una sesión completa por músculo (Fase 5.11): reemplaza los ejercicios del día
 # y refresca solo ese panel vía Turbo Stream.
 class GestionDiasController < ApplicationController
+  include RenderizaDiaRutina
+
   def update
     @plan = PlanPersonalizado.find(params[:plan_personalizado_id])
     authorize @plan, :editar_rutina?
@@ -21,11 +23,6 @@ class GestionDiasController < ApplicationController
     def aplicar_sesion(indice, musculo)
       plantillas = PlantillaEjercicio.ordenadas.where(musculo: musculo).to_a
       @plan.aplicar_sesion!(indice, musculo, plantillas)
-
-      render turbo_stream: turbo_stream.replace(
-        "dia_editor_#{indice}",
-        partial: "planes_personalizados/dia_editor",
-        locals: { plan: @plan, dia: @plan.dias.fetch(indice), indice: indice }
-      )
+      render_dia(indice)
     end
 end

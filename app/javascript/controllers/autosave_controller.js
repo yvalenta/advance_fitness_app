@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { Turbo } from "@hotwired/turbo-rails"
 
 // Editor de plan nutricional por comida con autosave tolerante a fallos.
 // Cada card guarda sola (debounce) y muestra su estado: editando → guardando
@@ -70,19 +71,25 @@ export default class extends Controller {
 
   async eliminar(event) {
     event.preventDefault()
-    if (!window.confirm("¿Eliminar este elemento del plan?")) return
+    // window.confirm no hace nada en iOS con la app agregada a inicio
+    // (Fase 6.9): se reemplaza por el diálogo global de confirmación.
+    if (!(await window.confirmarAccion("¿Eliminar este elemento del plan?"))) return
     const card = event.target.closest("[data-autosave-target='card']")
     await this.enviarEstructura(card.dataset.url, "DELETE")
   }
 
-  // Alta/baja de comidas cambian los índices: se recarga la sección desde el
-  // servidor (fuente de verdad) tras confirmar el cambio.
+  // Alta/baja cambian los índices: el servidor (fuente de verdad) responde
+  // turbo_stream con la sección ya recalculada, sin recargar la página.
   async enviarEstructura(url, metodo) {
     this.marcarGlobal("Guardando…")
     try {
-      const respuesta = await fetch(url, { method: metodo, headers: this.cabeceras })
+      const respuesta = await fetch(url, {
+        method: metodo,
+        headers: { ...this.cabeceras, Accept: "text/vnd.turbo-stream.html" }
+      })
       if (respuesta.ok) {
-        window.location.reload()
+        Turbo.renderStreamMessage(await respuesta.text())
+        this.marcarGlobal("Todo guardado ✓")
       } else {
         this.marcarGlobal("No se pudo guardar — reintenta")
       }

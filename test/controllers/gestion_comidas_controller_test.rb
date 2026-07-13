@@ -25,17 +25,19 @@ class GestionComidasControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Desayuno power", @plan.reload.comidas.first["nombre"]
   end
 
-  test "agregar y eliminar comidas cambia el tamaño del plan" do
+  test "agregar y eliminar comidas responde turbo_stream sin recargar" do
     sign_in_as users(:admin)
 
     assert_difference -> { @plan.reload.comidas.size }, 1 do
-      post plan_personalizado_comidas_path(@plan), as: :json,
-           params: { comida: { nombre: "Snack", kcal: "150" } }
+      post plan_personalizado_comidas_path(@plan),
+           headers: { "Accept" => "text/vnd.turbo-stream.html" }, params: { comida: { nombre: "Snack", kcal: "150" } }
     end
-    assert_response :created
+    assert_response :success
+    assert_match "turbo-stream", response.media_type
+    assert_select "turbo-stream[action=replace][target=editor_nutricional]"
 
     assert_difference -> { @plan.reload.comidas.size }, -1 do
-      delete plan_personalizado_comida_path(@plan, 0), as: :json
+      delete plan_personalizado_comida_path(@plan, 0), headers: { "Accept" => "text/vnd.turbo-stream.html" }
     end
     assert_response :success
   end

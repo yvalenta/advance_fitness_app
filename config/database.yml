@@ -15,7 +15,13 @@
 default: &default
   adapter: postgresql
   encoding: unicode
-  max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  # "pool" (no "max_connections", que ActiveRecord ignora): con 4 bases
+  # lógicas (primary/cache/queue/cable) compartiendo la MISMA base física de
+  # Supabase, cada una abre su propio pool — con el default de 5 se llega a
+  # 20 conexiones por proceso, superando el límite de 15 del pooler en modo
+  # sesión (puerto 5432) y dejando trabajos "atascados" cuando ni siquiera
+  # alcanza a guardarse el estado de fallo (julio 2026).
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS", 3).to_i %>
 
 
 development:

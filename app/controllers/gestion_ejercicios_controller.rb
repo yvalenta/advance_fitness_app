@@ -1,14 +1,17 @@
 # Autosave por ejercicio del editor de rutina (SDD Fase 5.7b). Espeja
 # GestionComidasController pero en 2D: :dia_id = índice del día,
-# :id = índice del ejercicio dentro de ese día. Responde JSON.
+# :id = índice del ejercicio dentro de ese día. Alta/baja responden turbo_
+# stream (Fase 6.9, en vivo sin recargar); la edición de campos sigue en JSON.
 class GestionEjerciciosController < ApplicationController
+  include RenderizaDiaRutina
+
   before_action :cargar_plan
 
   def create
     @plan.agregar_ejercicio!(dia_indice, ejercicio_params)
-    render json: cuerpo, status: :created
+    render_dia(dia_indice)
   rescue IndexError, KeyError
-    render json: { error: "El día ya no existe." }, status: :not_found
+    head :not_found
   end
 
   def update
@@ -20,9 +23,9 @@ class GestionEjerciciosController < ApplicationController
 
   def destroy
     @plan.eliminar_ejercicio!(dia_indice, params[:id].to_i)
-    render json: cuerpo
+    render_dia(dia_indice)
   rescue IndexError, KeyError, ActiveRecord::RecordNotFound
-    render json: { error: "El ejercicio ya no existe." }, status: :not_found
+    head :not_found
   end
 
   private
