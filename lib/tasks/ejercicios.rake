@@ -11,6 +11,17 @@ namespace :ejercicios do
          "sin cambio: #{resumen[:sin_cambio]} · total en base: #{Ejercicio.count}"
   end
 
+  desc "Traduce al español (con IA) los nombres que siguen en inglés"
+  task traducir_nombres: :environment do
+    pendientes = Ejercicio.where("nombre = nombre_en").count
+    puts "Pendientes de traducir: #{pendientes}"
+
+    total = Ejercicios::TraductorNombres.traducir_pendientes do |avance|
+      puts "  … #{avance} traducidos"
+    end
+    puts "✓ Traducidos: #{total} · aún en inglés: #{Ejercicio.where('nombre = nombre_en').count}"
+  end
+
   desc "Pre-descarga el media (gif + imagen) de los ejercicios enlazados a plantillas"
   task precalentar_media: :environment do
     ejercicios = Ejercicio.joins(:plantillas_ejercicio).distinct
