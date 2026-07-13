@@ -33,6 +33,32 @@ class Admin::PagosControllerTest < ActionDispatch::IntegrationTest
     assert_equal 80_000, pagos(:inicial_one).reload.monto.to_i
   end
 
+  # Fase 6.13: un solo campo interpreta usuario, fecha, valor o método
+  test "el buscador filtra por método" do
+    sign_in_as users(:admin)
+    get admin_pagos_path(q: "efectivo")
+    assert_response :success
+    assert_match "80.000", response.body
+  end
+
+  test "el buscador filtra por valor" do
+    sign_in_as users(:admin)
+    get admin_pagos_path(q: "80000")
+    assert_response :success
+    assert_match "80.000", response.body
+
+    get admin_pagos_path(q: "99999")
+    assert_response :success
+    assert_no_match "80.000", response.body
+  end
+
+  test "el buscador filtra por miembro" do
+    sign_in_as users(:admin)
+    get admin_pagos_path(q: pagos(:inicial_one).membresia.user.nombre)
+    assert_response :success
+    assert_match "80.000", response.body
+  end
+
   test "el entrenador no corrige ni elimina pagos" do
     sign_in_as users(:entrenador)
 

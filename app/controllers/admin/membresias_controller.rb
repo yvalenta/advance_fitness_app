@@ -1,7 +1,12 @@
 class Admin::MembresiasController < ApplicationController
   def index
     authorize Membresia
+    @q = params[:q].to_s.strip
     @membresias = policy_scope(Membresia).includes(:user).order(:fecha_vencimiento)
+    if @q.present?
+      @membresias = @membresias.joins(:user)
+        .where("users.nombre ILIKE :q OR users.email_address ILIKE :q", q: "%#{User.sanitize_sql_like(@q)}%")
+    end
   end
 
   def new

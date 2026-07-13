@@ -37,6 +37,6 @@ class ProgresosControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match "Registra tu peso al menos dos veces", response.body
     assert_match "Fija tu objetivo calórico", response.body
-    assert_match "Tus check-ins en recepción aparecerán aquí", response.body
+    assert_match "check-ins en recepción aparecerán aquí", response.body
   end
 end

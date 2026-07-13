@@ -1,0 +1,77 @@
+<%# Asistencia semanal (SVG), extraída de progresos/show para reutilizarla en %>
+<%# el dashboard del admin (Fase 6.13). %>
+<%# locals: (progreso:) %>
+<div class="card border border-base-300 bg-base-100 shadow-md">
+  <div class="card-body">
+    <h2 class="card-title text-base">
+      <span class="flex size-7 items-center justify-center rounded-lg bg-base-200 text-steel-5">
+        <%= render "shared/icono", nombre: :calendario, clase: "size-4" %>
+      </span>
+      Asistencia — últimas 8 semanas
+    </h2>
+    <% if progreso.asistencia.sum { |_, accesos| accesos.size }.positive? %>
+      <% tope = [ progreso.asistencia.map { |_, accesos| accesos.size }.max, 1 ].max * 1.3 %>
+      <% base = 150 - GraficaSvg::MARGEN %>
+      <% ranura = (1000 - (2 * GraficaSvg::MARGEN)).fdiv(progreso.asistencia.size) %>
+      <div class="relative" data-controller="grafica"
+           data-action="mousemove->grafica#mostrar mouseleave->grafica#ocultar click->grafica#seleccionar">
+        <svg viewBox="0 0 1000 150" class="mt-1 w-full" role="img" aria-label="Visitas al gimnasio por semana">
+          <% progreso.asistencia.each_with_index do |(semana, accesos), indice| %>
+            <% visitas = accesos.size %>
+            <% x = GraficaSvg::MARGEN + (indice * ranura) + (ranura * 0.28) %>
+            <% y = visitas.positive? ? GraficaSvg.y_para(visitas, alto: 150, min: 0, max: tope) : base - 3 %>
+            <rect class="grafica-barra" style="animation-delay: <%= indice * 60 %>ms"
+                  x="<%= x.round(1) %>" y="<%= y %>" width="<%= (ranura * 0.44).round(1) %>" height="<%= (base - y).round(1) %>"
+                  rx="5" fill="var(--color-<%= visitas.positive? ? "volt" : "steel-1" %>)"
+                  data-indice="<%= indice %>"
+                  data-etiqueta="<%= visitas %> <%= "visita".pluralize(visitas) %> · semana del <%= l semana, format: "%d %b" %> — ver detalle"/>
+            <% if visitas.positive? %>
+              <text x="<%= (x + (ranura * 0.22)).round(1) %>" y="<%= y - 7 %>" text-anchor="middle"
+                    class="fill-steel-5" font-size="12" font-weight="bold"><%= visitas %></text>
+            <% end %>
+            <text x="<%= (x + (ranura * 0.22)).round(1) %>" y="148" text-anchor="middle" class="fill-steel-3" font-size="10">
+              <%= l semana, format: "%d %b" %>
+            </text>
+          <% end %>
+        </svg>
+        <div class="pointer-events-none absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-steel px-2.5 py-1 text-xs font-semibold text-volt shadow-lg"
+             hidden data-grafica-target="tooltip"></div>
+
+        <%# Detalle por semana: los check-ins que suman la barra %>
+        <% progreso.asistencia.each_with_index do |(semana, accesos), indice| %>
+          <div hidden data-grafica-target="detalle" data-indice="<%= indice %>"
+               class="animate-fade-up mt-2 rounded-xl border p-3 text-sm <%= accesos.any? ? "border-volt/40 bg-volt/10" : "border-base-300 bg-base-200" %>">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <p class="font-semibold">Semana del <%= l semana, format: :long %></p>
+              <span class="badge badge-sm <%= accesos.any? ? "badge-success" : "badge-ghost" %>">
+                <%= accesos.size %> <%= "visita".pluralize(accesos.size) %>
+              </span>
+            </div>
+            <% if accesos.any? %>
+              <ul class="mt-2 flex flex-col gap-1.5">
+                <% accesos.each do |acceso| %>
+                  <li class="flex flex-wrap items-center gap-2 text-steel-5">
+                    <%= render "shared/icono", nombre: :rayo, clase: "size-3.5 text-volt-d" %>
+                    <%= l acceso.fecha_hora, format: :short %>
+                    <%= badge_estado(acceso.tipo) %>
+                    <% unless acceso.dentro_de_horario? %>
+                      <span class="badge badge-sm badge-error">fuera de horario</span>
+                    <% end %>
+                  </li>
+                <% end %>
+              </ul>
+              <p class="mt-1.5 text-xs text-steel-3">Fuente: check-ins registrados en recepción.</p>
+            <% else %>
+              <p class="mt-1 text-xs text-steel-3">Sin visitas esta semana.</p>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="flex flex-col items-center gap-2 rounded-xl bg-base-200 py-10 text-center">
+        <%= render "shared/icono", nombre: :calendario, clase: "size-8 text-steel-1" %>
+        <p class="text-sm text-steel-3">Los check-ins en recepción aparecerán aquí.</p>
+      </div>
+    <% end %>
+  </div>
+</div>

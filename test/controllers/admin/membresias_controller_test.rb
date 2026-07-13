@@ -55,6 +55,17 @@ class Admin::MembresiasControllerTest < ActionDispatch::IntegrationTest
     assert_equal Date.current + 30.days, membresia.fecha_vencimiento
   end
 
+  # Fase 6.13: buscador en vivo por nombre/correo del miembro
+  test "el listado filtra por usuario con ?q=" do
+    sign_in_as users(:admin)
+
+    get admin_membresias_path(q: users(:one).nombre)
+
+    assert_response :success
+    assert_match users(:one).email_address, response.body
+    assert_no_match users(:two).email_address, response.body
+  end
+
   test "un entrenador no puede renovar (solo admin registra pagos)" do
     sign_in_as users(:entrenador)
 

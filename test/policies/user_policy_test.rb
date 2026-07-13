@@ -18,9 +18,9 @@ class UserPolicyTest < ActiveSupport::TestCase
     assert_not UserPolicy.new(@miembro, @otro).update?
   end
 
-  test "staff ve a todos pero solo admin edita" do
+  test "staff ve y edita el perfil de cualquiera (el rol se restringe aparte, en el controller)" do
     assert UserPolicy.new(@entrenador, @otro).show?
-    assert_not UserPolicy.new(@entrenador, @otro).update?
+    assert UserPolicy.new(@entrenador, @otro).update?
 
     assert UserPolicy.new(@admin, @otro).show?
     assert UserPolicy.new(@admin, @otro).update?

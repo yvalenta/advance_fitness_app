@@ -1,0 +1,109 @@
+<%# Tendencia de peso (SVG), extraída de progresos/show para reutilizarla en %>
+<%# el dashboard del admin (Fase 6.13). %>
+<%# locals: (progreso:, editable: false) %>
+<%# editable: true = vista propia del miembro (enlaces de autoservicio). %>
+<% editable = local_assigns.fetch(:editable, false) %>
+<div class="card border border-base-300 bg-base-100 shadow-md">
+  <div class="card-body">
+    <h2 class="card-title text-base">
+      <span class="flex size-7 items-center justify-center rounded-lg bg-ocean/15 text-ocean">
+        <%= render "shared/icono", nombre: :actividad, clase: "size-4" %>
+      </span>
+      Tendencia de peso
+      <span class="badge badge-ghost badge-sm ml-auto hidden sm:inline-flex"><%= progreso.fuente_peso == :mediciones ? "de mediciones" : "de objetivos" %></span>
+    </h2>
+    <% if progreso.pesos.size >= 2 %>
+      <% valores = progreso.pesos.map(&:last) %>
+      <% puntos = GraficaSvg.puntos(valores, ancho: 560, alto: 230) %>
+      <% curva = GraficaSvg.camino_suave(puntos) %>
+      <% base = 230 - GraficaSvg::MARGEN %>
+      <div class="relative" data-controller="grafica"
+           data-action="mousemove->grafica#mostrar mouseleave->grafica#ocultar click->grafica#seleccionar">
+        <svg viewBox="0 0 560 230" class="mt-1 w-full" role="img" aria-label="Tendencia de peso">
+          <defs>
+            <linearGradient id="grad-peso" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--color-ocean)" stop-opacity="0.28"/>
+              <stop offset="100%" stop-color="var(--color-ocean)" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <% [ 0.25, 0.5, 0.75 ].each do |fraccion| %>
+            <line x1="<%= GraficaSvg::MARGEN %>" x2="<%= 560 - GraficaSvg::MARGEN %>"
+                  y1="<%= (GraficaSvg::MARGEN + (fraccion * (230 - (2 * GraficaSvg::MARGEN)))).round(1) %>"
+                  y2="<%= (GraficaSvg::MARGEN + (fraccion * (230 - (2 * GraficaSvg::MARGEN)))).round(1) %>"
+                  stroke="var(--color-base-300)" stroke-width="1" stroke-dasharray="2 5"/>
+          <% end %>
+          <path class="grafica-area" d="<%= curva %> L <%= puntos.last[0] %>,<%= base %> L <%= puntos.first[0] %>,<%= base %> Z"
+                fill="url(#grad-peso)"/>
+          <path class="grafica-linea" d="<%= curva %>" pathLength="1" fill="none" stroke="var(--color-ocean)"
+                stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <% puntos.each_with_index do |(x, y), indice| %>
+            <circle class="grafica-punto" style="animation-delay: <%= 500 + (indice * 90) %>ms"
+                    cx="<%= x %>" cy="<%= y %>" r="5" fill="var(--color-ocean)" stroke="white" stroke-width="2"
+                    data-indice="<%= indice %>"
+                    data-etiqueta="<%= valores[indice] %> kg · <%= l progreso.pesos[indice].first %> — ver detalle"/>
+          <% end %>
+          <text x="<%= GraficaSvg::MARGEN %>" y="<%= GraficaSvg::MARGEN - 2 %>" class="fill-steel-3" font-size="10"><%= valores.max %> kg</text>
+          <text x="<%= GraficaSvg::MARGEN %>" y="228" class="fill-steel-3" font-size="10"><%= l progreso.pesos.first.first %></text>
+          <text x="<%= 560 - GraficaSvg::MARGEN %>" y="228" text-anchor="end" class="fill-steel-3" font-size="10"><%= l progreso.pesos.last.first %></text>
+        </svg>
+        <div class="pointer-events-none absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-steel px-2.5 py-1 text-xs font-semibold text-volt shadow-lg"
+             hidden data-grafica-target="tooltip"></div>
+
+        <%# Detalle por punto: la medición o el objetivo que originó ese peso %>
+        <% if progreso.fuente_peso == :mediciones %>
+          <% progreso.mediciones.each_with_index do |medicion, indice| %>
+            <div hidden data-grafica-target="detalle" data-indice="<%= indice %>"
+                 class="animate-fade-up mt-2 rounded-xl border border-ocean/30 bg-ocean/5 p-3 text-sm">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <p class="font-semibold">Medición del <%= l medicion.fecha, format: :long %></p>
+                <span class="badge badge-sm badge-info">
+                  <%= editable ? (medicion.tomada_por_id == Current.user.id || medicion.tomada_por_id.nil? ? "tú" : "tu entrenador") : (medicion.tomada_por_id.nil? ? "el miembro" : "staff") %>
+                </span>
+              </div>
+              <p class="mt-1 text-steel-5">
+                Peso <strong><%= medicion.peso_kg.to_f %> kg</strong>
+                <% if medicion.imc %> · IMC <strong><%= medicion.imc %></strong><% end %>
+                <% if medicion.grasa_pct %> · Grasa <strong><%= medicion.grasa_pct %>%</strong><% end %>
+              </p>
+            </div>
+          <% end %>
+        <% else %>
+          <% progreso.objetivos_historial.each_with_index do |objetivo, indice| %>
+            <div hidden data-grafica-target="detalle" data-indice="<%= indice %>"
+                 class="animate-fade-up mt-2 rounded-xl border border-ocean/30 bg-ocean/5 p-3 text-sm">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <p class="font-semibold">Objetivo fijado el <%= l objetivo.created_at.to_date, format: :long %></p>
+                <span class="badge badge-sm badge-info"><%= objetivo.nombre %></span>
+              </div>
+              <p class="mt-1 text-steel-5">
+                Peso <strong><%= objetivo.peso_kg.to_f %> kg</strong> ·
+                TDEE <strong><%= number_with_delimiter(objetivo.tdee_kcal, delimiter: ".") %> kcal</strong> ·
+                objetivo diario <strong><%= number_with_delimiter(objetivo.objetivo_kcal, delimiter: ".") %> kcal</strong>
+              </p>
+              <% if editable %>
+                <p class="mt-1 text-xs text-steel-3">
+                  Este snapshot alimentó tus cálculos de nutrición desde esa fecha.
+                  <% if objetivo.activo? %>
+                    <%= link_to "Actualizar objetivo →", new_objetivo_path, class: "link font-semibold" %>
+                  <% end %>
+                </p>
+              <% end %>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+      <p class="text-xs text-steel-3">Cada punto es un registro de peso. Haz click para ver su detalle.</p>
+    <% else %>
+      <div class="flex flex-col items-center gap-2 rounded-xl bg-base-200 py-10 text-center">
+        <%= render "shared/icono", nombre: :actividad, clase: "size-8 text-steel-1" %>
+        <p class="max-w-sm text-sm text-steel-3">
+          <% if editable %>
+            Registra tu peso al menos dos veces para ver tu tendencia. Usa el formulario de arriba cuando cambie tu peso.
+          <% else %>
+            Se necesitan al menos dos registros de peso para ver la tendencia.
+          <% end %>
+        </p>
+      </div>
+    <% end %>
+  </div>
+</div>

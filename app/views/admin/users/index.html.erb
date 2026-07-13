@@ -7,56 +7,60 @@
 <div class="mx-auto -mt-8 w-full max-w-6xl px-4 pb-12">
   <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
     <div class="card-body">
-      <%= form_with url: admin_users_path, method: :get, class: "mb-1" do %>
-        <label class="input input-bordered flex max-w-sm items-center gap-2">
-          <%= render "shared/icono", nombre: :busqueda, clase: "size-4 text-steel-3" %>
-          <input type="search" name="q" value="<%= @q %>" placeholder="Buscar por nombre o correo…" class="grow">
-        </label>
-      <% end %>
+      <%= turbo_frame_tag "resultados_miembros", data: { controller: "buscador-en-vivo" } do %>
+        <%= form_with url: admin_users_path, method: :get, class: "mb-1",
+              data: { turbo_frame: "resultados_miembros", buscador_en_vivo_target: "form" } do %>
+          <label class="input input-bordered flex max-w-sm items-center gap-2">
+            <%= render "shared/icono", nombre: :busqueda, clase: "size-4 text-steel-3" %>
+            <input type="search" name="q" value="<%= @q %>" placeholder="Buscar por nombre o correo…"
+                   class="grow" data-action="input->buscador-en-vivo#buscar">
+          </label>
+        <% end %>
 
-      <% if @q.present? %>
-        <p class="text-xs text-steel-3">
-          <%= pluralize(@users.size, "resultado") %> para "<%= @q %>" ·
-          <%= link_to "Limpiar", admin_users_path, class: "link" %>
-        </p>
-      <% end %>
+        <% if @q.present? %>
+          <p class="text-xs text-steel-3">
+            <%= pluralize(@users.size, "resultado") %> para "<%= @q %>" ·
+            <%= link_to "Limpiar", admin_users_path, data: { turbo_frame: "resultados_miembros" }, class: "link" %>
+          </p>
+        <% end %>
 
-      <div class="overflow-x-auto">
-        <table class="table">
-          <thead>
-            <tr class="text-xs uppercase tracking-wider text-steel-3">
-              <th>Miembro</th><th>Rol</th><th>Membresía</th><th>Ingreso</th><th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <% @users.each do |usuario| %>
-              <tr class="hover:bg-base-200">
-                <td>
-                  <div class="flex items-center gap-3">
-                    <%= render "shared/avatar", user: usuario %>
-                    <div>
-                      <p class="font-semibold"><%= usuario.nombre.presence || "—" %></p>
-                      <p class="text-xs text-steel-3"><%= usuario.email_address %></p>
-                    </div>
-                  </div>
-                </td>
-                <td><span class="badge badge-sm badge-ghost"><%= usuario.rol %></span></td>
-                <td>
-                  <% if usuario.membresia %>
-                    <%= badge_estado(usuario.membresia.estado) %>
-                  <% else %>
-                    <span class="text-xs text-steel-3">sin membresía</span>
-                  <% end %>
-                </td>
-                <td class="text-sm text-steel-5"><%= l usuario.fecha_ingreso %></td>
-                <td class="text-right">
-                  <%= link_to "Ver", admin_user_path(usuario), class: "btn btn-ghost btn-xs" %>
-                </td>
+        <div class="overflow-x-auto">
+          <table class="table">
+            <thead>
+              <tr class="text-xs uppercase tracking-wider text-steel-3">
+                <th>Miembro</th><th>Rol</th><th>Membresía</th><th>Ingreso</th><th></th>
               </tr>
-            <% end %>
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              <% @users.each do |usuario| %>
+                <tr class="hover:bg-base-200">
+                  <td>
+                    <%= link_to admin_user_path(usuario), class: "flex items-center gap-3 hover:underline" do %>
+                      <%= render "shared/avatar", user: usuario %>
+                      <div>
+                        <p class="font-semibold"><%= usuario.nombre.presence || "—" %></p>
+                        <p class="text-xs text-steel-3"><%= usuario.email_address %></p>
+                      </div>
+                    <% end %>
+                  </td>
+                  <td><span class="badge badge-sm badge-ghost"><%= usuario.rol %></span></td>
+                  <td>
+                    <% if usuario.membresia %>
+                      <%= badge_estado(usuario.membresia.estado) %>
+                    <% else %>
+                      <span class="text-xs text-steel-3">sin membresía</span>
+                    <% end %>
+                  </td>
+                  <td class="text-sm text-steel-5"><%= l usuario.fecha_ingreso %></td>
+                  <td class="text-right">
+                    <%= link_to "Ver", admin_user_path(usuario), class: "btn btn-ghost btn-xs" %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
     </div>
   </div>
 </div>

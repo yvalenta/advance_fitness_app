@@ -8,48 +8,68 @@
 <div class="mx-auto -mt-8 w-full max-w-6xl px-4 pb-12">
   <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
     <div class="card-body">
-      <% if @membresias.any? %>
-        <div class="overflow-x-auto">
-          <table class="table">
-            <thead>
-              <tr class="text-xs uppercase tracking-wider text-steel-3">
-                <th>Miembro</th><th>Estado</th><th>Vence</th><th>Días</th><th>Horario</th><th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <% @membresias.each do |membresia| %>
-                <tr class="hover:bg-base-200">
-                  <td>
-                    <div class="flex items-center gap-3">
-                      <%= render "shared/avatar", user: membresia.user %>
-                      <div>
-                        <p class="font-semibold"><%= nombre_visible(membresia.user) %></p>
-                        <p class="text-xs text-steel-3"><%= membresia.user.email_address %></p>
-                      </div>
-                    </div>
-                  </td>
-                  <td><%= badge_estado(membresia.estado) %></td>
-                  <td class="text-sm text-steel-5"><%= l membresia.fecha_vencimiento %></td>
-                  <td class="font-display font-bold <%= membresia.dias_restantes.negative? ? "text-pulse" : "" %>">
-                    <%= membresia.dias_restantes %>
-                  </td>
-                  <td class="text-xs text-steel-3">
-                    <%= membresia.hora_apertura ? "#{membresia.hora_apertura}–#{membresia.hora_cierre}" : "libre" %>
-                  </td>
-                  <td class="text-right">
-                    <%= link_to "Gestionar", edit_admin_membresia_path(membresia), class: "btn btn-ghost btn-xs" %>
-                  </td>
+      <%= turbo_frame_tag "resultados_membresias", data: { controller: "buscador-en-vivo" } do %>
+        <%= form_with url: admin_membresias_path, method: :get, class: "mb-1",
+              data: { turbo_frame: "resultados_membresias", buscador_en_vivo_target: "form" } do %>
+          <label class="input input-bordered flex max-w-sm items-center gap-2">
+            <%= render "shared/icono", nombre: :busqueda, clase: "size-4 text-steel-3" %>
+            <input type="search" name="q" value="<%= @q %>" placeholder="Buscar por nombre o correo…"
+                   class="grow" data-action="input->buscador-en-vivo#buscar">
+          </label>
+        <% end %>
+
+        <% if @q.present? %>
+          <p class="text-xs text-steel-3">
+            <%= pluralize(@membresias.size, "resultado") %> para "<%= @q %>" ·
+            <%= link_to "Limpiar", admin_membresias_path, data: { turbo_frame: "resultados_membresias" }, class: "link" %>
+          </p>
+        <% end %>
+
+        <% if @membresias.any? %>
+          <div class="overflow-x-auto">
+            <table class="table">
+              <thead>
+                <tr class="text-xs uppercase tracking-wider text-steel-3">
+                  <th>Miembro</th><th>Estado</th><th>Vence</th><th>Días</th><th>Horario</th><th></th>
                 </tr>
-              <% end %>
-            </tbody>
-          </table>
-        </div>
-      <% else %>
-        <div class="flex flex-col items-center gap-3 rounded-xl bg-base-200 py-12 text-center">
-          <%= render "shared/icono", nombre: :escudo, clase: "size-8 text-steel-1" %>
-          <p class="text-sm text-steel-3">Aún no hay membresías.</p>
-          <%= link_to "Crear la primera", new_admin_membresia_path, class: "btn btn-primary btn-sm font-bold" %>
-        </div>
+              </thead>
+              <tbody>
+                <% @membresias.each do |membresia| %>
+                  <tr class="hover:bg-base-200">
+                    <td>
+                      <%= link_to admin_user_path(membresia.user), class: "flex items-center gap-3 hover:underline" do %>
+                        <%= render "shared/avatar", user: membresia.user %>
+                        <div>
+                          <p class="font-semibold"><%= nombre_visible(membresia.user) %></p>
+                          <p class="text-xs text-steel-3"><%= membresia.user.email_address %></p>
+                        </div>
+                      <% end %>
+                    </td>
+                    <td><%= badge_estado(membresia.estado) %></td>
+                    <td class="text-sm text-steel-5"><%= l membresia.fecha_vencimiento %></td>
+                    <td class="font-display font-bold <%= membresia.dias_restantes.negative? ? "text-pulse" : "" %>">
+                      <%= membresia.dias_restantes %>
+                    </td>
+                    <td class="text-xs text-steel-3">
+                      <%= membresia.hora_apertura ? "#{membresia.hora_apertura}–#{membresia.hora_cierre}" : "libre" %>
+                    </td>
+                    <td class="text-right">
+                      <%= link_to "Gestionar", edit_admin_membresia_path(membresia), class: "btn btn-ghost btn-xs" %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% else %>
+          <div class="flex flex-col items-center gap-3 rounded-xl bg-base-200 py-12 text-center">
+            <%= render "shared/icono", nombre: :escudo, clase: "size-8 text-steel-1" %>
+            <p class="text-sm text-steel-3"><%= @q.present? ? "Nada coincide con tu búsqueda." : "Aún no hay membresías." %></p>
+            <% unless @q.present? %>
+              <%= link_to "Crear la primera", new_admin_membresia_path, class: "btn btn-primary btn-sm font-bold" %>
+            <% end %>
+          </div>
+        <% end %>
       <% end %>
     </div>
   </div>

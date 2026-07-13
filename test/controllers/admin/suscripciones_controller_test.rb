@@ -104,6 +104,19 @@ class Admin::SuscripcionesControllerTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_entity
   end
 
+  # Fase 6.13: buscador en vivo por nombre/correo del miembro
+  test "el listado filtra por usuario con ?q=" do
+    Suscripcion.create!(user: users(:one), plan: planes(:personalizado), estado: "activa", fecha_inicio: Date.current)
+    Suscripcion.create!(user: users(:two), plan: planes(:personalizado), estado: "activa", fecha_inicio: Date.current)
+    sign_in_as users(:admin)
+
+    get admin_suscripciones_path(q: users(:one).nombre)
+
+    assert_response :success
+    assert_match users(:one).email_address, response.body
+    assert_no_match users(:two).email_address, response.body
+  end
+
   test "cancelar deja al miembro sin premium" do
     sign_in_as users(:admin)
     suscripcion = Suscripcion.create!(user: users(:one), plan: planes(:personalizado),

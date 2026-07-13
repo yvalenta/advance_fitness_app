@@ -7,20 +7,20 @@
 
 <div class="mx-auto -mt-8 w-full max-w-5xl px-4 pb-12">
   <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
-    <% peso_actual = @pesos.last&.last %>
-    <% delta_peso = @pesos.size >= 2 ? (peso_actual - @pesos.first.last).round(1) : nil %>
+    <% peso_actual = @progreso.pesos.last&.last %>
+    <% delta_peso = @progreso.pesos.size >= 2 ? (peso_actual - @progreso.pesos.first.last).round(1) : nil %>
     <div class="animate-fade-up">
       <%= render "shared/metric_card",
             titulo: "Peso actual",
             valor: peso_actual ? "#{peso_actual} kg" : "—",
-            descripcion: delta_peso ? "#{delta_peso.positive? ? "+" : ""}#{delta_peso} kg desde el inicio" : (@fuente_peso == :mediciones ? "Registra tu peso para ver la tendencia" : "Se toma de tus objetivos fijados"),
+            descripcion: delta_peso ? "#{delta_peso.positive? ? "+" : ""}#{delta_peso} kg desde el inicio" : (@progreso.fuente_peso == :mediciones ? "Registra tu peso para ver la tendencia" : "Se toma de tus objetivos fijados"),
             icono: :actividad,
             acento: "bg-ocean/15 text-ocean" %>
     </div>
     <div class="animate-fade-up fade-delay-1">
       <%= render "shared/metric_card",
             titulo: "Visitas este mes",
-            valor: @visitas_mes,
+            valor: @progreso.visitas_mes,
             descripcion: "Check-ins registrados en recepción",
             icono: :rayo,
             acento: "bg-volt/15 text-volt-d" %>
@@ -28,8 +28,8 @@
     <div class="animate-fade-up fade-delay-2 col-span-2 sm:col-span-1">
       <%= render "shared/metric_card",
             titulo: "Adherencia del mes",
-            valor: @dias_registrados.positive? ? "#{((@dias_en_meta * 100.0) / @dias_registrados).round}%" : "—",
-            descripcion: @dias_registrados.positive? ? "#{@dias_en_meta} de #{@dias_registrados} días registrados en meta" : "Registra tus calorías para medirla",
+            valor: @progreso.dias_registrados.positive? ? "#{((@progreso.dias_en_meta * 100.0) / @progreso.dias_registrados).round}%" : "—",
+            descripcion: @progreso.dias_registrados.positive? ? "#{@progreso.dias_en_meta} de #{@progreso.dias_registrados} días registrados en meta" : "Registra tus calorías para medirla",
             icono: :fuego,
             acento: "bg-pulse/15 text-pulse" %>
     </div>
@@ -48,7 +48,7 @@
       </label>
       <label class="form-control">
         <span class="label-text mb-1 text-xs font-semibold">Peso (kg)</span>
-        <%= form.number_field "medicion[peso_kg]", step: 0.1, min: 0, required: true, value: @ultima_medicion&.peso_kg,
+        <%= form.number_field "medicion[peso_kg]", step: 0.1, min: 0, required: true, value: @progreso.mediciones.last&.peso_kg,
               class: "input input-bordered input-sm w-28" %>
       </label>
       <label class="form-control">
@@ -62,7 +62,7 @@
   <% end %>
 
   <%# ── Historial de pesos editable (Fase 5.12) ──────────────────────────── %>
-  <% if @mediciones.any? %>
+  <% if @progreso.mediciones.any? %>
     <div class="card animate-fade-up fade-delay-1 mt-4 border border-base-300 bg-base-100 shadow-sm">
       <div class="card-body">
         <h2 class="card-title text-base">
@@ -72,7 +72,7 @@
           Tus últimos pesos
         </h2>
         <ul class="flex flex-col divide-y divide-base-200 text-sm">
-          <% @mediciones.reverse_each do |medicion| %>
+          <% @progreso.mediciones.reverse_each do |medicion| %>
             <li class="flex flex-wrap items-center justify-between gap-2 py-2">
               <span class="text-steel-5"><%= l medicion.fecha, format: :long %></span>
               <%= form_with url: mediciones_path, class: "flex items-center gap-1.5" do %>
@@ -96,280 +96,8 @@
   <% end %>
 
   <div class="mt-6 grid items-start gap-6 lg:grid-cols-2">
-    <%# ── Tendencia de peso ─────────────────────────────────────── %>
-    <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
-      <div class="card-body">
-        <h2 class="card-title text-base">
-          <span class="flex size-7 items-center justify-center rounded-lg bg-ocean/15 text-ocean">
-            <%= render "shared/icono", nombre: :actividad, clase: "size-4" %>
-          </span>
-          Tendencia de peso
-          <span class="badge badge-ghost badge-sm ml-auto hidden sm:inline-flex"><%= @fuente_peso == :mediciones ? "de tus mediciones" : "de tus objetivos" %></span>
-        </h2>
-        <% if @pesos.size >= 2 %>
-          <% valores = @pesos.map(&:last) %>
-          <% puntos = GraficaSvg.puntos(valores, ancho: 560, alto: 230) %>
-          <% curva = GraficaSvg.camino_suave(puntos) %>
-          <% base = 230 - GraficaSvg::MARGEN %>
-          <div class="relative" data-controller="grafica"
-               data-action="mousemove->grafica#mostrar mouseleave->grafica#ocultar click->grafica#seleccionar">
-            <svg viewBox="0 0 560 230" class="mt-1 w-full" role="img" aria-label="Tendencia de peso">
-              <defs>
-                <linearGradient id="grad-peso" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="var(--color-ocean)" stop-opacity="0.28"/>
-                  <stop offset="100%" stop-color="var(--color-ocean)" stop-opacity="0"/>
-                </linearGradient>
-              </defs>
-              <% [ 0.25, 0.5, 0.75 ].each do |fraccion| %>
-                <line x1="<%= GraficaSvg::MARGEN %>" x2="<%= 560 - GraficaSvg::MARGEN %>"
-                      y1="<%= (GraficaSvg::MARGEN + (fraccion * (230 - (2 * GraficaSvg::MARGEN)))).round(1) %>"
-                      y2="<%= (GraficaSvg::MARGEN + (fraccion * (230 - (2 * GraficaSvg::MARGEN)))).round(1) %>"
-                      stroke="var(--color-base-300)" stroke-width="1" stroke-dasharray="2 5"/>
-              <% end %>
-              <path class="grafica-area" d="<%= curva %> L <%= puntos.last[0] %>,<%= base %> L <%= puntos.first[0] %>,<%= base %> Z"
-                    fill="url(#grad-peso)"/>
-              <path class="grafica-linea" d="<%= curva %>" pathLength="1" fill="none" stroke="var(--color-ocean)"
-                    stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-              <% puntos.each_with_index do |(x, y), indice| %>
-                <circle class="grafica-punto" style="animation-delay: <%= 500 + (indice * 90) %>ms"
-                        cx="<%= x %>" cy="<%= y %>" r="5" fill="var(--color-ocean)" stroke="white" stroke-width="2"
-                        data-indice="<%= indice %>"
-                        data-etiqueta="<%= valores[indice] %> kg · <%= l @pesos[indice].first %> — ver detalle"/>
-              <% end %>
-              <text x="<%= GraficaSvg::MARGEN %>" y="<%= GraficaSvg::MARGEN - 2 %>" class="fill-steel-3" font-size="10"><%= valores.max %> kg</text>
-              <text x="<%= GraficaSvg::MARGEN %>" y="228" class="fill-steel-3" font-size="10"><%= l @pesos.first.first %></text>
-              <text x="<%= 560 - GraficaSvg::MARGEN %>" y="228" text-anchor="end" class="fill-steel-3" font-size="10"><%= l @pesos.last.first %></text>
-            </svg>
-            <div class="pointer-events-none absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-steel px-2.5 py-1 text-xs font-semibold text-volt shadow-lg"
-                 hidden data-grafica-target="tooltip"></div>
-
-            <%# Detalle por punto: la medición (Fase 5.9) o el objetivo que originó ese peso %>
-            <% if @fuente_peso == :mediciones %>
-              <% @mediciones.each_with_index do |medicion, indice| %>
-                <div hidden data-grafica-target="detalle" data-indice="<%= indice %>"
-                     class="animate-fade-up mt-2 rounded-xl border border-ocean/30 bg-ocean/5 p-3 text-sm">
-                  <div class="flex flex-wrap items-center justify-between gap-2">
-                    <p class="font-semibold">Medición del <%= l medicion.fecha, format: :long %></p>
-                    <span class="badge badge-sm badge-info"><%= medicion.tomada_por_id == Current.user.id || medicion.tomada_por_id.nil? ? "tú" : "tu entrenador" %></span>
-                  </div>
-                  <p class="mt-1 text-steel-5">
-                    Peso <strong><%= medicion.peso_kg.to_f %> kg</strong>
-                    <% if medicion.imc %> · IMC <strong><%= medicion.imc %></strong><% end %>
-                    <% if medicion.grasa_pct %> · Grasa <strong><%= medicion.grasa_pct %>%</strong><% end %>
-                  </p>
-                </div>
-              <% end %>
-            <% else %>
-              <% @objetivos_historial.each_with_index do |objetivo, indice| %>
-                <div hidden data-grafica-target="detalle" data-indice="<%= indice %>"
-                     class="animate-fade-up mt-2 rounded-xl border border-ocean/30 bg-ocean/5 p-3 text-sm">
-                  <div class="flex flex-wrap items-center justify-between gap-2">
-                    <p class="font-semibold">Objetivo fijado el <%= l objetivo.created_at.to_date, format: :long %></p>
-                    <span class="badge badge-sm badge-info"><%= objetivo.nombre %></span>
-                  </div>
-                  <p class="mt-1 text-steel-5">
-                    Peso <strong><%= objetivo.peso_kg.to_f %> kg</strong> ·
-                    TDEE <strong><%= number_with_delimiter(objetivo.tdee_kcal, delimiter: ".") %> kcal</strong> ·
-                    objetivo diario <strong><%= number_with_delimiter(objetivo.objetivo_kcal, delimiter: ".") %> kcal</strong>
-                  </p>
-                  <p class="mt-1 text-xs text-steel-3">
-                    Este snapshot alimentó tus cálculos de nutrición desde esa fecha.
-                    <% if objetivo.activo? %>
-                      <%= link_to "Actualizar objetivo →", new_objetivo_path, class: "link font-semibold" %>
-                    <% end %>
-                  </p>
-                </div>
-              <% end %>
-            <% end %>
-          </div>
-          <p class="text-xs text-steel-3">Cada punto es el peso con el que fijaste un objetivo. Haz click para ver su detalle.</p>
-        <% else %>
-          <div class="flex flex-col items-center gap-2 rounded-xl bg-base-200 py-10 text-center">
-            <%= render "shared/icono", nombre: :actividad, clase: "size-8 text-steel-1" %>
-            <p class="max-w-sm text-sm text-steel-3">
-              Registra tu peso al menos dos veces para ver tu tendencia. Usa el formulario de arriba cuando cambie tu peso.
-            </p>
-          </div>
-        <% end %>
-      </div>
-    </div>
-
-    <%# ── Calorías de los últimos 14 días ───────────────────────── %>
-    <div class="card animate-fade-up fade-delay-1 border border-base-300 bg-base-100 shadow-md">
-      <div class="card-body">
-        <h2 class="card-title text-base">
-          <span class="flex size-7 items-center justify-center rounded-lg bg-volt/15 text-volt-d">
-            <%= render "shared/icono", nombre: :fuego, clase: "size-4" %>
-          </span>
-          Calorías — 14 días
-          <% if @objetivo %>
-            <span class="badge badge-ghost badge-sm ml-auto hidden sm:inline-flex">objetivo <%= number_with_delimiter(@objetivo.objetivo_kcal, delimiter: ".") %></span>
-          <% end %>
-        </h2>
-        <% if @objetivo && @calorias.any? { |_, kcal| kcal } %>
-          <% tope = [ @calorias.filter_map(&:last).max, @objetivo.objetivo_kcal ].max * 1.15 %>
-          <% base = 230 - GraficaSvg::MARGEN %>
-          <% ranura = (560 - (2 * GraficaSvg::MARGEN)).fdiv(@calorias.size) %>
-          <% y_objetivo = GraficaSvg.y_para(@objetivo.objetivo_kcal, alto: 230, min: 0, max: tope) %>
-          <div class="relative" data-controller="grafica"
-               data-action="mousemove->grafica#mostrar mouseleave->grafica#ocultar click->grafica#seleccionar">
-            <svg viewBox="0 0 560 230" class="mt-1 w-full" role="img" aria-label="Calorías diarias contra el objetivo">
-              <% @calorias.each_with_index do |(fecha, kcal), indice| %>
-                <% x = GraficaSvg::MARGEN + (indice * ranura) + (ranura * 0.15) %>
-                <% if kcal %>
-                  <% y = GraficaSvg.y_para(kcal, alto: 230, min: 0, max: tope) %>
-                  <rect class="grafica-barra" style="animation-delay: <%= indice * 45 %>ms"
-                        x="<%= x.round(1) %>" y="<%= y %>" width="<%= (ranura * 0.7).round(1) %>" height="<%= (base - y).round(1) %>"
-                        rx="4" fill="var(--color-<%= kcal <= @objetivo.objetivo_kcal ? "volt" : "pulse" %>)"
-                        fill-opacity="<%= kcal <= @objetivo.objetivo_kcal ? 0.95 : 0.8 %>"
-                        data-indice="<%= indice %>"
-                        data-etiqueta="<%= number_with_delimiter(kcal, delimiter: ".") %> kcal · <%= l fecha, format: "%d %b" %> — ver detalle"/>
-                <% else %>
-                  <rect class="grafica-barra" x="<%= x.round(1) %>" y="<%= base - 3 %>" width="<%= (ranura * 0.7).round(1) %>" height="3"
-                        rx="1.5" fill="var(--color-steel-1)"
-                        data-indice="<%= indice %>"
-                        data-etiqueta="Sin registro · <%= l fecha, format: "%d %b" %>"/>
-                <% end %>
-              <% end %>
-              <line x1="<%= GraficaSvg::MARGEN %>" y1="<%= y_objetivo %>" x2="<%= 560 - GraficaSvg::MARGEN %>" y2="<%= y_objetivo %>"
-                    stroke="var(--color-steel-5)" stroke-width="1.5" stroke-dasharray="6 4"/>
-              <text x="<%= 560 - GraficaSvg::MARGEN %>" y="<%= y_objetivo - 5 %>" text-anchor="end" class="fill-steel-5" font-size="10">objetivo</text>
-              <text x="<%= GraficaSvg::MARGEN %>" y="228" class="fill-steel-3" font-size="10"><%= l @calorias.first.first, format: "%d %b" %></text>
-              <text x="<%= 560 - GraficaSvg::MARGEN %>" y="228" text-anchor="end" class="fill-steel-3" font-size="10"><%= l @calorias.last.first, format: "%d %b" %></text>
-            </svg>
-            <div class="pointer-events-none absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-steel px-2.5 py-1 text-xs font-semibold text-volt shadow-lg"
-                 hidden data-grafica-target="tooltip"></div>
-
-            <%# Detalle por día: el registro contra su objetivo %>
-            <% @calorias.each_with_index do |(fecha, kcal), indice| %>
-              <% delta = kcal ? @objetivo.kcal_restantes(kcal) : nil %>
-              <div hidden data-grafica-target="detalle" data-indice="<%= indice %>"
-                   class="animate-fade-up mt-2 rounded-xl border p-3 text-sm <%= kcal.nil? ? "border-base-300 bg-base-200" : delta.negative? ? "border-pulse/30 bg-pulse/5" : "border-volt/40 bg-volt/10" %>">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <p class="font-semibold"><%= l fecha, format: :long %></p>
-                  <% if kcal.nil? %>
-                    <span class="badge badge-sm badge-ghost">sin registro</span>
-                  <% elsif delta.negative? %>
-                    <span class="badge badge-sm badge-error">excedido +<%= number_with_delimiter(delta.abs, delimiter: ".") %> kcal</span>
-                  <% else %>
-                    <span class="badge badge-sm badge-success">en meta · <%= number_with_delimiter(delta, delimiter: ".") %> kcal libres</span>
-                  <% end %>
-                </div>
-                <% if kcal %>
-                  <p class="mt-1 text-steel-5">
-                    Registraste <strong><%= number_with_delimiter(kcal, delimiter: ".") %> kcal</strong>
-                    de un objetivo de <strong><%= number_with_delimiter(@objetivo.objetivo_kcal, delimiter: ".") %> kcal</strong>.
-                  </p>
-                  <p class="mt-1 text-xs text-steel-3">
-                    Fuente: tu registro diario de calorías.
-                    <% if fecha == Date.current %>
-                      <%= link_to "Corregir el de hoy →", objetivo_path, class: "link font-semibold" %>
-                    <% end %>
-                  </p>
-                <% else %>
-                  <p class="mt-1 text-xs text-steel-3">
-                    No registraste calorías este día<% if fecha == Date.current %> —
-                    <%= link_to "registra tu consumo de hoy →", objetivo_path, class: "link font-semibold" %><% end %>.
-                  </p>
-                <% end %>
-              </div>
-            <% end %>
-          </div>
-          <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-steel-5">
-            <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-volt"></span>En meta</span>
-            <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-pulse"></span>Sobre el objetivo</span>
-            <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-steel-1"></span>Sin registro</span>
-          </div>
-        <% else %>
-          <div class="flex flex-col items-center gap-2 rounded-xl bg-base-200 py-10 text-center">
-            <%= render "shared/icono", nombre: :fuego, clase: "size-8 text-steel-1" %>
-            <p class="max-w-sm text-sm text-steel-3">
-              <% if @objetivo %>
-                Aún no registras calorías.
-                <%= link_to "Registra tu consumo de hoy", objetivo_path, class: "link font-semibold" %> para ver la gráfica.
-              <% else %>
-                <%= link_to "Fija tu objetivo calórico", new_objetivo_path, class: "link font-semibold" %> para comparar tus días contra la meta.
-              <% end %>
-            </p>
-          </div>
-        <% end %>
-      </div>
-    </div>
-
-    <%# ── Asistencia por semana ─────────────────────────────────── %>
-    <div class="card animate-fade-up fade-delay-2 border border-base-300 bg-base-100 shadow-md lg:col-span-2">
-      <div class="card-body">
-        <h2 class="card-title text-base">
-          <span class="flex size-7 items-center justify-center rounded-lg bg-base-200 text-steel-5">
-            <%= render "shared/icono", nombre: :calendario, clase: "size-4" %>
-          </span>
-          Asistencia — últimas 8 semanas
-        </h2>
-        <% if @asistencia.sum { |_, accesos| accesos.size }.positive? %>
-          <% tope = [ @asistencia.map { |_, accesos| accesos.size }.max, 1 ].max * 1.3 %>
-          <% base = 150 - GraficaSvg::MARGEN %>
-          <% ranura = (1000 - (2 * GraficaSvg::MARGEN)).fdiv(@asistencia.size) %>
-          <div class="relative" data-controller="grafica"
-               data-action="mousemove->grafica#mostrar mouseleave->grafica#ocultar click->grafica#seleccionar">
-            <svg viewBox="0 0 1000 150" class="mt-1 w-full" role="img" aria-label="Visitas al gimnasio por semana">
-              <% @asistencia.each_with_index do |(semana, accesos), indice| %>
-                <% visitas = accesos.size %>
-                <% x = GraficaSvg::MARGEN + (indice * ranura) + (ranura * 0.28) %>
-                <% y = visitas.positive? ? GraficaSvg.y_para(visitas, alto: 150, min: 0, max: tope) : base - 3 %>
-                <rect class="grafica-barra" style="animation-delay: <%= indice * 60 %>ms"
-                      x="<%= x.round(1) %>" y="<%= y %>" width="<%= (ranura * 0.44).round(1) %>" height="<%= (base - y).round(1) %>"
-                      rx="5" fill="var(--color-<%= visitas.positive? ? "volt" : "steel-1" %>)"
-                      data-indice="<%= indice %>"
-                      data-etiqueta="<%= visitas %> <%= "visita".pluralize(visitas) %> · semana del <%= l semana, format: "%d %b" %> — ver detalle"/>
-                <% if visitas.positive? %>
-                  <text x="<%= (x + (ranura * 0.22)).round(1) %>" y="<%= y - 7 %>" text-anchor="middle"
-                        class="fill-steel-5" font-size="12" font-weight="bold"><%= visitas %></text>
-                <% end %>
-                <text x="<%= (x + (ranura * 0.22)).round(1) %>" y="148" text-anchor="middle" class="fill-steel-3" font-size="10">
-                  <%= l semana, format: "%d %b" %>
-                </text>
-              <% end %>
-            </svg>
-            <div class="pointer-events-none absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-steel px-2.5 py-1 text-xs font-semibold text-volt shadow-lg"
-                 hidden data-grafica-target="tooltip"></div>
-
-            <%# Detalle por semana: los check-ins que suman la barra %>
-            <% @asistencia.each_with_index do |(semana, accesos), indice| %>
-              <div hidden data-grafica-target="detalle" data-indice="<%= indice %>"
-                   class="animate-fade-up mt-2 rounded-xl border p-3 text-sm <%= accesos.any? ? "border-volt/40 bg-volt/10" : "border-base-300 bg-base-200" %>">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <p class="font-semibold">Semana del <%= l semana, format: :long %></p>
-                  <span class="badge badge-sm <%= accesos.any? ? "badge-success" : "badge-ghost" %>">
-                    <%= accesos.size %> <%= "visita".pluralize(accesos.size) %>
-                  </span>
-                </div>
-                <% if accesos.any? %>
-                  <ul class="mt-2 flex flex-col gap-1.5">
-                    <% accesos.each do |acceso| %>
-                      <li class="flex flex-wrap items-center gap-2 text-steel-5">
-                        <%= render "shared/icono", nombre: :rayo, clase: "size-3.5 text-volt-d" %>
-                        <%= l acceso.fecha_hora, format: :short %>
-                        <%= badge_estado(acceso.tipo) %>
-                        <% unless acceso.dentro_de_horario? %>
-                          <span class="badge badge-sm badge-error">fuera de horario</span>
-                        <% end %>
-                      </li>
-                    <% end %>
-                  </ul>
-                  <p class="mt-1.5 text-xs text-steel-3">Fuente: check-ins registrados en recepción.</p>
-                <% else %>
-                  <p class="mt-1 text-xs text-steel-3">Sin visitas esta semana.</p>
-                <% end %>
-              </div>
-            <% end %>
-          </div>
-        <% else %>
-          <div class="flex flex-col items-center gap-2 rounded-xl bg-base-200 py-10 text-center">
-            <%= render "shared/icono", nombre: :calendario, clase: "size-8 text-steel-1" %>
-            <p class="text-sm text-steel-3">Tus check-ins en recepción aparecerán aquí.</p>
-          </div>
-        <% end %>
-      </div>
-    </div>
+    <div class="animate-fade-up"><%= render "shared/grafica_peso", progreso: @progreso, editable: true %></div>
+    <div class="animate-fade-up fade-delay-1"><%= render "shared/grafica_calorias", progreso: @progreso, editable: true %></div>
+    <div class="animate-fade-up fade-delay-2 lg:col-span-2"><%= render "shared/grafica_asistencia", progreso: @progreso %></div>
   </div>
 </div>

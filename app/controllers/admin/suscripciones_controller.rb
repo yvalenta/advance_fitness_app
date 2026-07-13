@@ -1,7 +1,12 @@
 class Admin::SuscripcionesController < ApplicationController
   def index
     authorize Suscripcion, :index?
+    @q = params[:q].to_s.strip
     @suscripciones = Suscripcion.includes(:user, :plan).order(created_at: :desc)
+    if @q.present?
+      @suscripciones = @suscripciones.joins(:user)
+        .where("users.nombre ILIKE :q OR users.email_address ILIKE :q", q: "%#{User.sanitize_sql_like(@q)}%")
+    end
   end
 
   def new

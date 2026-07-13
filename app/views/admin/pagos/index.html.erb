@@ -7,50 +7,68 @@
 <div class="mx-auto -mt-8 w-full max-w-6xl px-4 pb-12">
   <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
     <div class="card-body">
-      <% if @pagos.any? %>
-        <div class="overflow-x-auto">
-          <table class="table">
-            <thead>
-              <tr class="text-xs uppercase tracking-wider text-steel-3">
-                <th>Fecha</th><th>Miembro</th><th>Período</th><th>Monto</th><th>Método</th><th>Registró</th><th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <% @pagos.each do |pago| %>
-                <tr class="<%= pago.anulado? ? "opacity-50" : "hover:bg-base-200" %>">
-                  <td class="text-sm"><%= l pago.fecha_pago %></td>
-                  <td>
-                    <div class="flex items-center gap-2">
-                      <%= render "shared/avatar", user: pago.membresia.user, clase: "size-7 text-[10px]" %>
-                      <span class="font-medium"><%= nombre_visible(pago.membresia.user) %></span>
-                    </div>
-                  </td>
-                  <td class="text-xs text-steel-5"><%= l pago.periodo_inicio %> — <%= l pago.periodo_fin %></td>
-                  <td class="font-display font-bold <%= "line-through" if pago.anulado? %>"><%= cop pago.monto %></td>
-                  <td><span class="badge badge-sm badge-ghost"><%= pago.metodo %></span></td>
-                  <td class="text-xs text-steel-3"><%= pago.registrado_por.nombre %></td>
-                  <td class="text-right">
-                    <% if pago.anulado? %>
-                      <span class="badge badge-sm badge-error" title="Anulado el <%= l pago.anulado_en.to_date %> por <%= pago.anulado_por&.nombre %>">eliminado</span>
-                    <% else %>
-                      <div class="flex justify-end gap-1">
-                        <%= link_to "Editar", edit_admin_pago_path(pago), class: "btn btn-ghost btn-xs" %>
-                        <%= button_to "Eliminar", admin_pago_path(pago), method: :delete,
-                              class: "btn btn-ghost btn-xs text-error",
-                              data: { turbo_confirm: "El pago quedará en el historial marcado como eliminado. ¿Continuar?" } %>
-                      </div>
-                    <% end %>
-                  </td>
+      <%= turbo_frame_tag "resultados_pagos", data: { controller: "buscador-en-vivo" } do %>
+        <%= form_with url: admin_pagos_path, method: :get, class: "mb-1",
+              data: { turbo_frame: "resultados_pagos", buscador_en_vivo_target: "form" } do %>
+          <label class="input input-bordered flex max-w-sm items-center gap-2">
+            <%= render "shared/icono", nombre: :busqueda, clase: "size-4 text-steel-3" %>
+            <input type="search" name="q" value="<%= @q %>" placeholder="Buscar por miembro, fecha, valor o método…"
+                   class="grow" data-action="input->buscador-en-vivo#buscar">
+          </label>
+        <% end %>
+
+        <% if @q.present? %>
+          <p class="text-xs text-steel-3">
+            <%= pluralize(@pagos.size, "resultado") %> para "<%= @q %>" ·
+            <%= link_to "Limpiar", admin_pagos_path, data: { turbo_frame: "resultados_pagos" }, class: "link" %>
+          </p>
+        <% end %>
+
+        <% if @pagos.any? %>
+          <div class="overflow-x-auto">
+            <table class="table">
+              <thead>
+                <tr class="text-xs uppercase tracking-wider text-steel-3">
+                  <th>Fecha</th><th>Miembro</th><th>Período</th><th>Monto</th><th>Método</th><th>Registró</th><th></th>
                 </tr>
-              <% end %>
-            </tbody>
-          </table>
-        </div>
-      <% else %>
-        <div class="flex flex-col items-center gap-2 rounded-xl bg-base-200 py-12 text-center">
-          <%= render "shared/icono", nombre: :tarjeta, clase: "size-8 text-steel-1" %>
-          <p class="text-sm text-steel-3">Aún no hay pagos registrados.</p>
-        </div>
+              </thead>
+              <tbody>
+                <% @pagos.each do |pago| %>
+                  <tr class="<%= pago.anulado? ? "opacity-50" : "hover:bg-base-200" %>">
+                    <td class="text-sm"><%= l pago.fecha_pago %></td>
+                    <td>
+                      <%= link_to admin_user_path(pago.membresia.user), class: "flex items-center gap-2 hover:underline" do %>
+                        <%= render "shared/avatar", user: pago.membresia.user, clase: "size-7 text-[10px]" %>
+                        <span class="font-medium"><%= nombre_visible(pago.membresia.user) %></span>
+                      <% end %>
+                    </td>
+                    <td class="text-xs text-steel-5"><%= l pago.periodo_inicio %> — <%= l pago.periodo_fin %></td>
+                    <td class="font-display font-bold <%= "line-through" if pago.anulado? %>"><%= cop pago.monto %></td>
+                    <td><span class="badge badge-sm badge-ghost"><%= pago.metodo %></span></td>
+                    <td class="text-xs text-steel-3"><%= pago.registrado_por.nombre %></td>
+                    <td class="text-right">
+                      <% if pago.anulado? %>
+                        <span class="badge badge-sm badge-error" title="Anulado el <%= l pago.anulado_en.to_date %> por <%= pago.anulado_por&.nombre %>">eliminado</span>
+                      <% else %>
+                        <div class="flex justify-end gap-1">
+                          <%= link_to "Editar", edit_admin_pago_path(pago), class: "btn btn-ghost btn-xs" %>
+                          <%= button_to "Eliminar", admin_pago_path(pago), method: :delete,
+                                class: "btn btn-ghost btn-xs text-error",
+                                data: { turbo_confirm: "El pago quedará en el historial marcado como eliminado. ¿Continuar?" } %>
+                        </div>
+                      <% end %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% else %>
+          <div class="flex flex-col items-center gap-2 rounded-xl bg-base-200 py-12 text-center">
+            <%= render "shared/icono", nombre: :tarjeta, clase: "size-8 text-steel-1" %>
+            <p class="text-sm text-steel-3"><%= @q.present? ? "Nada coincide con tu búsqueda." : "Aún no hay pagos registrados." %></p>
+          </div>
+        <% end %>
       <% end %>
     </div>
   </div>

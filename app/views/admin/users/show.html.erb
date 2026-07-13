@@ -16,6 +16,65 @@
 </div>
 
 <div class="mx-auto -mt-8 w-full max-w-4xl px-4 pb-12">
+  <%# ── Editar perfil (Fase 6.13): staff edita datos básicos; rol, solo admin ── %>
+  <div class="card animate-fade-up mb-6 border border-base-300 bg-base-100 shadow-md">
+    <div class="card-body">
+      <h2 class="card-title text-base">
+        <span class="flex size-7 items-center justify-center rounded-lg bg-steel/15 text-steel-5">
+          <%= render "shared/icono", nombre: :usuarios, clase: "size-4" %>
+        </span>
+        Editar perfil
+      </h2>
+      <% if @user.errors.any? %>
+        <div role="alert" class="alert alert-error text-sm">
+          <%= render "shared/icono", nombre: :alerta, clase: "size-5 shrink-0" %>
+          <span><%= @user.errors.full_messages.to_sentence %></span>
+        </div>
+      <% end %>
+      <%= form_with model: @user, url: admin_user_path(@user), method: :patch, class: "grid gap-3 sm:grid-cols-2" do |form| %>
+        <label class="form-control">
+          <span class="label-text mb-1 text-xs font-semibold">Nombre</span>
+          <%= form.text_field :nombre, class: "input input-bordered w-full" %>
+        </label>
+        <label class="form-control">
+          <span class="label-text mb-1 text-xs font-semibold">Correo</span>
+          <%= form.email_field :email_address, class: "input input-bordered w-full" %>
+        </label>
+        <label class="form-control">
+          <span class="label-text mb-1 text-xs font-semibold">Fecha de nacimiento</span>
+          <%= form.date_field :fecha_nacimiento, class: "input input-bordered w-full" %>
+        </label>
+        <label class="form-control">
+          <span class="label-text mb-1 text-xs font-semibold">Sexo</span>
+          <%= form.select :sexo, [ [ "Masculino", "M" ], [ "Femenino", "F" ] ], { include_blank: "Sin definir" }, class: "select select-bordered w-full" %>
+        </label>
+        <label class="form-control">
+          <span class="label-text mb-1 text-xs font-semibold">Nivel de actividad</span>
+          <%= form.select :nivel_actividad, User::NIVELES_ACTIVIDAD.map { |valor, etiqueta| [ etiqueta, valor ] },
+                { include_blank: "Sin definir" }, class: "select select-bordered w-full" %>
+        </label>
+        <label class="form-control">
+          <span class="label-text mb-1 text-xs font-semibold">Somatotipo</span>
+          <%= form.select :somatotipo, User::SOMATOTIPOS.map { |s| [ s.capitalize, s ] },
+                { include_blank: "Sin definir" }, class: "select select-bordered w-full" %>
+        </label>
+        <% if Current.user.admin? %>
+          <label class="form-control">
+            <span class="label-text mb-1 text-xs font-semibold">Rol</span>
+            <select name="user[rol]" class="select select-bordered w-full">
+              <% User::ROLES.each do |rol| %>
+                <option value="<%= rol %>" <%= "selected" if @user.rol == rol %>><%= rol %></option>
+              <% end %>
+            </select>
+          </label>
+        <% end %>
+        <div class="sm:col-span-2">
+          <%= form.submit "Guardar cambios", class: "btn btn-primary font-bold" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
   <div class="grid items-start gap-6 md:grid-cols-2">
     <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
       <div class="card-body">
@@ -114,6 +173,27 @@
           <%= link_to "Nueva medición", new_admin_user_medicion_path(@user), class: "btn btn-primary btn-sm font-bold" %>
         </div>
       </div>
+    </div>
+  </div>
+
+  <%# ── Progreso (Fase 6.13): las mismas gráficas que ve el propio miembro ── %>
+  <div class="mt-6">
+    <h2 class="mb-3 font-display text-lg font-bold">Progreso</h2>
+    <% peso_actual = @progreso.pesos.last&.last %>
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+      <%= render "shared/metric_card", titulo: "Peso actual", valor: peso_actual ? "#{peso_actual} kg" : "—",
+            icono: :actividad, acento: "bg-ocean/15 text-ocean" %>
+      <%= render "shared/metric_card", titulo: "Visitas este mes", valor: @progreso.visitas_mes,
+            descripcion: "Check-ins en recepción", icono: :rayo, acento: "bg-volt/15 text-volt-d" %>
+      <%= render "shared/metric_card", titulo: "Adherencia del mes",
+            valor: @progreso.dias_registrados.positive? ? "#{((@progreso.dias_en_meta * 100.0) / @progreso.dias_registrados).round}%" : "—",
+            descripcion: @progreso.dias_registrados.positive? ? "#{@progreso.dias_en_meta} de #{@progreso.dias_registrados} días en meta" : nil,
+            icono: :fuego, acento: "bg-pulse/15 text-pulse" %>
+    </div>
+    <div class="mt-4 grid items-start gap-6 lg:grid-cols-2">
+      <%= render "shared/grafica_peso", progreso: @progreso %>
+      <%= render "shared/grafica_calorias", progreso: @progreso %>
+      <div class="lg:col-span-2"><%= render "shared/grafica_asistencia", progreso: @progreso %></div>
     </div>
   </div>
 </div>

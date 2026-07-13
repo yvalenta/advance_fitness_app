@@ -9,8 +9,11 @@ class UserPolicy < ApplicationPolicy
     propio? || user.staff?
   end
 
+  # Datos básicos editables desde el dashboard del admin (Fase 6.13): staff
+  # (entrenador o admin), no solo admin — el rol en sí se restringe aparte,
+  # en el controller, exclusivamente a Current.user.admin?.
   def update?
-    propio? || user.admin?
+    propio? || user.staff?
   end
 
   def destroy?

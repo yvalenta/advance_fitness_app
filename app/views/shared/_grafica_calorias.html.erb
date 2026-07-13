@@ -1,0 +1,116 @@
+<%# Calorías de los últimos 14 días contra el objetivo, extraída de %>
+<%# progresos/show para reutilizarla en el dashboard del admin (Fase 6.13). %>
+<%# locals: (progreso:, editable: false) %>
+<%# editable: true = vista propia del miembro (enlaces de autoservicio). %>
+<% editable = local_assigns.fetch(:editable, false) %>
+<div class="card border border-base-300 bg-base-100 shadow-md">
+  <div class="card-body">
+    <h2 class="card-title text-base">
+      <span class="flex size-7 items-center justify-center rounded-lg bg-volt/15 text-volt-d">
+        <%= render "shared/icono", nombre: :fuego, clase: "size-4" %>
+      </span>
+      Calorías — 14 días
+      <% if progreso.objetivo %>
+        <span class="badge badge-ghost badge-sm ml-auto hidden sm:inline-flex">objetivo <%= number_with_delimiter(progreso.objetivo.objetivo_kcal, delimiter: ".") %></span>
+      <% end %>
+    </h2>
+    <% if progreso.objetivo && progreso.calorias.any? { |_, kcal| kcal } %>
+      <% tope = [ progreso.calorias.filter_map(&:last).max, progreso.objetivo.objetivo_kcal ].max * 1.15 %>
+      <% base = 230 - GraficaSvg::MARGEN %>
+      <% ranura = (560 - (2 * GraficaSvg::MARGEN)).fdiv(progreso.calorias.size) %>
+      <% y_objetivo = GraficaSvg.y_para(progreso.objetivo.objetivo_kcal, alto: 230, min: 0, max: tope) %>
+      <div class="relative" data-controller="grafica"
+           data-action="mousemove->grafica#mostrar mouseleave->grafica#ocultar click->grafica#seleccionar">
+        <svg viewBox="0 0 560 230" class="mt-1 w-full" role="img" aria-label="Calorías diarias contra el objetivo">
+          <% progreso.calorias.each_with_index do |(fecha, kcal), indice| %>
+            <% x = GraficaSvg::MARGEN + (indice * ranura) + (ranura * 0.15) %>
+            <% if kcal %>
+              <% y = GraficaSvg.y_para(kcal, alto: 230, min: 0, max: tope) %>
+              <rect class="grafica-barra" style="animation-delay: <%= indice * 45 %>ms"
+                    x="<%= x.round(1) %>" y="<%= y %>" width="<%= (ranura * 0.7).round(1) %>" height="<%= (base - y).round(1) %>"
+                    rx="4" fill="var(--color-<%= kcal <= progreso.objetivo.objetivo_kcal ? "volt" : "pulse" %>)"
+                    fill-opacity="<%= kcal <= progreso.objetivo.objetivo_kcal ? 0.95 : 0.8 %>"
+                    data-indice="<%= indice %>"
+                    data-etiqueta="<%= number_with_delimiter(kcal, delimiter: ".") %> kcal · <%= l fecha, format: "%d %b" %> — ver detalle"/>
+            <% else %>
+              <rect class="grafica-barra" x="<%= x.round(1) %>" y="<%= base - 3 %>" width="<%= (ranura * 0.7).round(1) %>" height="3"
+                    rx="1.5" fill="var(--color-steel-1)"
+                    data-indice="<%= indice %>"
+                    data-etiqueta="Sin registro · <%= l fecha, format: "%d %b" %>"/>
+            <% end %>
+          <% end %>
+          <line x1="<%= GraficaSvg::MARGEN %>" y1="<%= y_objetivo %>" x2="<%= 560 - GraficaSvg::MARGEN %>" y2="<%= y_objetivo %>"
+                stroke="var(--color-steel-5)" stroke-width="1.5" stroke-dasharray="6 4"/>
+          <text x="<%= 560 - GraficaSvg::MARGEN %>" y="<%= y_objetivo - 5 %>" text-anchor="end" class="fill-steel-5" font-size="10">objetivo</text>
+          <text x="<%= GraficaSvg::MARGEN %>" y="228" class="fill-steel-3" font-size="10"><%= l progreso.calorias.first.first, format: "%d %b" %></text>
+          <text x="<%= 560 - GraficaSvg::MARGEN %>" y="228" text-anchor="end" class="fill-steel-3" font-size="10"><%= l progreso.calorias.last.first, format: "%d %b" %></text>
+        </svg>
+        <div class="pointer-events-none absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-steel px-2.5 py-1 text-xs font-semibold text-volt shadow-lg"
+             hidden data-grafica-target="tooltip"></div>
+
+        <%# Detalle por día: el registro contra su objetivo %>
+        <% progreso.calorias.each_with_index do |(fecha, kcal), indice| %>
+          <% delta = kcal ? progreso.objetivo.kcal_restantes(kcal) : nil %>
+          <div hidden data-grafica-target="detalle" data-indice="<%= indice %>"
+               class="animate-fade-up mt-2 rounded-xl border p-3 text-sm <%= kcal.nil? ? "border-base-300 bg-base-200" : delta.negative? ? "border-pulse/30 bg-pulse/5" : "border-volt/40 bg-volt/10" %>">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <p class="font-semibold"><%= l fecha, format: :long %></p>
+              <% if kcal.nil? %>
+                <span class="badge badge-sm badge-ghost">sin registro</span>
+              <% elsif delta.negative? %>
+                <span class="badge badge-sm badge-error">excedido +<%= number_with_delimiter(delta.abs, delimiter: ".") %> kcal</span>
+              <% else %>
+                <span class="badge badge-sm badge-success">en meta · <%= number_with_delimiter(delta, delimiter: ".") %> kcal libres</span>
+              <% end %>
+            </div>
+            <% if kcal %>
+              <p class="mt-1 text-steel-5">
+                <%= editable ? "Registraste" : "Registró" %> <strong><%= number_with_delimiter(kcal, delimiter: ".") %> kcal</strong>
+                de un objetivo de <strong><%= number_with_delimiter(progreso.objetivo.objetivo_kcal, delimiter: ".") %> kcal</strong>.
+              </p>
+              <% if editable %>
+                <p class="mt-1 text-xs text-steel-3">
+                  Fuente: tu registro diario de calorías.
+                  <% if fecha == Date.current %>
+                    <%= link_to "Corregir el de hoy →", objetivo_path, class: "link font-semibold" %>
+                  <% end %>
+                </p>
+              <% end %>
+            <% else %>
+              <p class="mt-1 text-xs text-steel-3">
+                <% if editable && fecha == Date.current %>
+                  No registraste calorías este día — <%= link_to "registra tu consumo de hoy →", objetivo_path, class: "link font-semibold" %>.
+                <% else %>
+                  Sin registro este día.
+                <% end %>
+              </p>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+      <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-steel-5">
+        <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-volt"></span>En meta</span>
+        <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-pulse"></span>Sobre el objetivo</span>
+        <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-steel-1"></span>Sin registro</span>
+      </div>
+    <% else %>
+      <div class="flex flex-col items-center gap-2 rounded-xl bg-base-200 py-10 text-center">
+        <%= render "shared/icono", nombre: :fuego, clase: "size-8 text-steel-1" %>
+        <p class="max-w-sm text-sm text-steel-3">
+          <% if progreso.objetivo %>
+            <% if editable %>
+              Aún no registras calorías.
+              <%= link_to "Registra tu consumo de hoy", objetivo_path, class: "link font-semibold" %> para ver la gráfica.
+            <% else %>
+              Aún no hay calorías registradas.
+            <% end %>
+          <% elsif editable %>
+            <%= link_to "Fija tu objetivo calórico", new_objetivo_path, class: "link font-semibold" %> para comparar tus días contra la meta.
+          <% else %>
+            Sin objetivo calórico fijado.
+          <% end %>
+        </p>
+      </div>
+    <% end %>
+  </div>
+</div>

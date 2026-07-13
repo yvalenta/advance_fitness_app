@@ -29,6 +29,7 @@ class User < ApplicationRecord
   # y entre 19:00 y 24:00 hora Colombia daría el día siguiente)
   before_validation(on: :create) { self.fecha_ingreso ||= Date.current }
 
+  validates :email_address, presence: true, uniqueness: true
   validates :rol, inclusion: { in: ROLES }
   validates :sexo, inclusion: { in: %w[M F] }, allow_nil: true
   validates :somatotipo, inclusion: { in: SOMATOTIPOS }, allow_nil: true
