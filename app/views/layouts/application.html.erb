@@ -60,6 +60,10 @@
       <%= yield %>
     </main>
 
+    <footer class="py-4 text-center">
+      <span class="font-mono text-[10px] text-base-content/40">v<%= Rails.application.config.x.version %></span>
+    </footer>
+
     <%# Confirmación global (Fase 6.9): reemplaza window.confirm/data-turbo-
         confirm, que no hacen nada en iOS con la app agregada a inicio. %>
     <dialog class="modal" data-controller="confirmacion" data-action="click->confirmacion#cerrarEnBackdrop">
