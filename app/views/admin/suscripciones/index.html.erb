@@ -28,9 +28,17 @@
                       </div>
                     </div>
                   </td>
-                  <td><span class="badge badge-sm <%= suscripcion.plan.personalizado? ? "badge-primary" : "badge-ghost" %>"><%= suscripcion.plan.nombre %></span></td>
                   <td>
-                    <span class="badge badge-sm <%= { "activa" => "badge-success", "cancelada" => "badge-ghost", "expirada" => "badge-error" }[suscripcion.estado] %>">
+                    <span class="badge badge-sm <%= suscripcion.plan.personalizado? ? "badge-primary" : "badge-ghost" %>"><%= suscripcion.plan.nombre %></span>
+                    <% if suscripcion.incluida_en_membresia? %>
+                      <%= link_to edit_admin_membresia_path(suscripcion.membresia),
+                            class: "badge badge-sm badge-outline ml-1", title: "Incluida con la membresía pagada el #{l suscripcion.membresia.fecha_inicio}" do %>
+                        Incluida con membresía
+                      <% end %>
+                    <% end %>
+                  </td>
+                  <td>
+                    <span class="badge badge-sm <%= { "activa" => "badge-success", "programada" => "badge-info", "cancelada" => "badge-ghost", "expirada" => "badge-error" }[suscripcion.estado] %>">
                       <%= suscripcion.estado %>
                     </span>
                   </td>

@@ -29,6 +29,9 @@ class Admin::MembresiasController < ApplicationController
     # Plan sugerido incluido (Fase 5.11); si el miembro aún no tiene objetivo,
     # Mi plan se lo pregunta y el plan nace al fijarlo.
     PlanPersonalizado.asegurar_sugerido!(@membresia.user)
+    # Membresía "combo" (Fase 6.9): si el monto cubre el plan Personalizado,
+    # se incluye la suscripción sin cobro aparte (o se programa si ya tiene una activa).
+    Suscripcion.incluir_con_membresia!(@membresia)
     redirect_to admin_membresias_path, notice: "Membresía creada para #{@membresia.user.nombre}."
   rescue ActiveRecord::RecordInvalid => error
     @membresia.errors.add(:base, error.message) if @membresia.errors.empty?

@@ -18,3 +18,8 @@ production:
     class: VencerMembresiasJob
     queue: default
     schedule: at 4am every day
+
+  activar_suscripciones_programadas:
+    class: ActivarSuscripcionesProgramadasJob
+    queue: default
+    schedule: at 4:05am every day

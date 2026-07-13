@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_12_130001) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_13_153557) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -211,9 +211,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_12_130001) do
     t.string "estado", default: "activa", null: false
     t.date "fecha_fin"
     t.date "fecha_inicio", null: false
+    t.bigint "membresia_id"
     t.bigint "plan_id", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["membresia_id"], name: "index_suscripciones_on_membresia_id"
     t.index ["plan_id"], name: "index_suscripciones_on_plan_id"
     t.index ["user_id"], name: "index_suscripciones_on_user_id"
     t.index ["user_id"], name: "index_suscripciones_una_activa_por_user", unique: true, where: "((estado)::text = 'activa'::text)"
@@ -252,6 +254,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_12_130001) do
   add_foreign_key "registros_calorias", "users"
   add_foreign_key "registros_entrenamiento", "users"
   add_foreign_key "sessions", "users"
+  add_foreign_key "suscripciones", "membresias"
   add_foreign_key "suscripciones", "planes"
   add_foreign_key "suscripciones", "users"
 end

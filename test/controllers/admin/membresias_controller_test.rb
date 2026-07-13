@@ -21,6 +21,25 @@ class Admin::MembresiasControllerTest < ActionDispatch::IntegrationTest
 
     membresia = users(:entrenador).reload.membresia
     assert_equal Date.current + 30.days, membresia.fecha_vencimiento
+    assert_not users(:entrenador).premium?
+  end
+
+  test "el alta con el monto del combo (350.000) incluye la suscripción sin cobro aparte" do
+    sign_in_as users(:admin)
+
+    assert_difference "Suscripcion.count", 1 do
+      post admin_membresias_path, params: { membresia: {
+        user_id: users(:entrenador).id,
+        fecha_inicio: Date.current,
+        monto: Negocio.precio_personalizado,
+        metodo: "efectivo"
+      } }
+    end
+
+    assert users(:entrenador).reload.premium?
+    suscripcion = users(:entrenador).suscripcion_activa
+    assert suscripcion.incluida_en_membresia?
+    assert_equal users(:entrenador).membresia, suscripcion.membresia
   end
 
   test "la renovación extiende el vencimiento y registra el pago" do
