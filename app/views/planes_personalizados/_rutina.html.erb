@@ -88,7 +88,16 @@
                       <%= ejercicio["descanso_seg"] %> s
                     </span>
                   <% end %>
+                  <% if ejercicio["peso_sugerido_kg"].to_f.positive? %>
+                    <%# Peso inicial sugerido por el análisis del perfil (Fase 6.5) %>
+                    <span class="inline-flex items-center gap-1 rounded-full bg-pulse/15 px-2 py-0.5 text-xs font-bold text-pulse">
+                      ≈ <%= ejercicio["peso_sugerido_kg"] %> kg
+                    </span>
+                  <% end %>
                 </div>
+                <% if ejercicio["nota_tecnica"].present? %>
+                  <p class="mt-1 text-xs leading-snug text-steel-3"><%= ejercicio["nota_tecnica"] %></p>
+                <% end %>
               </button>
             </div>
           <% end %>

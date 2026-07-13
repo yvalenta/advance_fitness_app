@@ -44,6 +44,21 @@
           <span class="text-xs text-steel-3">s</span>
         </label>
       </div>
+      <%# Personalización del análisis (Fase 6.5): peso inicial y consejo técnico %>
+      <div class="grid grid-cols-[7rem_1fr] gap-2">
+        <label class="input input-sm input-bordered flex items-center gap-1">
+          <span class="text-xs font-bold text-steel-3">≈ kg</span>
+          <input type="number" name="ejercicio[peso_sugerido_kg]" value="<%= ejercicio["peso_sugerido_kg"] %>"
+                 min="0" step="0.5" class="w-full text-right" aria-label="Peso sugerido (kg)"
+                 data-action="input->autosave#programar">
+        </label>
+        <label class="input input-sm input-bordered flex items-center gap-1">
+          <span class="text-xs font-bold text-steel-3">Nota</span>
+          <input type="text" name="ejercicio[nota_tecnica]" value="<%= ejercicio["nota_tecnica"] %>" maxlength="90"
+                 placeholder="Consejo de ejecución (opcional)" class="grow" aria-label="Nota técnica"
+                 data-action="input->autosave#programar">
+        </label>
+      </div>
       <div class="flex flex-wrap items-center gap-2">
         <button type="button" class="btn btn-ghost btn-xs" data-action="modal-ejercicios#abrir">
           <%= render "shared/icono", nombre: :busqueda, clase: "size-3.5" %> Plantilla

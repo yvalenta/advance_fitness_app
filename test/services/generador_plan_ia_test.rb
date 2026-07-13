@@ -36,6 +36,48 @@ class GeneradorPlanIaTest < ActiveSupport::TestCase
     assert_no_match(/Medidas antropométricas/, prompt)
   end
 
+  # Fase 6.5: catálogo cerrado de ejercicios en el prompt
+  test "el prompt incluye el catálogo permitido y el system exige ids exactos" do
+    prompt = GeneradorPlanIa.construir_prompt(
+      edad: 30, sexo: "M", talla_cm: 178.0, peso_kg: 80.0, somatotipo: "mesomorfo",
+      nivel_actividad: 1.6, meta: "x", objetivo_kcal: 2000, tdee_kcal: 1800,
+      catalogo: "PECHO:\n12 | Press de banca (barbell)"
+    )
+
+    assert_match "CATÁLOGO PERMITIDO", prompt
+    assert_match "12 | Press de banca", prompt
+    assert_match "EXCLUSIVAMENTE", GeneradorPlanIa::SYSTEM_PROMPT
+    assert_match "peso_sugerido_kg", GeneradorPlanIa::SYSTEM_PROMPT
+    assert_match "nota_tecnica", GeneradorPlanIa::SYSTEM_PROMPT
+  end
+
+  # Fase 6.6: bloque de adherencia real al regenerar
+  test "el prompt resume la adherencia con lo flojo y las novedades" do
+    prompt = GeneradorPlanIa.construir_prompt(
+      edad: 30, sexo: "M", talla_cm: 178.0, peso_kg: 80.0, somatotipo: "mesomorfo",
+      nivel_actividad: 1.6, meta: "x", objetivo_kcal: 2000, tdee_kcal: 1800,
+      adherencia: { semanas: 4, pct_global: 55,
+                    por_ejercicio: [ { nombre: "Sentadilla", hechos: 1, total: 4 },
+                                     { nombre: "Press banca", hechos: 4, total: 4 } ],
+                    novedades: [ "me dolió el hombro" ] }
+    )
+
+    assert_match "Adherencia real del miembro (últimas 4 semanas): 55%", prompt
+    assert_match "Baja adherencia en: Sentadilla (1/4)", prompt
+    assert_no_match(/Baja adherencia en:.*Press banca/, prompt)
+    assert_match "me dolió el hombro", prompt
+  end
+
+  test "sin catálogo ni adherencia el prompt no agrega esos bloques" do
+    prompt = GeneradorPlanIa.construir_prompt(
+      edad: 30, sexo: "M", talla_cm: 178.0, peso_kg: 80.0, somatotipo: "mesomorfo",
+      nivel_actividad: 1.6, meta: "x", objetivo_kcal: 2000, tdee_kcal: 1800
+    )
+
+    assert_no_match(/CATÁLOGO PERMITIDO/, prompt)
+    assert_no_match(/Adherencia real/, prompt)
+  end
+
   test "parsear acepta JSON limpio y envuelto en fences" do
     json = '{"rutina": {"dias": []}, "plan_nutricional": {"comidas": []}}'
 

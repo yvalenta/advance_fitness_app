@@ -20,7 +20,8 @@ module GeneradorPlanIa
       "rutina": {
         "dias": [
           { "dia": "lunes", "enfoque": "...", "ejercicios": [
-            { "nombre": "...", "series": 4, "repeticiones": "8-10", "descanso_seg": 90 }
+            { "ejercicio_id": 0, "nombre": "...", "series": 4, "repeticiones": "8-10",
+              "descanso_seg": 90, "peso_sugerido_kg": 20, "nota_tecnica": "..." }
           ] }
         ]
       },
@@ -36,6 +37,13 @@ module GeneradorPlanIa
     entrenamiento de FUERZA con pesos; NO incluyas días dedicados a cardio
     ni ejercicios de cardio como enfoque principal de un día. Las kcal de las
     comidas deben sumar aproximadamente el objetivo diario indicado.
+    Si el prompt incluye un CATÁLOGO PERMITIDO, elige los ejercicios
+    EXCLUSIVAMENTE de esa lista, copiando su ejercicio_id y su nombre EXACTOS;
+    no inventes ejercicios ni ids. peso_sugerido_kg (número, opcional) es un
+    peso inicial conservador acorde al sexo, peso corporal y nivel del miembro;
+    omítelo en ejercicios de peso corporal. nota_tecnica (opcional, máximo 90
+    caracteres) es un consejo de ejecución personalizado a su somatotipo y
+    medidas.
   PROMPT
 
   # perfil: hash plano con los datos del miembro (sin objetos ActiveRecord).
@@ -61,7 +69,30 @@ module GeneradorPlanIa
       - Nivel de actividad (factor TDEE): #{perfil[:nivel_actividad]}
       - Meta: #{perfil[:meta]} · Objetivo diario: #{perfil[:objetivo_kcal]} kcal (TDEE #{perfil[:tdee_kcal]} kcal)
     PROMPT
-    base + antropometria(perfil[:medicion])
+    base + antropometria(perfil[:medicion]) + adherencia(perfil[:adherencia]) + catalogo(perfil[:catalogo])
+  end
+
+  # Catálogo cerrado de ejercicios (Fase 6.5): la IA solo puede elegir de aquí.
+  def self.catalogo(texto)
+    return "" if texto.blank?
+
+    "\nCATÁLOGO PERMITIDO (ejercicio_id | nombre (equipo)):\n#{texto}\n"
+  end
+
+  # Adherencia real del miembro (Fase 6.6): solo al regenerar un plan, para
+  # que el nuevo reaccione a lo que sí ejecuta y a sus novedades reportadas.
+  def self.adherencia(resumen)
+    return "" if resumen.blank?
+
+    lineas = [ "Adherencia real del miembro (últimas #{resumen[:semanas]} semanas): #{resumen[:pct_global]}% global." ]
+    flojos = resumen[:por_ejercicio].select { |e| e[:total] >= 2 && e[:hechos] * 2 < e[:total] }
+    if flojos.any?
+      lineas << "Baja adherencia en: #{flojos.map { |e| "#{e[:nombre]} (#{e[:hechos]}/#{e[:total]})" }.join(", ")}."
+    end
+    lineas << "Novedades reportadas: #{resumen[:novedades].map(&:inspect).join(", ")}." if resumen[:novedades].any?
+    lineas << "Ajusta el nuevo plan: sustituye o adapta lo de baja adherencia y respeta las novedades (lesiones, máquinas no disponibles)."
+
+    "\n#{lineas.join("\n")}\n"
   end
 
   # Bloque opcional con las medidas antropométricas (Fase 5.9) para afinar la

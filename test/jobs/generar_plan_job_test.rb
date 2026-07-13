@@ -40,6 +40,41 @@ class GenerarPlanJobTest < ActiveJob::TestCase
     assert_equal "gemini-test", plan.modelo_generacion
   end
 
+  # Fase 6.5: el job pasa la rutina de la IA por el validador de catálogo
+  test "un ejercicio_id alucinado se rescata o se limpia antes de completar" do
+    press = Ejercicio.create!(dataset_id: "0025", nombre: "Press de banca", nombre_en: "barbell bench press",
+                              musculo: "pecho", categoria: "chest")
+    Suscripcion.create!(user: @user, plan: planes(:personalizado), estado: "activa", fecha_inicio: Date.current)
+    plan = plan_generando
+
+    con_alucinacion = RESULTADO.merge(rutina: { "dias" => [ { "dia" => "lunes", "ejercicios" => [
+      { "ejercicio_id" => 999_999, "nombre" => "press de banca" },
+      { "ejercicio_id" => 888_888, "nombre" => "Invento marciano" }
+    ] } ] })
+
+    con_ia_stub(con_alucinacion) { GenerarPlanJob.perform_now(plan.id) }
+
+    ejercicios = plan.reload.rutina["dias"][0]["ejercicios"]
+    assert_equal press.id, ejercicios[0]["ejercicio_id"]      # rescatado por nombre
+    assert_nil ejercicios[1]["ejercicio_id"]                  # limpiado, sobrevive
+    assert_equal "Invento marciano", ejercicios[1]["nombre"]
+    assert plan.borrador?
+  end
+
+  # Fase 6.6: la adherencia real viaja en el perfil cuando hay registros
+  test "el perfil lleva catálogo y adherencia cuando hay seguimiento" do
+    Suscripcion.create!(user: @user, plan: planes(:personalizado), estado: "activa", fecha_inicio: Date.current)
+    RegistroEntrenamiento.create!(user: @user, fecha: Date.current.beginning_of_week,
+                                  ejercicios: { "0" => { "hecho" => true, "nombre" => "Press banca" } })
+    plan = plan_generando
+    perfil_visto = nil
+
+    con_ia_stub(->(perfil) { perfil_visto = perfil; RESULTADO }) { GenerarPlanJob.perform_now(plan.id) }
+
+    assert perfil_visto.key?(:catalogo)
+    assert_equal 100, perfil_visto[:adherencia][:pct_global]
+  end
+
   test "un fallo de la IA deja el plan en fallido con su mensaje" do
     Suscripcion.create!(user: @user, plan: planes(:personalizado), estado: "activa", fecha_inicio: Date.current)
     plan = plan_generando

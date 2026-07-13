@@ -27,11 +27,20 @@ class GenerarPlanJob < ApplicationJob
       meta: objetivo&.nombre || "no definida",
       objetivo_kcal: objetivo&.objetivo_kcal,
       tdee_kcal: objetivo&.tdee_kcal,
-      medicion: medicion
+      medicion: medicion,
+      # Fase 6.5/6.6: catálogo cerrado de ejercicios + adherencia real
+      catalogo: Ejercicios::CatalogoParaPrompt.para,
+      adherencia: ResumenAdherencia.para(plan.user)
     )
 
+    # Anti-alucinación (Fase 6.5): ids inexistentes se rescatan o se limpian
+    validacion = Ejercicios::ValidadorRutina.corregir!(resultado[:rutina])
+    if validacion[:correcciones].positive?
+      Rails.logger.info("GenerarPlanJob: #{validacion[:correcciones]} correcciones de catálogo en el plan #{plan.id}")
+    end
+
     plan.completar!(
-      rutina: resultado[:rutina],
+      rutina: validacion[:rutina],
       plan_nutricional: resultado[:plan_nutricional],
       modelo: resultado[:modelo]
     )
