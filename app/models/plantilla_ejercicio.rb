@@ -10,6 +10,8 @@ class PlantillaEjercicio < ApplicationRecord
   }.freeze
 
   belongs_to :creado_por, class_name: "User", optional: true
+  # Enlace al catálogo visual (Fase 6.4): aporta GIF de ejecución e instrucciones
+  belongs_to :ejercicio, optional: true
 
   validates :musculo, inclusion: { in: MUSCULOS }
   validates :nombre, presence: true, uniqueness: { scope: :musculo }

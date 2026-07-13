@@ -14,7 +14,7 @@
                  "viernes" => 4, "sabado" => 5, "domingo" => 6 } %>
 <% end %>
 
-<div class="card border border-base-300 bg-base-100 shadow-md" data-controller="tabs seguimiento"
+<div class="card border border-base-300 bg-base-100 shadow-md" data-controller="tabs seguimiento ayuda-ejercicio"
      data-seguimiento-url-value="<%= registros_entrenamiento_path %>">
   <div class="card-body">
     <div class="flex flex-wrap items-center justify-between gap-2">
@@ -63,15 +63,21 @@
                 <%# Check de seguimiento (5.11): reemplaza el número cuando es tu plan %>
                 <input type="checkbox" class="checkbox checkbox-success checkbox-sm shrink-0"
                        <%= "checked" if hecho %> <%= "disabled" if futuro %>
-                       aria-label="¿Hiciste #{ejercicio["nombre"]}?"
+                       aria-label="¿Hiciste <%= ejercicio["nombre"] %>?"
                        data-action="change->seguimiento#marcar">
               <% else %>
                 <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-base-200 font-display text-sm font-bold text-steel-5">
                   <%= indice + 1 %>
                 </span>
               <% end %>
-              <div class="min-w-0 flex-1">
-                <p class="font-semibold leading-tight"><%= ejercicio["nombre"] %></p>
+              <%# Tap en el bloque del nombre → popup con GIF de ejecución (Fase 6.3) %>
+              <button type="button" class="min-w-0 flex-1 text-left"
+                      data-action="click->ayuda-ejercicio#abrir"
+                      data-ayuda-url="<%= ayuda_ejercicios_path(ejercicio_id: ejercicio["ejercicio_id"], nombre: ejercicio["nombre"]) %>">
+                <p class="flex items-center gap-1.5 font-semibold leading-tight">
+                  <span class="min-w-0"><%= ejercicio["nombre"] %></span>
+                  <%= render "shared/icono", nombre: :busqueda, clase: "size-3.5 shrink-0 text-steel-3" %>
+                </p>
                 <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
                   <span class="inline-flex items-center gap-1 rounded-full bg-volt/15 px-2 py-0.5 text-xs font-bold text-volt-d">
                     <%= ejercicio["series"] %> × <%= ejercicio["repeticiones"] %>
@@ -83,7 +89,7 @@
                     </span>
                   <% end %>
                 </div>
-              </div>
+              </button>
             </div>
           <% end %>
 
@@ -100,4 +106,6 @@
       </div>
     <% end %>
   </div>
+
+  <%= render "ejercicios/dialogo_ayuda" %>
 </div>

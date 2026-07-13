@@ -89,6 +89,10 @@ class GestionPlanesControllerTest < ActionDispatch::IntegrationTest
     # Fase 5.14: copy sin menciones a "IA" de cara al miembro
     assert_match "Analizado y diseñado según tu perfil", response.body
     assert_no_match(/\bIA\b/, response.body)
+    # Fase 6.3: tap en el ejercicio abre el popup de ayuda (dialog + frame perezoso)
+    assert_select "button[data-ayuda-url=?]", ayuda_ejercicios_path(nombre: "Press banca")
+    assert_select "dialog[data-ayuda-ejercicio-target=dialogo]"
+    assert_select "turbo-frame#ayuda_ejercicio"
   end
 
   test "el modo avanzado guarda el JSON de la rutina" do

@@ -1,0 +1,41 @@
+<%# Catálogo buscable dentro de la biblioteca del editor (Fase 6.4). Vive en %>
+<%# un turbo-frame perezoso: el form navega solo el frame, sin recargar el %>
+<%# modal. Aplicar reutiliza modal-ejercicios#aplicar con defaults 3×10-12. %>
+<%= turbo_frame_tag "catalogo_ejercicios" do %>
+  <%= form_with url: ejercicios_path, method: :get, class: "mb-2 flex items-center gap-2" do %>
+    <label class="input input-bordered input-sm flex flex-1 items-center gap-2">
+      <%= render "shared/icono", nombre: :busqueda, clase: "size-4 text-steel-3" %>
+      <input type="search" name="q" value="<%= params[:q] %>" class="grow"
+             placeholder="Buscar en el catálogo (1.324 ejercicios)…">
+    </label>
+    <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+  <% end %>
+
+  <% if @ejercicios.any? %>
+    <div class="grid gap-1.5 sm:grid-cols-2">
+      <% @ejercicios.each do |ejercicio| %>
+        <button type="button"
+                class="group flex items-center gap-2 rounded-xl border border-base-300 px-3 py-2 text-left text-sm transition-colors hover:border-volt-d/50 hover:bg-volt/5"
+                data-action="modal-ejercicios#aplicar"
+                data-nombre="<%= ejercicio.nombre %>" data-series="3"
+                data-repeticiones="10-12" data-descanso="60"
+                data-ejercicio-id="<%= ejercicio.id %>">
+          <% if ejercicio.imagen_ruta.present? %>
+            <span class="shrink-0 cursor-zoom-in" title="Ver ejecución"
+                  data-action="click->ayuda-ejercicio#abrir:stop"
+                  data-ayuda-url="<%= ayuda_ejercicios_path(ejercicio_id: ejercicio.id, marco: "ayuda_ejercicio_editor") %>">
+              <img src="<%= media_ejercicio_path(ejercicio, tipo: :imagen) %>" loading="lazy"
+                   width="32" height="32" class="size-8 rounded-lg bg-white object-cover" alt="">
+            </span>
+          <% end %>
+          <span class="min-w-0 flex-1">
+            <span class="block truncate font-medium"><%= ejercicio.nombre %></span>
+            <span class="block truncate text-xs text-steel-3"><%= PlantillaEjercicio::NOMBRES_MUSCULO.fetch(ejercicio.musculo, ejercicio.musculo) %><%= " · #{ejercicio.equipo}" if ejercicio.equipo.present? %></span>
+          </span>
+        </button>
+      <% end %>
+    </div>
+  <% else %>
+    <p class="py-4 text-center text-sm text-steel-3">Nada coincide con tu búsqueda en el catálogo.</p>
+  <% end %>
+<% end %>

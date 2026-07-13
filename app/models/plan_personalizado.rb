@@ -7,7 +7,9 @@ class PlanPersonalizado < ApplicationRecord
   # entrenamiento, aprobado de una vez y editable por el propio miembro.
   GENERADORES = %w[ia entrenador reglas].freeze
   CAMPOS_COMIDA = %w[nombre descripcion kcal proteinas_g carbohidratos_g grasas_g].freeze
-  CAMPOS_EJERCICIO = %w[nombre series repeticiones descanso_seg].freeze
+  # ejercicio_id enlaza al catálogo visual (Fase 6); peso_sugerido_kg y
+  # nota_tecnica los personaliza la IA con catálogo cerrado (Fase 6.5).
+  CAMPOS_EJERCICIO = %w[nombre series repeticiones descanso_seg ejercicio_id peso_sugerido_kg nota_tecnica].freeze
 
   belongs_to :user
   belongs_to :aprobado_por, class_name: "User", optional: true
@@ -138,7 +140,8 @@ class PlanPersonalizado < ApplicationRecord
       dia["enfoque"] = PlantillaEjercicio::NOMBRES_MUSCULO.fetch(musculo, musculo.to_s.capitalize)
       dia["ejercicios"] = plantillas.map do |plantilla|
         { "nombre" => plantilla.nombre, "series" => plantilla.series || 3,
-          "repeticiones" => plantilla.repeticiones, "descanso_seg" => plantilla.descanso_seg || 60 }
+          "repeticiones" => plantilla.repeticiones, "descanso_seg" => plantilla.descanso_seg || 60,
+          "ejercicio_id" => plantilla.ejercicio_id }.compact
       end
     end
   end
@@ -218,7 +221,13 @@ class PlanPersonalizado < ApplicationRecord
       base = defaults ? { "nombre" => "Nuevo ejercicio", "series" => 3,
                           "repeticiones" => "10-12", "descanso_seg" => 60 } : {}
       campos.to_h.slice(*CAMPOS_EJERCICIO).each_with_object(base) do |(clave, valor), saneado|
-        saneado[clave.to_s] = %w[nombre repeticiones].include?(clave.to_s) ? valor.to_s.strip : valor.to_i
+        saneado[clave.to_s] =
+          case clave.to_s
+          when "nombre", "repeticiones", "nota_tecnica" then valor.to_s.strip
+          when "ejercicio_id" then valor.presence && valor.to_i
+          when "peso_sugerido_kg" then valor.presence && como_numero(valor)
+          else valor.to_i
+          end
       end
     end
 end

@@ -84,6 +84,8 @@ export default class extends Controller {
     this.fijar("series", o.series)
     this.fijar("repeticiones", o.repeticiones)
     this.fijar("descanso_seg", o.descanso)
+    // Enlace al catálogo visual (Fase 6.4); "" limpia el vínculo anterior
+    this.fijar("ejercicio_id", o.ejercicioId || "")
     this.dialogoTarget.close()
     this.destino.querySelector("[name$='[nombre]']")
       ?.dispatchEvent(new Event("input", { bubbles: true }))

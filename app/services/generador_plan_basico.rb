@@ -60,6 +60,7 @@ module GeneradorPlanBasico
 
   def self.ejercicio_hash(plantilla)
     { "nombre" => plantilla.nombre, "series" => plantilla.series || 3,
-      "repeticiones" => plantilla.repeticiones, "descanso_seg" => plantilla.descanso_seg || 60 }
+      "repeticiones" => plantilla.repeticiones, "descanso_seg" => plantilla.descanso_seg || 60,
+      "ejercicio_id" => plantilla.ejercicio_id }.compact
   end
 end

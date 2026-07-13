@@ -18,6 +18,8 @@
          data-autosave-target="card"
          data-url="<%= plan_personalizado_dia_ejercicio_path(plan, indice, ei) %>">
       <div class="flex items-center gap-2">
+        <%# Enlace al catálogo visual (Fase 6.4): lo fija el modal al aplicar %>
+        <input type="hidden" name="ejercicio[ejercicio_id]" value="<%= ejercicio["ejercicio_id"] %>">
         <input type="text" name="ejercicio[nombre]" value="<%= ejercicio["nombre"] %>" required
                class="input input-sm input-bordered w-full font-semibold" aria-label="Ejercicio"
                data-action="input->autosave#programar">

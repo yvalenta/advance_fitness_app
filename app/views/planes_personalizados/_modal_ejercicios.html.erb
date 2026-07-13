@@ -53,7 +53,17 @@
                         class="group flex items-center justify-between gap-2 rounded-xl border border-base-300 px-3 py-2 text-left text-sm transition-colors hover:border-volt-d/50 hover:bg-volt/5"
                         data-action="modal-ejercicios#aplicar"
                         data-nombre="<%= p.nombre %>" data-series="<%= p.series %>"
-                        data-repeticiones="<%= p.repeticiones %>" data-descanso="<%= p.descanso_seg %>">
+                        data-repeticiones="<%= p.repeticiones %>" data-descanso="<%= p.descanso_seg %>"
+                        data-ejercicio-id="<%= p.ejercicio_id %>">
+                  <%# Thumbnail del catálogo (Fase 6.4): tap abre la ayuda sin aplicar %>
+                  <% if p.ejercicio&.imagen_ruta.present? %>
+                    <span class="shrink-0 cursor-zoom-in" title="Ver ejecución"
+                          data-action="click->ayuda-ejercicio#abrir:stop"
+                          data-ayuda-url="<%= ayuda_ejercicios_path(ejercicio_id: p.ejercicio_id, marco: "ayuda_ejercicio_editor") %>">
+                      <img src="<%= media_ejercicio_path(p.ejercicio, tipo: :imagen) %>" loading="lazy"
+                           width="32" height="32" class="size-8 rounded-lg bg-white object-cover" alt="">
+                    </span>
+                  <% end %>
                   <span class="min-w-0 flex-1 truncate font-medium"><%= p.nombre %></span>
                   <span class="shrink-0 rounded-full bg-volt/15 px-2 py-0.5 text-xs font-bold text-volt-d"><%= p.series %>×<%= p.repeticiones %></span>
                 </button>
@@ -64,6 +74,15 @@
         <p class="hidden py-6 text-center text-sm text-steel-3" data-modal-ejercicios-target="vacio">
           Nada coincide con tu búsqueda.
         </p>
+
+        <%# Catálogo completo del dataset (Fase 6.4): frame perezoso, solo carga %>
+        <%# al abrir el modal y llegar hasta aquí. Búsqueda server-side. %>
+        <div>
+          <p class="eyebrow mb-2 text-steel-3">Catálogo completo</p>
+          <%= turbo_frame_tag "catalogo_ejercicios", src: ejercicios_path, loading: :lazy do %>
+            <div class="flex justify-center py-4"><span class="loading loading-spinner loading-sm"></span></div>
+          <% end %>
+        </div>
       </div>
     <% else %>
       <p class="p-8 text-center text-sm text-steel-3">Aún no hay plantillas de ejercicio.</p>

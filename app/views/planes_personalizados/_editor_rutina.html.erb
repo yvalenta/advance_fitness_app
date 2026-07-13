@@ -1,7 +1,7 @@
 <%# Editor de rutina por día/ejercicio con autosave (SDD Fase 5.7b). %>
 <%# locals: (plan:, plantillas:) %>
 <div class="card border border-base-300 bg-base-100 shadow-md"
-     data-controller="tabs autosave modal-ejercicios"
+     data-controller="tabs autosave modal-ejercicios ayuda-ejercicio"
      data-autosave-clave="ejercicio"
      data-modal-ejercicios-crear-url="<%= entrenador_plantillas_ejercicio_path %>">
   <div class="card-body">
@@ -29,5 +29,8 @@
     <% end %>
 
     <%= render "planes_personalizados/modal_ejercicios", plantillas: plantillas %>
+    <%# Popup de ayuda propio del editor (Fase 6.4): id de frame distinto al de %>
+    <%# la rutina del miembro para poder convivir en la misma página. %>
+    <%= render "ejercicios/dialogo_ayuda", marco: "ayuda_ejercicio_editor" %>
   </div>
 </div>

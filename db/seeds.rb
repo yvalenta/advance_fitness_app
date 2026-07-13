@@ -126,3 +126,49 @@ end
     plantilla.descanso_seg = descanso
   end
 end
+
+# Enlace de la biblioteca curada con el catálogo visual (Fase 6.4): cada
+# plantilla apunta a su ejercicio del dataset (GIF + instrucciones). Lista de
+# candidatos por nombre_en (el primero que exista gana); solo fija el enlace
+# si aún no lo tiene, así el staff puede re-vincular sin que el seed lo pise.
+{
+  "Press de banca con barra" => [ "barbell bench press" ],
+  "Press inclinado con mancuernas" => [ "dumbbell incline bench press", "dumbbell incline press" ],
+  "Aperturas con mancuernas" => [ "dumbbell fly" ],
+  "Fondos en paralelas" => [ "chest dip" ],
+  "Dominadas" => [ "pull-up", "pull up (neutral grip)" ],
+  "Remo con barra" => [ "barbell bent over row" ],
+  "Jalón al pecho en polea" => [ "cable pulldown", "cable lat pulldown full range of motion" ],
+  "Remo con mancuerna a una mano" => [ "dumbbell one arm row", "dumbbell bent over row" ],
+  "Sentadilla con barra" => [ "barbell full squat" ],
+  "Prensa de piernas" => [ "sled 45° leg press (side pov)", "lever alternate leg press" ],
+  "Zancadas con mancuernas" => [ "dumbbell lunge", "barbell lunge" ],
+  "Peso muerto rumano" => [ "barbell romanian deadlift" ],
+  "Extensión de cuádriceps" => [ "lever leg extension" ],
+  "Curl femoral" => [ "lever lying leg curl" ],
+  "Press militar con barra" => [ "barbell standing wide military press", "barbell seated overhead press" ],
+  "Elevaciones laterales" => [ "dumbbell lateral raise" ],
+  "Pájaros (deltoide posterior)" => [ "dumbbell rear lateral raise", "barbell rear delt raise" ],
+  "Press Arnold" => [ "dumbbell arnold press" ],
+  "Curl con barra" => [ "barbell curl" ],
+  "Curl con mancuernas alterno" => [ "dumbbell alternate biceps curl" ],
+  "Curl martillo" => [ "dumbbell hammer curl" ],
+  "Extensiones en polea alta" => [ "cable pushdown" ],
+  "Press francés" => [ "ez bar standing french press", "barbell lying triceps extension skull crusher" ],
+  "Fondos en banco" => [ "bench dip (knees bent)", "bench dip on floor" ],
+  "Plancha abdominal" => [ "weighted front plank", "front plank with twist" ],
+  "Abdominales crunch" => [ "crunch floor" ],
+  "Elevación de piernas colgado" => [ "hanging leg raise" ],
+  "Giro ruso con peso" => [ "weighted russian twist", "russian twist" ],
+  "Hip thrust con barra" => [ "barbell hip thrust", "barbell glute bridge" ],
+  "Patada de glúteo en polea" => [ "cable standing hip extension", "cable kickback" ],
+  "Puente de glúteo" => [ "low glute bridge on floor", "glute bridge march" ],
+  "Antebrazo con barra (curl de muñeca)" => [ "barbell wrist curl" ],
+  "Encogimiento de trapecio" => [ "barbell shrug" ]
+}.each do |nombre_plantilla, candidatos|
+  plantilla = PlantillaEjercicio.find_by(nombre: nombre_plantilla)
+  next if plantilla.nil? || plantilla.ejercicio_id.present?
+
+  ejercicio = candidatos.lazy.filter_map { |n| Ejercicio.where("LOWER(nombre_en) = ?", n).first }.first
+  plantilla.update!(ejercicio: ejercicio) if ejercicio
+end

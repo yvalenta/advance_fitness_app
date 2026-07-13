@@ -38,6 +38,24 @@ class PlanPersonalizadoTest < ActiveSupport::TestCase
     assert_equal "8-10", ej["repeticiones"]           # no tocado
   end
 
+  # Fase 6.4: campos del catálogo visual y de la IA personalizada
+  test "sanea ejercicio_id, peso_sugerido_kg y nota_tecnica" do
+    plan = plan_con_rutina
+    plan.actualizar_ejercicio!(0, 0, { "ejercicio_id" => "42", "peso_sugerido_kg" => "22.5",
+                                       "nota_tecnica" => " Codos pegados al torso " })
+
+    ej = plan.reload.ejercicios_de(0).first
+    assert_equal 42, ej["ejercicio_id"]
+    assert_equal 22.5, ej["peso_sugerido_kg"]
+    assert_equal "Codos pegados al torso", ej["nota_tecnica"]
+
+    # Vacíos → nil (limpiar el vínculo no lo convierte en 0)
+    plan.actualizar_ejercicio!(0, 0, { "ejercicio_id" => "", "peso_sugerido_kg" => "" })
+    ej = plan.reload.ejercicios_de(0).first
+    assert_nil ej["ejercicio_id"]
+    assert_nil ej["peso_sugerido_kg"]
+  end
+
   test "agregar_ejercicio! y eliminar_ejercicio! ajustan el día" do
     plan = plan_con_rutina
 

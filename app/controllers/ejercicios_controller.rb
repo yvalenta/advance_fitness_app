@@ -13,12 +13,17 @@ class EjerciciosController < ApplicationController
     @ejercicios = @ejercicios.where(musculo: params[:musculo]) if params[:musculo].present?
   end
 
-  # Popup de ayuda: por id (rutinas nuevas) o por nombre (rutinas viejas)
+  # Popup de ayuda: por id (rutinas nuevas), por nombre contra el catálogo, o
+  # vía la plantilla enlazada (cubre rutinas viejas generadas desde la
+  # biblioteca en español, sin ejercicio_id en su JSON).
+  # `marco` (whitelist) permite dos dialogs en la misma página (rutina/editor).
   def ayuda
     authorize Ejercicio
     @ejercicio = Ejercicio.find_by(id: params[:ejercicio_id]) ||
-                 Ejercicio.buscar_por_nombre(params[:nombre])
+                 Ejercicio.buscar_por_nombre(params[:nombre]) ||
+                 PlantillaEjercicio.find_by(nombre: params[:nombre].to_s.strip)&.ejercicio
     @nombre_consultado = params[:nombre]
+    @marco = params[:marco].presence_in(%w[ayuda_ejercicio ayuda_ejercicio_editor]) || "ayuda_ejercicio"
   end
 
   # GET /ejercicios/:id/media/:tipo (gif|imagen) — descarga on-demand + caché

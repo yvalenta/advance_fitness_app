@@ -38,6 +38,19 @@ class GeneradorPlanBasicoTest < ActiveSupport::TestCase
     assert ejercicio["nombre"].present?
   end
 
+  # Fase 6.4: la plantilla enlazada al catálogo propaga su ejercicio_id
+  test "incluye ejercicio_id cuando la plantilla está enlazada al catálogo" do
+    ejercicio = Ejercicio.create!(dataset_id: "0025", nombre: "Press de banca", nombre_en: "barbell bench press",
+                                  musculo: "pecho", categoria: "chest")
+    PlantillaEjercicio.find_by(musculo: "pecho", nombre: "Ej pecho").update!(ejercicio: ejercicio)
+
+    rutina = GeneradorPlanBasico.para(users(:one), objetivo: objetivo("superavit"))
+
+    con_id = rutina["dias"].flat_map { |d| d["ejercicios"] }.select { |e| e["ejercicio_id"] }
+    assert con_id.any?
+    assert_equal ejercicio.id, con_id.first["ejercicio_id"]
+  end
+
   test "la semana rota ejercicios entre repeticiones del mismo enfoque" do
     2.times { |i| PlantillaEjercicio.find_or_create_by!(musculo: "pecho", nombre: "Press extra #{i}") { |p| p.repeticiones = "8" } }
     rutina = GeneradorPlanBasico.para(users(:one), objetivo: objetivo("superavit"))

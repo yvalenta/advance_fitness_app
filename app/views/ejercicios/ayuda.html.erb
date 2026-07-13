@@ -1,0 +1,52 @@
+<%# Contenido del popup de ayuda de un ejercicio (Fase 6.3): llega dentro del %>
+<%# turbo-frame del dialog compartido en la rutina. El GIF pasa por el proxy %>
+<%# con caché y solo se descarga al abrir (carga perezosa real). %>
+<%= turbo_frame_tag @marco do %>
+  <% if @ejercicio %>
+    <div class="flex flex-col gap-3">
+      <div class="flex items-start justify-between gap-2">
+        <h3 class="font-display text-lg font-bold leading-tight"><%= @ejercicio.nombre %></h3>
+        <button type="button" class="btn btn-circle btn-ghost btn-sm shrink-0"
+                data-action="ayuda-ejercicio#cerrar" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-1.5">
+        <span class="badge badge-sm bg-volt/15 font-semibold text-volt-d">
+          <%= PlantillaEjercicio::NOMBRES_MUSCULO.fetch(@ejercicio.musculo, @ejercicio.musculo) %>
+        </span>
+        <% if @ejercicio.equipo.present? %>
+          <span class="badge badge-ghost badge-sm"><%= @ejercicio.equipo %></span>
+        <% end %>
+      </div>
+
+      <% if @ejercicio.gif_ruta.present? %>
+        <div class="flex justify-center rounded-xl bg-white p-2">
+          <img src="<%= media_ejercicio_path(@ejercicio, tipo: :gif) %>" loading="lazy"
+               width="180" height="180" class="size-44 rounded-lg object-contain"
+               alt="Ejecución de <%= @ejercicio.nombre %>">
+        </div>
+      <% end %>
+
+      <% if @ejercicio.instrucciones.any? %>
+        <ol class="flex list-none flex-col gap-1.5">
+          <% @ejercicio.instrucciones.each_with_index do |paso, indice| %>
+            <li class="flex items-start gap-2 text-sm leading-snug text-steel-7">
+              <span class="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-volt/15 text-xs font-bold text-volt-d"><%= indice + 1 %></span>
+              <%= paso %>
+            </li>
+          <% end %>
+        </ol>
+      <% end %>
+
+      <p class="text-right text-[10px] text-steel-3"><%= @ejercicio.atribucion %></p>
+    </div>
+  <% else %>
+    <div class="flex flex-col items-center gap-2 py-6 text-center">
+      <p class="font-semibold">Sin ayuda visual para este ejercicio</p>
+      <p class="text-sm text-steel-3">
+        “<%= @nombre_consultado %>” aún no está vinculado al catálogo. Tu entrenador puede orientarte en su ejecución.
+      </p>
+      <button type="button" class="btn btn-ghost btn-sm" data-action="ayuda-ejercicio#cerrar">Cerrar</button>
+    </div>
+  <% end %>
+<% end %>

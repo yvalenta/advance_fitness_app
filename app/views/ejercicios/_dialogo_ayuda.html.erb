@@ -1,0 +1,14 @@
+<%# Popup compartido de ayuda de ejecución (Fase 6.3): un solo dialog cuyo %>
+<%# turbo-frame se carga bajo demanda al tocar un ejercicio. Requiere el %>
+<%# controller Stimulus "ayuda-ejercicio" en un ancestro. `marco` permite dos %>
+<%# instancias en la misma página (rutina del miembro + editor) sin duplicar %>
+<%# el id del frame. Cierre manual por JS (patrón 5.16, sin form dialog). %>
+<% marco = local_assigns.fetch(:marco, "ayuda_ejercicio") %>
+<dialog class="modal" data-ayuda-ejercicio-target="dialogo" data-action="click->ayuda-ejercicio#cerrarEnBackdrop">
+  <div class="modal-box max-w-sm">
+    <%= turbo_frame_tag marco, data: { ayuda_ejercicio_target: "marco" } do %>
+      <div class="flex justify-center py-10"><span class="loading loading-spinner loading-md"></span></div>
+    <% end %>
+  </div>
+  <div class="modal-backdrop"></div>
+</dialog>
