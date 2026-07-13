@@ -59,7 +59,7 @@
                   <% if p.ejercicio&.imagen_ruta.present? %>
                     <span class="shrink-0 cursor-zoom-in" title="Ver ejecución"
                           data-action="click->ayuda-ejercicio#abrir:stop"
-                          data-ayuda-url="<%= ayuda_ejercicios_path(ejercicio_id: p.ejercicio_id, marco: "ayuda_ejercicio_editor") %>">
+                          data-ayuda-url="<%= ayuda_ejercicios_path(ejercicio_id: p.ejercicio_id) %>">
                       <img src="<%= media_ejercicio_path(p.ejercicio, tipo: :imagen) %>" loading="lazy"
                            width="32" height="32" class="size-8 rounded-lg bg-white object-cover" alt="">
                     </span>

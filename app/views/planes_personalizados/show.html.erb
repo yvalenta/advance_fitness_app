@@ -12,22 +12,6 @@
     <div class="animate-fade-up">
       <%= render "planes_personalizados/plan", plan: @plan, usuario: Current.user %>
     </div>
-
-    <%# Edición de la rutina por su dueño (Fase 5.12: sugerido o de IA) — fuera
-        del div del broadcast para que el refresco en vivo no pise lo editado. %>
-    <% if @editable %>
-      <div class="animate-fade-up fade-delay-1 mt-6">
-        <div class="mb-2 flex items-center gap-2">
-          <% if @plan.reglas? %>
-            <span class="badge badge-success gap-1 font-semibold">
-              <%= render "shared/icono", nombre: :check, clase: "size-3" %> Incluido con tu membresía
-            </span>
-          <% end %>
-          <span class="text-sm text-steel-5">Personaliza tu rutina: cambia los músculos del día y elige ejercicios de la biblioteca.</span>
-        </div>
-        <%= render "planes_personalizados/editor_rutina", plan: @plan, plantillas: @plantillas_ejercicio %>
-      </div>
-    <% end %>
   <% else %>
     <% if @falta_meta %>
       <div class="card animate-fade-up mb-6 border-2 border-volt/50 bg-base-100 shadow-md">

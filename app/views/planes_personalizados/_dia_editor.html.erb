@@ -1,84 +1,175 @@
-<%# Panel editable de un día de la rutina (extraído de _editor_rutina en 5.11 %>
-<%# para refrescarlo solo, vía turbo_stream, al aplicar una sesión completa). %>
-<%# locals: (plan:, dia:, indice:) %>
-<div id="dia_editor_<%= indice %>" class="flex flex-col gap-3"
-     data-dia-url="<%= plan_personalizado_dia_path(plan, indice) %>">
-  <label class="input input-sm input-bordered flex items-center gap-2"
-         data-autosave-target="card" data-clave="dia"
-         data-url="<%= plan_personalizado_dia_path(plan, indice) %>">
-    <span class="text-xs font-bold text-steel-3">Enfoque</span>
-    <input type="text" name="dia[enfoque]" value="<%= dia["enfoque"] %>" class="grow"
-           aria-label="Enfoque del día" data-action="input->autosave#programar">
-    <span class="badge badge-sm gap-1 font-semibold" hidden
-          data-autosave-target="estado" data-action="click->autosave#reintentar"></span>
-  </label>
+<%# Panel de un día completo de la rutina unificada (Fase 6.8): cada ejercicio %>
+<%# lleva un bloque de LECTURA (checks, cápsulas, ayuda) y uno de EDICIÓN %>
+<%# (inputs), hermanos que "modo-edicion" alterna sin duplicar el componente. %>
+<%# Conserva su id y data-dia-url: GestionDiasController los usa como turbo_ %>
+<%# stream replace target y modal_ejercicios#abrir/#aplicarSesion los usan %>
+<%# para ubicar el día destino. %>
+<%# locals: (plan:, dia:, indice:, con_seguimiento: false, editable: false, editando_por_defecto: false, registro: nil, fecha: nil) %>
+<% con_seguimiento = local_assigns.fetch(:con_seguimiento, false) %>
+<% editable = local_assigns.fetch(:editable, false) %>
+<% editando_por_defecto = local_assigns.fetch(:editando_por_defecto, false) %>
+<% registro = local_assigns[:registro] %>
+<% fecha = local_assigns[:fecha] %>
+<% futuro = con_seguimiento && fecha && fecha > Date.current %>
+<% ejercicios = Array(dia["ejercicios"]) %>
 
-  <% Array(dia["ejercicios"]).each_with_index do |ejercicio, ei| %>
-    <div class="flex flex-col gap-2 rounded-xl border border-base-300 p-3"
-         data-autosave-target="card"
-         data-url="<%= plan_personalizado_dia_ejercicio_path(plan, indice, ei) %>">
-      <div class="flex items-center gap-2">
-        <%# Enlace al catálogo visual (Fase 6.4): lo fija el modal al aplicar %>
-        <input type="hidden" name="ejercicio[ejercicio_id]" value="<%= ejercicio["ejercicio_id"] %>">
-        <input type="text" name="ejercicio[nombre]" value="<%= ejercicio["nombre"] %>" required
-               class="input input-sm input-bordered w-full font-semibold" aria-label="Ejercicio"
-               data-action="input->autosave#programar">
-        <span class="badge badge-sm shrink-0 gap-1 font-semibold" hidden
-              data-autosave-target="estado" data-action="click->autosave#reintentar"></span>
-      </div>
-      <div class="grid grid-cols-3 gap-2">
-        <label class="input input-sm input-bordered flex items-center gap-1">
-          <span class="text-xs font-bold text-steel-3">Series</span>
-          <input type="number" name="ejercicio[series]" value="<%= ejercicio["series"] %>" min="0"
-                 class="w-full text-right" aria-label="Series" data-action="input->autosave#programar">
-        </label>
-        <label class="input input-sm input-bordered flex items-center gap-1">
-          <span class="text-xs font-bold text-steel-3">Reps</span>
-          <input type="text" name="ejercicio[repeticiones]" value="<%= ejercicio["repeticiones"] %>"
-                 class="w-full text-right" aria-label="Repeticiones" data-action="input->autosave#programar">
-        </label>
-        <label class="input input-sm input-bordered flex items-center gap-1">
-          <span class="text-xs font-bold text-steel-3">Desc.</span>
-          <input type="number" name="ejercicio[descanso_seg]" value="<%= ejercicio["descanso_seg"] %>" min="0"
-                 class="w-full text-right" aria-label="Descanso (s)" data-action="input->autosave#programar">
-          <span class="text-xs text-steel-3">s</span>
-        </label>
-      </div>
-      <%# Personalización del análisis (Fase 6.5): peso inicial y consejo técnico %>
-      <div class="grid grid-cols-[7rem_1fr] gap-2">
-        <label class="input input-sm input-bordered flex items-center gap-1">
-          <span class="text-xs font-bold text-steel-3">≈ kg</span>
-          <input type="number" name="ejercicio[peso_sugerido_kg]" value="<%= ejercicio["peso_sugerido_kg"] %>"
-                 min="0" step="0.5" class="w-full text-right" aria-label="Peso sugerido (kg)"
-                 data-action="input->autosave#programar">
-        </label>
-        <label class="input input-sm input-bordered flex items-center gap-1">
-          <span class="text-xs font-bold text-steel-3">Nota</span>
-          <input type="text" name="ejercicio[nota_tecnica]" value="<%= ejercicio["nota_tecnica"] %>" maxlength="90"
-                 placeholder="Consejo de ejecución (opcional)" class="grow" aria-label="Nota técnica"
-                 data-action="input->autosave#programar">
-        </label>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <button type="button" class="btn btn-ghost btn-xs" data-action="modal-ejercicios#abrir">
-          <%= render "shared/icono", nombre: :busqueda, clase: "size-3.5" %> Plantilla
-        </button>
-        <% if Current.user.staff? %>
-          <button type="button" class="btn btn-ghost btn-xs text-steel-5"
-                  data-action="modal-ejercicios#guardarPlantilla" data-musculo="otro">
-            Guardar como plantilla
-          </button>
-        <% end %>
-        <button type="button" class="btn btn-ghost btn-xs ml-auto text-error"
-                data-action="autosave#eliminar" aria-label="Eliminar ejercicio">
-          <%= render "shared/icono", nombre: :alerta, clase: "size-3.5" %>
-        </button>
-      </div>
+<div id="dia_editor_<%= indice %>" class="flex flex-col gap-2.5"
+     data-fecha="<%= fecha.iso8601 if con_seguimiento %>"
+     data-dia-url="<%= plan_personalizado_dia_path(plan, indice) if editable %>">
+
+  <% if dia["enfoque"].present? %>
+    <div class="flex flex-wrap items-center gap-2 rounded-xl bg-volt/10 px-3 py-2"
+         data-modo-edicion-target="lectura" <%= "hidden" if editando_por_defecto %>>
+      <%= render "shared/icono", nombre: :rayo, clase: "size-4 shrink-0 text-volt-d" %>
+      <p class="min-w-0 text-sm font-semibold text-steel-7"><span class="text-steel-3">Enfoque:</span> <%= dia["enfoque"] %></p>
+      <% if con_seguimiento && !futuro %>
+        <span class="ml-auto shrink-0 text-xs text-steel-3"><%= l fecha, format: "%d %b" %></span>
+      <% end %>
     </div>
   <% end %>
 
-  <button type="button" class="btn btn-outline btn-sm w-full border-dashed"
-          data-action="autosave#agregar" data-url="<%= plan_personalizado_dia_ejercicios_path(plan, indice) %>">
-    + Agregar ejercicio
-  </button>
+  <% if editable %>
+    <label class="input input-sm input-bordered flex items-center gap-2"
+           data-modo-edicion-target="edicion" <%= "hidden" unless editando_por_defecto %>
+           data-autosave-target="card" data-clave="dia" data-url="<%= plan_personalizado_dia_path(plan, indice) %>">
+      <span class="text-xs font-bold text-steel-3">Enfoque</span>
+      <input type="text" name="dia[enfoque]" value="<%= dia["enfoque"] %>" class="grow"
+             aria-label="Enfoque del día" data-action="input->autosave#programar">
+      <span class="badge badge-sm gap-1 font-semibold" hidden
+            data-autosave-target="estado" data-action="click->autosave#reintentar"></span>
+    </label>
+  <% end %>
+
+  <% if ejercicios.any? %>
+    <% ejercicios.each_with_index do |ejercicio, ei| %>
+      <% hecho = con_seguimiento && registro&.estado_de(ei)&.dig("hecho") %>
+      <div class="flex flex-col gap-2 rounded-xl border p-3 transition-colors <%= hecho ? "border-success/50 bg-success/5" : "border-base-300 bg-base-100 hover:border-volt-d/40 hover:bg-base-200/50" %>"
+           <% if editable %>data-autosave-target="card" data-url="<%= plan_personalizado_dia_ejercicio_path(plan, indice, ei) %>"<% end %>
+           data-indice="<%= ei %>" data-nombre="<%= ejercicio["nombre"] %>">
+
+        <%# ── Lectura: check/número, nombre tappable, cápsula principal y línea secundaria ── %>
+        <div class="flex items-center gap-3" data-modo-edicion-target="lectura" <%= "hidden" if editando_por_defecto %>>
+          <% if con_seguimiento %>
+            <input type="checkbox" class="checkbox checkbox-success checkbox-sm shrink-0"
+                   <%= "checked" if hecho %> <%= "disabled" if futuro %>
+                   aria-label="¿Hiciste <%= ejercicio["nombre"] %>?"
+                   data-action="change->seguimiento#marcar">
+          <% else %>
+            <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-base-200 font-display text-sm font-bold text-steel-5">
+              <%= ei + 1 %>
+            </span>
+          <% end %>
+          <button type="button" class="min-w-0 flex-1 text-left"
+                  data-action="click->ayuda-ejercicio#abrir"
+                  data-ayuda-url="<%= ayuda_ejercicios_path(ejercicio_id: ejercicio["ejercicio_id"], nombre: ejercicio["nombre"]) %>">
+            <p class="flex items-center gap-1.5 font-semibold leading-tight">
+              <span class="min-w-0"><%= ejercicio["nombre"] %></span>
+              <%= render "shared/icono", nombre: :busqueda, clase: "size-3.5 shrink-0 text-steel-3" %>
+            </p>
+            <div class="mt-1.5">
+              <span class="inline-flex items-center whitespace-nowrap rounded-full bg-volt/15 px-2 py-0.5 text-xs font-bold text-volt-d">
+                <%= ejercicio["series"] %> × <%= ejercicio["repeticiones"] %>
+              </span>
+            </div>
+            <% if ejercicio["descanso_seg"].to_i.positive? || ejercicio["peso_sugerido_kg"].to_f.positive? %>
+              <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-steel-3">
+                <% if ejercicio["descanso_seg"].to_i.positive? %>
+                  <span class="whitespace-nowrap">Descanso <%= ejercicio["descanso_seg"] %> s</span>
+                <% end %>
+                <% if ejercicio["peso_sugerido_kg"].to_f.positive? %>
+                  <%# Peso inicial sugerido por el análisis del perfil (Fase 6.5) %>
+                  <span class="whitespace-nowrap font-semibold text-pulse">≈ <%= ejercicio["peso_sugerido_kg"] %> kg</span>
+                <% end %>
+              </div>
+            <% end %>
+            <% if ejercicio["nota_tecnica"].present? %>
+              <p class="mt-1 text-xs leading-snug text-steel-3"><%= ejercicio["nota_tecnica"] %></p>
+            <% end %>
+          </button>
+        </div>
+
+        <%# ── Edición: campos inline (Fase 5.7b/6.5) ─────────────────────── %>
+        <% if editable %>
+          <div class="flex flex-col gap-2" data-modo-edicion-target="edicion" <%= "hidden" unless editando_por_defecto %>>
+            <div class="flex items-center gap-2">
+              <%# Enlace al catálogo visual (Fase 6.4): lo fija el modal al aplicar %>
+              <input type="hidden" name="ejercicio[ejercicio_id]" value="<%= ejercicio["ejercicio_id"] %>">
+              <input type="text" name="ejercicio[nombre]" value="<%= ejercicio["nombre"] %>" required
+                     class="input input-sm input-bordered w-full font-semibold" aria-label="Ejercicio"
+                     data-action="input->autosave#programar">
+              <span class="badge badge-sm shrink-0 gap-1 font-semibold" hidden
+                    data-autosave-target="estado" data-action="click->autosave#reintentar"></span>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <label class="input input-sm input-bordered flex items-center gap-1">
+                <span class="text-xs font-bold text-steel-3">Series</span>
+                <input type="number" name="ejercicio[series]" value="<%= ejercicio["series"] %>" min="0"
+                       class="w-full text-right" aria-label="Series" data-action="input->autosave#programar">
+              </label>
+              <label class="input input-sm input-bordered flex items-center gap-1">
+                <span class="text-xs font-bold text-steel-3">Reps</span>
+                <input type="text" name="ejercicio[repeticiones]" value="<%= ejercicio["repeticiones"] %>"
+                       class="w-full text-right" aria-label="Repeticiones" data-action="input->autosave#programar">
+              </label>
+              <label class="input input-sm input-bordered flex items-center gap-1">
+                <span class="text-xs font-bold text-steel-3">Desc.</span>
+                <input type="number" name="ejercicio[descanso_seg]" value="<%= ejercicio["descanso_seg"] %>" min="0"
+                       class="w-full text-right" aria-label="Descanso (s)" data-action="input->autosave#programar">
+                <span class="text-xs text-steel-3">s</span>
+              </label>
+            </div>
+            <div class="grid grid-cols-[7rem_1fr] gap-2">
+              <label class="input input-sm input-bordered flex items-center gap-1">
+                <span class="text-xs font-bold text-steel-3">≈ kg</span>
+                <input type="number" name="ejercicio[peso_sugerido_kg]" value="<%= ejercicio["peso_sugerido_kg"] %>"
+                       min="0" step="0.5" class="w-full text-right" aria-label="Peso sugerido (kg)"
+                       data-action="input->autosave#programar">
+              </label>
+              <label class="input input-sm input-bordered flex items-center gap-1">
+                <span class="text-xs font-bold text-steel-3">Nota</span>
+                <input type="text" name="ejercicio[nota_tecnica]" value="<%= ejercicio["nota_tecnica"] %>" maxlength="90"
+                       placeholder="Consejo de ejecución (opcional)" class="grow" aria-label="Nota técnica"
+                       data-action="input->autosave#programar">
+              </label>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" class="btn btn-ghost btn-xs" data-action="modal-ejercicios#abrir">
+                <%= render "shared/icono", nombre: :busqueda, clase: "size-3.5" %> Plantilla
+              </button>
+              <% if Current.user.staff? %>
+                <button type="button" class="btn btn-ghost btn-xs text-steel-5"
+                        data-action="modal-ejercicios#guardarPlantilla" data-musculo="otro">
+                  Guardar como plantilla
+                </button>
+              <% end %>
+              <button type="button" class="btn btn-ghost btn-xs ml-auto text-error"
+                      data-action="autosave#eliminar" aria-label="Eliminar ejercicio">
+                <%= render "shared/icono", nombre: :papelera, clase: "size-3.5" %>
+              </button>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  <% else %>
+    <p class="rounded-xl bg-base-200 px-3 py-4 text-center text-sm text-steel-3"
+       data-modo-edicion-target="lectura" <%= "hidden" if editando_por_defecto %>>Día de descanso.</p>
+  <% end %>
+
+  <% if editable %>
+    <button type="button" class="btn btn-outline btn-sm w-full border-dashed"
+            data-modo-edicion-target="edicion" <%= "hidden" unless editando_por_defecto %>
+            data-action="autosave#agregar" data-url="<%= plan_personalizado_dia_ejercicios_path(plan, indice) %>">
+      + Agregar ejercicio
+    </button>
+  <% end %>
+
+  <% if con_seguimiento %>
+    <%# Novedad para toda la rutina del día (lesión, cambio de máquina…) %>
+    <input type="text" placeholder="Novedad del día para toda la rutina (opcional)" maxlength="160"
+           value="<%= registro&.novedad %>" <%= "disabled" if futuro %>
+           class="input input-bordered input-sm w-full"
+           data-modo-edicion-target="lectura" <%= "hidden" if editando_por_defecto %>
+           data-action="change->seguimiento#novedad">
+  <% end %>
 </div>

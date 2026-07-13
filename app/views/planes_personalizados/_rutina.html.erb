@@ -1,21 +1,26 @@
-<%# Rutina semanal por día (tabs Stimulus). Si el plan es del usuario que la %>
-<%# ve, cada ejercicio lleva su CHECK de seguimiento (Fase 5.11: hecho por día %>
-<%# de la semana actual, sin recargar) y el día una "novedad" para toda la %>
-<%# rutina. Reutilizada por el plan del miembro y el broadcast en vivo. %>
-<%# locals: (rutina:, plan: nil, usuario: nil) %>
+<%# Rutina semanal unificada (Fase 6.8): una sola tarjeta con tabs por día que %>
+<%# alterna, por ejercicio, entre modo lectura (checks de seguimiento, %>
+<%# cápsulas, tap para ver ejecución) y modo edición (inputs inline) — sin %>
+<%# duplicar el componente entre la vista del miembro y la del editor. %>
+<%# locals: (rutina:, plan: nil, usuario: nil, plantillas: nil, siempre_editando: false) %>
 <% plan = local_assigns[:plan] %>
 <% usuario = local_assigns[:usuario] %>
+<% siempre_editando = local_assigns.fetch(:siempre_editando, false) %>
 <% dias = Array(rutina["dias"]) %>
 <% con_seguimiento = plan && usuario && plan.user_id == usuario.id %>
+<% editable = siempre_editando || (plan && usuario && PlanPersonalizadoPolicy.new(usuario, plan).editar_rutina?) %>
+<% plantillas = local_assigns[:plantillas] || (PlantillaEjercicio.ordenadas if editable) %>
 <% if con_seguimiento %>
   <% semana = Date.current.beginning_of_week %>
   <% registros = usuario.registros_entrenamiento.where(fecha: semana..(semana + 6)).index_by(&:fecha) %>
-  <% offsets = { "lunes" => 0, "martes" => 1, "miercoles" => 2, "jueves" => 3,
-                 "viernes" => 4, "sabado" => 5, "domingo" => 6 } %>
 <% end %>
 
-<div class="card border border-base-300 bg-base-100 shadow-md" data-controller="tabs seguimiento ayuda-ejercicio"
-     data-seguimiento-url-value="<%= registros_entrenamiento_path %>">
+<div class="card border border-base-300 bg-base-100 shadow-md"
+     data-controller="tabs modo-edicion seguimiento ayuda-ejercicio autosave modal-ejercicios"
+     data-seguimiento-url-value="<%= registros_entrenamiento_path %>"
+     data-autosave-clave="ejercicio"
+     data-modal-ejercicios-crear-url="<%= entrenador_plantillas_ejercicio_path %>"
+     data-modo-edicion-editando-value="<%= siempre_editando %>">
   <div class="card-body">
     <div class="flex flex-wrap items-center justify-between gap-2">
       <h2 class="card-title text-base">
@@ -24,10 +29,33 @@
         </span>
         Rutina semanal
       </h2>
-      <% if con_seguimiento %>
-        <span class="text-xs text-steel-3">Marca lo que ejecutes · <span data-seguimiento-target="estado"></span></span>
-      <% end %>
+      <div class="flex items-center gap-2">
+        <% if con_seguimiento %>
+          <span class="text-xs text-steel-3" data-modo-edicion-target="lectura" <%= "hidden" if siempre_editando %>>
+            Marca lo que ejecutes · <span data-seguimiento-target="estado"></span>
+          </span>
+        <% end %>
+        <% if editable %>
+          <span class="text-xs text-steel-3" data-autosave-target="global" data-modo-edicion-target="edicion"
+                <%= "hidden" unless siempre_editando %>>Todo guardado ✓</span>
+        <% end %>
+        <% if editable && !siempre_editando %>
+          <button type="button" class="btn btn-ghost btn-xs gap-1 font-semibold"
+                  data-action="modo-edicion#alternar" data-modo-edicion-target="boton">
+            <%= render "shared/icono", nombre: :lapiz, clase: "size-3.5" %> Editar
+          </button>
+        <% end %>
+      </div>
     </div>
+
+    <% if editable && plan&.reglas? %>
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="badge badge-success gap-1 font-semibold">
+          <%= render "shared/icono", nombre: :check, clase: "size-3" %> Incluido con tu membresía
+        </span>
+        <span class="text-xs text-steel-5">Personaliza tu rutina: cambia los músculos del día y elige ejercicios de la biblioteca.</span>
+      </div>
+    <% end %>
 
     <div role="tablist" class="tabs tabs-box w-fit max-w-full flex-nowrap overflow-x-auto">
       <% dias.each do |dia| %>
@@ -36,85 +64,21 @@
       <% end %>
     </div>
 
-    <% dias.each do |dia| %>
-      <% ejercicios = Array(dia["ejercicios"]) %>
+    <% dias.each_with_index do |dia, indice| %>
       <% if con_seguimiento %>
-        <% fecha = semana + offsets.fetch(dia["dia"].to_s.downcase, 0) %>
-        <% futuro = fecha > Date.current %>
+        <% fecha = semana + PlanPersonalizado::DIAS_OFFSET.fetch(dia["dia"].to_s.downcase, 0) %>
         <% registro = registros[fecha] %>
       <% end %>
-      <div data-tabs-target="panel" hidden class="flex flex-col gap-2.5" data-fecha="<%= fecha.iso8601 if con_seguimiento %>">
-        <% if dia["enfoque"].present? %>
-          <div class="flex items-center gap-2 rounded-xl bg-volt/10 px-3 py-2">
-            <%= render "shared/icono", nombre: :rayo, clase: "size-4 shrink-0 text-volt-d" %>
-            <p class="text-sm font-semibold text-steel-7"><span class="text-steel-3">Enfoque:</span> <%= dia["enfoque"] %></p>
-            <% if con_seguimiento && !futuro %>
-              <span class="ml-auto text-xs text-steel-3"><%= l fecha, format: "%d %b" %></span>
-            <% end %>
-          </div>
-        <% end %>
-
-        <% if ejercicios.any? %>
-          <% ejercicios.each_with_index do |ejercicio, indice| %>
-            <% hecho = con_seguimiento && registro&.estado_de(indice)&.dig("hecho") %>
-            <div class="flex items-center gap-3 rounded-xl border p-3 transition-colors <%= hecho ? "border-success/50 bg-success/5" : "border-base-300 bg-base-100 hover:border-volt-d/40 hover:bg-base-200/50" %>"
-                 data-indice="<%= indice %>" data-nombre="<%= ejercicio["nombre"] %>">
-              <% if con_seguimiento %>
-                <%# Check de seguimiento (5.11): reemplaza el número cuando es tu plan %>
-                <input type="checkbox" class="checkbox checkbox-success checkbox-sm shrink-0"
-                       <%= "checked" if hecho %> <%= "disabled" if futuro %>
-                       aria-label="¿Hiciste <%= ejercicio["nombre"] %>?"
-                       data-action="change->seguimiento#marcar">
-              <% else %>
-                <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-base-200 font-display text-sm font-bold text-steel-5">
-                  <%= indice + 1 %>
-                </span>
-              <% end %>
-              <%# Tap en el bloque del nombre → popup con GIF de ejecución (Fase 6.3) %>
-              <button type="button" class="min-w-0 flex-1 text-left"
-                      data-action="click->ayuda-ejercicio#abrir"
-                      data-ayuda-url="<%= ayuda_ejercicios_path(ejercicio_id: ejercicio["ejercicio_id"], nombre: ejercicio["nombre"]) %>">
-                <p class="flex items-center gap-1.5 font-semibold leading-tight">
-                  <span class="min-w-0"><%= ejercicio["nombre"] %></span>
-                  <%= render "shared/icono", nombre: :busqueda, clase: "size-3.5 shrink-0 text-steel-3" %>
-                </p>
-                <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
-                  <span class="inline-flex items-center gap-1 rounded-full bg-volt/15 px-2 py-0.5 text-xs font-bold text-volt-d">
-                    <%= ejercicio["series"] %> × <%= ejercicio["repeticiones"] %>
-                  </span>
-                  <% if ejercicio["descanso_seg"].to_i.positive? %>
-                    <span class="inline-flex items-center gap-1 rounded-full bg-base-200 px-2 py-0.5 text-xs font-medium text-steel-5">
-                      <%= render "shared/icono", nombre: :reloj, clase: "size-3" %>
-                      <%= ejercicio["descanso_seg"] %> s
-                    </span>
-                  <% end %>
-                  <% if ejercicio["peso_sugerido_kg"].to_f.positive? %>
-                    <%# Peso inicial sugerido por el análisis del perfil (Fase 6.5) %>
-                    <span class="inline-flex items-center gap-1 rounded-full bg-pulse/15 px-2 py-0.5 text-xs font-bold text-pulse">
-                      ≈ <%= ejercicio["peso_sugerido_kg"] %> kg
-                    </span>
-                  <% end %>
-                </div>
-                <% if ejercicio["nota_tecnica"].present? %>
-                  <p class="mt-1 text-xs leading-snug text-steel-3"><%= ejercicio["nota_tecnica"] %></p>
-                <% end %>
-              </button>
-            </div>
-          <% end %>
-
-          <% if con_seguimiento %>
-            <%# Novedad para toda la rutina del día (lesión, cambio de máquina…) %>
-            <input type="text" placeholder="Novedad del día para toda la rutina (opcional)" maxlength="160"
-                   value="<%= registro&.novedad %>" <%= "disabled" if futuro %>
-                   class="input input-bordered input-sm w-full"
-                   data-action="change->seguimiento#novedad">
-          <% end %>
-        <% else %>
-          <p class="rounded-xl bg-base-200 px-3 py-4 text-center text-sm text-steel-3">Día de descanso.</p>
-        <% end %>
+      <div data-tabs-target="panel" hidden>
+        <%= render "planes_personalizados/dia_editor", plan: plan, dia: dia, indice: indice,
+              con_seguimiento: con_seguimiento, editable: editable, editando_por_defecto: siempre_editando,
+              registro: registro, fecha: fecha %>
       </div>
     <% end %>
   </div>
 
+  <% if editable %>
+    <%= render "planes_personalizados/modal_ejercicios", plantillas: plantillas %>
+  <% end %>
   <%= render "ejercicios/dialogo_ayuda" %>
 </div>

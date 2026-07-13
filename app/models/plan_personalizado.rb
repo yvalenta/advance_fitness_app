@@ -10,6 +10,10 @@ class PlanPersonalizado < ApplicationRecord
   # ejercicio_id enlaza al catálogo visual (Fase 6); peso_sugerido_kg y
   # nota_tecnica los personaliza la IA con catálogo cerrado (Fase 6.5).
   CAMPOS_EJERCICIO = %w[nombre series repeticiones descanso_seg ejercicio_id peso_sugerido_kg nota_tecnica].freeze
+  # Día de la semana (nombre en rutina["dias"]) → offset desde el lunes, para
+  # ubicar el RegistroEntrenamiento de la semana actual (Fase 5.10/6.9).
+  DIAS_OFFSET = { "lunes" => 0, "martes" => 1, "miercoles" => 2, "jueves" => 3,
+                  "viernes" => 4, "sabado" => 5, "domingo" => 6 }.freeze
 
   belongs_to :user
   belongs_to :aprobado_por, class_name: "User", optional: true
