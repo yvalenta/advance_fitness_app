@@ -81,3 +81,19 @@ bin/kamal rollback        # volver a la versión anterior si algo falla
 - **`db/schema.rb` puede contaminarse** si se migra localmente contra Supabase (`dip rails db:migrate` con `DEV_DATABASE_URL`): aparecen `enable_extension` de extensiones propias del pooler (`extensions.pgcrypto`, `extensions.uuid-ossp`, `extensions.pg_stat_statements`) que no existen en el schema real y rompen `db:test:load_schema`. Si aparecen, quitarlas a mano antes de comitear — debe quedar solo `enable_extension "pg_catalog.plpgsql"`.
 - **No correr `db:drop`/`db:reset`/`dip provision`** mientras `DEV_DATABASE_URL` esté activo en `.env` — apuntaría a destruir datos de producción.
 - El push a `main` es responsabilidad del usuario; Kamal despliega lo que esté craneado en el working tree local en el momento de `bin/kamal deploy` (no necesariamente lo último pusheado a GitHub), así que conviene desplegar siempre desde un working tree limpio y actualizado.
+
+## Troubleshooting: 502 después de un deploy exitoso
+
+Puede pasar que `bin/kamal deploy` termine "Finished... successful" y el contenedor salga `healthy`, pero `https://advance-fitness-app.ynt.codes/` responda **502** ("connection refused" a `192.168.40.1:80` en los logs de `docker-lab-cloudflared-1`). Causa observada (julio 2026): Kamal ejecuta `docker run` con dos `--network` (la red por defecto `kamal` y la custom `docker-lab_proxy-network`), pero el flag `--network-alias rails-app` a veces solo queda aplicado a la red `kamal`, no a `docker-lab_proxy-network` — el túnel de Cloudflare, que vive en esa segunda red, no puede resolver el alias y cae al gateway.
+
+Diagnóstico rápido:
+```bash
+ssh ynt@192.168.40.253 "docker inspect <container> --format '{{json .NetworkSettings.Networks}}'"
+```
+Si `docker-lab_proxy-network` aparece con `"Aliases": null` (y sí lo tiene la red `kamal`), es este bug.
+
+Arreglo inmediato (no requiere redeploy):
+```bash
+ssh ynt@192.168.40.253 "docker network disconnect docker-lab_proxy-network <container> && docker network connect --alias rails-app docker-lab_proxy-network <container>"
+```
+Verificar con `curl -I https://advance-fitness-app.ynt.codes/up` (debe dar 200).
