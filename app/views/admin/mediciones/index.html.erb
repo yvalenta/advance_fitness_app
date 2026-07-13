@@ -14,7 +14,7 @@
           <table class="table table-sm">
             <thead>
               <tr class="text-xs uppercase tracking-wider text-steel-3">
-                <th>Fecha</th><th>Peso</th><th>IMC</th><th>Grasa</th><th>Cintura</th><th>Tomada por</th>
+                <th>Fecha</th><th>Peso</th><th>IMC</th><th>Grasa</th><th>Cintura</th><th>Tomada por</th><th></th>
               </tr>
             </thead>
             <tbody>
@@ -26,6 +26,7 @@
                   <td><%= medicion.grasa_pct ? "#{medicion.grasa_pct}%" : "—" %></td>
                   <td><%= medicion.cintura_cm ? "#{medicion.cintura_cm} cm" : "—" %></td>
                   <td class="text-steel-3"><%= medicion.tomada_por ? nombre_visible(medicion.tomada_por) : "el miembro" %></td>
+                  <td class="text-right"><%= link_to "Editar", edit_admin_user_medicion_path(@miembro, medicion), class: "btn btn-ghost btn-xs" %></td>
                 </tr>
               <% end %>
             </tbody>

@@ -58,8 +58,9 @@ Rails.application.routes.draw do
   # Panel de administración (SDD §09) — protegido por Pundit, no solo por el namespace
   namespace :admin do
     resources :users, only: %i[ index show ] do
-      # Antropometría con historial, tomada por el staff (Fase 5.9)
-      resources :mediciones, only: %i[ index new create ]
+      # Antropometría con historial, tomada por el staff (Fase 5.9); editable
+      # (Fase 6.11) para corregir cualquier medición pasada, no solo la de hoy.
+      resources :mediciones, only: %i[ index new create edit update ]
     end
     resources :membresias, only: %i[ index new create edit update ] do
       resource :renovacion, only: :create, controller: "renovaciones"

@@ -46,4 +46,60 @@ class Admin::MedicionesControllerTest < ActionDispatch::IntegrationTest
     end
     assert_redirected_to root_path
   end
+
+  test "el staff edita una medición pasada sin duplicar el historial" do
+    medicion = users(:one).mediciones.create!(peso_kg: 80, cintura_cm: 82, fecha: Date.current - 10)
+    sign_in_as users(:admin)
+
+    assert_no_difference "Medicion.count" do
+      patch admin_user_medicion_path(users(:one), medicion), params: { medicion: { peso_kg: 78 } }
+    end
+    assert_equal 78, medicion.reload.peso_kg.to_f
+    assert_equal 82, medicion.cintura_cm.to_f # el resto de campos no se pisa
+  end
+
+  test "un miembro no puede editar mediciones de otros" do
+    medicion = users(:entrenador).mediciones.create!(peso_kg: 80, fecha: Date.current)
+    sign_in_as users(:one)
+
+    patch admin_user_medicion_path(users(:entrenador), medicion), params: { medicion: { peso_kg: 60 } }
+    assert_redirected_to root_path
+    assert_equal 80, medicion.reload.peso_kg.to_f
+  end
+
+  test "actualizar_plan=1 reencola la generación del plan Personalizado con la nueva medición" do
+    plan = PlanPersonalizado.create!(user: users(:one), generado_por: "ia", estado: "aprobado",
+                                     aprobado_por: users(:entrenador), rutina: { "dias" => [] },
+                                     plan_nutricional: { "kcal_diarias" => 0, "comidas" => [] })
+    sign_in_as users(:entrenador)
+
+    assert_enqueued_with(job: GenerarPlanJob, args: [ plan.id ]) do
+      post admin_user_mediciones_path(users(:one)),
+           params: { medicion: { peso_kg: 74 }, actualizar_plan: "1" }
+    end
+    assert_equal "generando", plan.reload.estado
+  end
+
+  test "sin marcar actualizar_plan, el plan Personalizado no se toca" do
+    plan = PlanPersonalizado.create!(user: users(:one), generado_por: "ia", estado: "aprobado",
+                                     aprobado_por: users(:entrenador), rutina: { "dias" => [] },
+                                     plan_nutricional: { "kcal_diarias" => 0, "comidas" => [] })
+    sign_in_as users(:entrenador)
+
+    assert_no_enqueued_jobs only: GenerarPlanJob do
+      post admin_user_mediciones_path(users(:one)), params: { medicion: { peso_kg: 74 } }
+    end
+    assert_equal "aprobado", plan.reload.estado
+  end
+
+  test "actualizar_plan=1 no hace nada si el plan es el sugerido por reglas" do
+    plan = PlanPersonalizado.create!(user: users(:one), generado_por: "reglas", estado: "aprobado",
+                                     rutina: { "dias" => [] }, plan_nutricional: {})
+    sign_in_as users(:entrenador)
+
+    assert_no_enqueued_jobs only: GenerarPlanJob do
+      post admin_user_mediciones_path(users(:one)), params: { medicion: { peso_kg: 74 }, actualizar_plan: "1" }
+    end
+    assert_equal "aprobado", plan.reload.estado
+  end
 end

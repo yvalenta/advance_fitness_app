@@ -26,4 +26,19 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "a[href=?]", plan_personalizado_path(plan)
   end
+
+  # Fase 6.11: el staff busca al miembro por nombre o correo
+  test "el listado filtra por nombre o correo con ?q=" do
+    sign_in_as users(:entrenador)
+
+    get admin_users_path(q: users(:one).nombre)
+    assert_response :success
+    assert_match users(:one).email_address, response.body
+    assert_no_match users(:two).email_address, response.body
+
+    get admin_users_path(q: users(:two).email_address)
+    assert_response :success
+    assert_match users(:two).email_address, response.body
+    assert_no_match users(:one).email_address, response.body
+  end
 end

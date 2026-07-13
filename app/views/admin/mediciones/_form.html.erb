@@ -1,0 +1,40 @@
+<%# Alta/edición de una medición (Fase 5.9/6.11). locals: (miembro:, medicion:, url:, metodo:, fecha_editable: true) %>
+<% fecha_editable = local_assigns.fetch(:fecha_editable, true) %>
+<% plan = miembro.plan_actual %>
+<% plan_personalizable = plan.present? && !plan.reglas? %>
+
+<% if medicion.errors.any? %>
+  <div role="alert" class="alert alert-error text-sm">
+    <%= render "shared/icono", nombre: :alerta, clase: "size-5 shrink-0" %>
+    <span><%= medicion.errors.full_messages.to_sentence %></span>
+  </div>
+<% end %>
+
+<%= form_with model: [ miembro, medicion ], url: url, method: metodo, class: "flex flex-col gap-4" do |form| %>
+  <label class="form-control max-w-xs">
+    <span class="label-text mb-1 text-xs font-semibold">Fecha</span>
+    <%= form.date_field :fecha, required: true, disabled: !fecha_editable, class: "input input-bordered w-full" %>
+  </label>
+
+  <%= render "admin/mediciones/campos", form: form %>
+
+  <label class="form-control">
+    <span class="label-text mb-1 text-xs font-semibold">Notas (opcional)</span>
+    <%= form.text_area :notas, rows: 2, class: "textarea textarea-bordered w-full" %>
+  </label>
+
+  <% if plan_personalizable %>
+    <label class="flex cursor-pointer items-start gap-2 rounded-xl bg-volt/10 p-3 text-sm">
+      <input type="checkbox" name="actualizar_plan" value="1" class="checkbox checkbox-sm mt-0.5">
+      <span>
+        <span class="font-semibold">Actualizar el plan de entrenamiento con estas medidas</span>
+        <span class="block text-xs text-steel-5">Vuelve a analizar el plan personalizado de <%= nombre_visible(miembro) %> tomando esta medición como base. Si lo dejas sin marcar, el plan actual no cambia.</span>
+      </span>
+    </label>
+  <% end %>
+
+  <div class="flex gap-2">
+    <%= form.submit "Guardar medición", class: "btn btn-primary font-bold" %>
+    <%= link_to "Cancelar", admin_user_mediciones_path(miembro), class: "btn btn-ghost" %>
+  </div>
+<% end %>

@@ -1,5 +1,6 @@
 class Admin::MedicionesController < ApplicationController
   before_action :cargar_miembro
+  before_action :cargar_medicion, only: %i[ edit update ]
 
   def index
     authorize Medicion
@@ -23,16 +24,48 @@ class Admin::MedicionesController < ApplicationController
     authorize @medicion
 
     if @medicion.save
-      redirect_to admin_user_mediciones_path(@miembro), notice: "Medición registrada."
+      redirect_to admin_user_mediciones_path(@miembro), notice: guardar_y_notificar
     else
       render :new, status: :unprocessable_entity
+    end
+  end
+
+  # Edición de cualquier medición pasada (Fase 6.11): el staff corrige
+  # medidas cargadas con error, no solo las de hoy.
+  def edit
+  end
+
+  def update
+    @medicion.assign_attributes(medicion_params.except(:fecha))
+
+    if @medicion.save
+      redirect_to admin_user_mediciones_path(@miembro), notice: guardar_y_notificar
+    else
+      render :edit, status: :unprocessable_entity
     end
   end
 
   private
     def cargar_miembro = @miembro = User.find(params[:user_id])
 
+    def cargar_medicion
+      @medicion = @miembro.mediciones.find(params[:id])
+      authorize @medicion
+    end
+
     def medicion_params
       params.expect(medicion: [ :fecha, :notas, *Medicion::MEDIDAS ])
+    end
+
+    # El plan Personalizado (con IA) se arma a partir de la última medición;
+    # el sugerido por reglas no usa antropometría, así que no aplica (Fase 6.11).
+    def guardar_y_notificar
+      quiere_actualizar = ActiveModel::Type::Boolean.new.cast(params[:actualizar_plan])
+      plan = @miembro.plan_actual
+      return "Medición guardada." unless quiere_actualizar && plan && !plan.reglas?
+
+      plan.marcar_generando!
+      GenerarPlanJob.perform_later(plan.id)
+      "Medición guardada. El plan se está actualizando con estas medidas."
     end
 end

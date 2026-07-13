@@ -7,6 +7,20 @@
 <div class="mx-auto -mt-8 w-full max-w-6xl px-4 pb-12">
   <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
     <div class="card-body">
+      <%= form_with url: admin_users_path, method: :get, class: "mb-1" do %>
+        <label class="input input-bordered flex max-w-sm items-center gap-2">
+          <%= render "shared/icono", nombre: :busqueda, clase: "size-4 text-steel-3" %>
+          <input type="search" name="q" value="<%= @q %>" placeholder="Buscar por nombre o correo…" class="grow">
+        </label>
+      <% end %>
+
+      <% if @q.present? %>
+        <p class="text-xs text-steel-3">
+          <%= pluralize(@users.size, "resultado") %> para "<%= @q %>" ·
+          <%= link_to "Limpiar", admin_users_path, class: "link" %>
+        </p>
+      <% end %>
+
       <div class="overflow-x-auto">
         <table class="table">
           <thead>

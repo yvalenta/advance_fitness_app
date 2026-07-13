@@ -1,0 +1,15 @@
+<% content_for :title, "Editar medición — Advance Fitness" %>
+
+<%= render "shared/encabezado",
+      eyebrow: "Antropometría",
+      titulo: "Editar medición de #{nombre_visible(@miembro)} · #{l @medicion.fecha}",
+      descripcion: "Corrige las medidas de este día. La fecha no se puede cambiar." %>
+
+<div class="mx-auto -mt-8 w-full max-w-3xl px-4 pb-12">
+  <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
+    <div class="card-body">
+      <%= render "admin/mediciones/form", miembro: @miembro, medicion: @medicion,
+            url: admin_user_medicion_path(@miembro, @medicion), metodo: :patch, fecha_editable: false %>
+    </div>
+  </div>
+</div>

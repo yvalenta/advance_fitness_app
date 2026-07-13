@@ -1,7 +1,9 @@
 class Admin::UsersController < ApplicationController
   def index
     authorize User
+    @q = params[:q].to_s.strip
     @users = policy_scope(User).includes(:membresia).order(:nombre)
+    @users = @users.where("nombre ILIKE :q OR email_address ILIKE :q", q: "%#{User.sanitize_sql_like(@q)}%") if @q.present?
   end
 
   def show
