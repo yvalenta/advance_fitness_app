@@ -1,16 +1,46 @@
-# This file should ensure the existence of records required to run the application in every environment (production,
-# development, test). The code here should be idempotent so that it can be executed at any point in every environment.
-# The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
+# ══════════════════════════════════════════════════════════════════════════
+# Seed de arranque de tenant (SDD §16 — visión multi-gimnasio)
+# ══════════════════════════════════════════════════════════════════════════
 #
-# Example:
+# Este seed deja una BASE VIRGEN lista para que la app arranque estable y sin
+# errores: admin inicial, catálogo de planes (free/personalizado) y las
+# bibliotecas curadas del entrenador (plantillas de comida y de ejercicio).
+# Es la pieza central del alta de un gimnasio nuevo en el modelo
+# "una base independiente por tenant" (misma app, subdominio propio).
 #
-#   ["Action", "Comedy", "Drama", "Horror"].each do |genre_name|
-#     MovieGenre.find_or_create_by!(name: genre_name)
-#   end
+# ── Garantías ──────────────────────────────────────────────────────────────
+# · IDEMPOTENTE: se puede correr N veces sin duplicar ni pisar datos que el
+#   staff ya editó (cada sección documenta su estrategia: find_or_create_by!,
+#   find_or_initialize_by + update!, o "solo si aún no tiene valor").
+# · Sin red ni API keys: todo lo que siembra vive en este archivo.
+# · Los precios NO se hardcodean aquí: salen de Negocio (config/negocio.yml,
+#   con override por ENV) — el mismo lugar que usa el resto de la app.
+#
+# ── Lo que este seed NO cubre (pasos del runbook de alta de tenant, SDD §16) ──
+# · Catálogo visual de ejercicios (~1.324 filas del dataset): requiere red y
+#   API key de IA → `bin/rails ejercicios:importar ejercicios:traducir_nombres`.
+#   Después de importarlo, re-ejecuta este seed para fijar los vínculos
+#   plantilla→ejercicio (sección 5). O usa `bin/rails tenant:preparar`, que
+#   orquesta todo el flujo (lib/tasks/tenant.rake).
+# · ENV de marca y precios del tenant (NEGOCIO_NOMBRE, PRECIO_*, etc.).
+# · OAuth de Google (redirect URI por subdominio), túnel Cloudflare y deploy.
+#
+# ── ENV que parametrizan este seed ─────────────────────────────────────────
+#   SEED_ADMIN_EMAIL     correo del admin inicial (default: admin@advancefitness.local)
+#   SEED_ADMIN_PASSWORD  contraseña del admin inicial (default: cambiame-ya-123)
+#   ADMIN_EMAIL          promueve a admin un usuario YA existente (p. ej. tu
+#                        cuenta de Google): ADMIN_EMAIL=tu@correo.com bin/rails db:seed
+#
+# Abierto a mejoras: al crecer las bibliotecas curadas o sumar entidades de
+# arranque (p. ej. horarios default del gimnasio), agrégalas como una sección
+# numerada nueva con su estrategia de idempotencia documentada.
 
-# Admin inicial (idempotente). En producción cambia la contraseña de
-# inmediato o crea el admin real y elimina este.
-admin = User.find_or_create_by!(email_address: "admin@advancefitness.local") do |user|
+# ── 1. Admin inicial ────────────────────────────────────────────────────────
+# Un tenant recién creado necesita al menos un admin para entrar al panel.
+# En producción: cambia la contraseña de inmediato, o crea el admin real y
+# elimina este. Idempotencia: find_or_create_by! por correo; si el usuario ya
+# existe pero perdió el rol, se le restituye (update! condicional).
+admin = User.find_or_create_by!(email_address: ENV.fetch("SEED_ADMIN_EMAIL", "admin@advancefitness.local")) do |user|
   user.nombre = "Administrador"
   user.rol = "admin"
   user.password = ENV.fetch("SEED_ADMIN_PASSWORD", "cambiame-ya-123")
@@ -23,8 +53,13 @@ if ENV["ADMIN_EMAIL"].present?
   User.find_by(email_address: ENV["ADMIN_EMAIL"])&.update!(rol: "admin")
 end
 
-# Catálogo de planes (SDD §07 — monetización). Idempotente; los precios se
-# sincronizan desde la config del negocio en cada corrida (update! no solo create).
+# ── 2. Catálogo de planes (SDD §07 — monetización) ─────────────────────────
+# Sin estas dos filas el alta de suscripciones falla ("Plan debe existir");
+# el modelo Plan tiene autocreación de respaldo (Plan.personalizado/free),
+# pero el seed las deja con beneficios completos para la página de upgrade.
+# Idempotencia: find_or_initialize_by + update! — los PRECIOS se re-sincronizan
+# desde Negocio en cada corrida (si el tenant cambia PRECIO_PERSONALIZADO por
+# ENV, correr el seed actualiza el catálogo).
 Plan.find_or_initialize_by(codigo: "free").update!(
   nombre: "Free",
   precio: 0,
@@ -48,8 +83,11 @@ Plan.find_or_initialize_by(codigo: "personalizado").update!(
   ]
 )
 
-# Plantillas de comidas para el editor de planes del entrenador (SDD §07,
-# Fase 5.5). Base curada con alimentos colombianos; crece con el uso.
+# ── 3. Plantillas de comida (SDD §07, Fase 5.5) ────────────────────────────
+# Biblioteca curada con alimentos colombianos para el editor de planes del
+# entrenador; crece con el uso (el staff crea las suyas desde la UI).
+# Idempotencia: find_or_create_by! por (tipo, nombre) — si el staff editó la
+# descripción o los macros de una existente, el seed NO la pisa.
 # [tipo, nombre, descripcion, kcal, proteinas_g, carbohidratos_g, grasas_g]
 [
   [ "desayuno", "Huevos con arepa", "2 huevos revueltos con tomate y cebolla, 1 arepa de maíz mediana y 1 taza de café con leche descremada.", 420, 22, 42, 18 ],
@@ -82,8 +120,10 @@ Plan.find_or_initialize_by(codigo: "personalizado").update!(
   end
 end
 
-# Plantillas de ejercicios para el editor de rutina (SDD Fase 5.7b). Fuerza,
-# agrupadas por músculo; "otro" para individuales sin categoría.
+# ── 4. Plantillas de ejercicio (SDD Fase 5.7b) ─────────────────────────────
+# Biblioteca de fuerza agrupada por músculo para el editor de rutina y las
+# "sesiones por músculo"; "otro" agrupa individuales sin categoría.
+# Idempotencia: find_or_create_by! por (musculo, nombre) — no pisa ediciones.
 # [musculo, nombre, series, repeticiones, descanso_seg]
 [
   [ "pecho", "Press de banca con barra", 4, "8-10", 90 ],
@@ -127,10 +167,13 @@ end
   end
 end
 
-# Enlace de la biblioteca curada con el catálogo visual (Fase 6.4): cada
-# plantilla apunta a su ejercicio del dataset (GIF + instrucciones). Lista de
-# candidatos por nombre_en (el primero que exista gana); solo fija el enlace
-# si aún no lo tiene, así el staff puede re-vincular sin que el seed lo pise.
+# ── 5. Vínculo de la biblioteca con el catálogo visual (Fase 6.4) ──────────
+# Cada plantilla apunta a su ejercicio del dataset (GIF + instrucciones).
+# Lista de candidatos por nombre_en (el primero que exista gana).
+# Idempotencia: solo fija el enlace si la plantilla aún NO lo tiene — el
+# staff puede re-vincular desde la UI sin que el seed lo pise. Si el catálogo
+# está vacío (base virgen antes de `ejercicios:importar`), esta sección no
+# hace nada y el aviso final indica cómo completarla.
 {
   "Press de banca con barra" => [ "barbell bench press" ],
   "Press inclinado con mancuernas" => [ "dumbbell incline bench press", "dumbbell incline press" ],
@@ -171,4 +214,15 @@ end
 
   ejercicio = candidatos.lazy.filter_map { |n| Ejercicio.where("LOWER(nombre_en) = ?", n).first }.first
   plantilla.update!(ejercicio: ejercicio) if ejercicio
+end
+
+# ── Aviso final: catálogo visual pendiente ─────────────────────────────────
+# El seed no importa el catálogo de ejercicios (necesita red y API key de IA),
+# pero tampoco deja el hueco en silencio: sin catálogo no hay GIFs de ayuda
+# ni generación con catálogo cerrado (Fase 6.5).
+if Ejercicio.none? && !Rails.env.test?
+  puts "⚠ El catálogo visual de ejercicios está vacío. Complétalo con:"
+  puts "    bin/rails ejercicios:importar ejercicios:traducir_nombres db:seed"
+  puts "  (el db:seed final fija los vínculos plantilla→ejercicio de la sección 5),"
+  puts "  o corre todo el arranque de tenant con: bin/rails tenant:preparar"
 end
