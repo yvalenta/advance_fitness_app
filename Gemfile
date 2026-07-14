@@ -65,6 +65,10 @@ group :test do
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem "capybara"
   gem "selenium-webdriver"
+
+  # Fase QA: suite migrada de minitest a RSpec
+  gem "rspec-rails", "~> 8.0"
+  gem "simplecov", require: false
 end
 
 gem "pundit", "~> 2.5"

@@ -41,3 +41,4 @@
 .claudesignore
 .agents/
 skills-lock.json
+coverage/
