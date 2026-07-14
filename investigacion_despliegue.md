@@ -21,7 +21,7 @@ feature/x → PR → develop            (integración continua, checks corren pe
 develop → PR → main                 (requiere 1 aprobación + lint/test en verde)
 main → bin/kamal deploy             (deploy manual, ver §3 y DEPLOY.md)
 ```
-El CI (`test test/system`) tiene un job `system-test` que hoy falla siempre (no hay `test/system`, la suite es RSpec desde julio 2026) — no es un check requerido por la protección de `main`, así que no bloquea merges; queda como deuda menor a limpiar del workflow.
+Jobs de CI: `scan_ruby`/`scan_js` (Brakeman/bundler-audit), `lint` (RuboCop) y `test` (RSpec) — estos dos últimos son los checks requeridos por la protección de `main`. El job heredado `system-test` (Minitest + Capybara, ya no aplica desde la migración a RSpec) se eliminó del workflow.
 
 ## 3. Proceso de Despliegue Manual
 
