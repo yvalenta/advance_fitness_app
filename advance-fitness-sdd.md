@@ -676,6 +676,8 @@ Rutas RESTful de Rails; los nombres siguen el dominio en español. Las de staff 
 > **Nota 7 (julio 2026, Fase 6.11):** el admin puede **buscar miembros** por nombre o correo en `admin/users` y **editar cualquier medición pasada** (antes solo se podía corregir la de hoy vía upsert). Al guardar una medición, un checkbox opcional "Actualizar el plan de entrenamiento con estas medidas" reencola `GenerarPlanJob` para el plan Personalizado vigente del miembro (no aplica al plan sugerido por reglas, que no usa antropometría) — sin marcarlo, el plan actual queda intacto.
 >
 > **Nota 8 (julio 2026, Fase 6.13):** buscador en vivo (mientras se escribe, sin recargar) en Suscripciones/Membresías/Pagos/Miembros, con un componente Stimulus reutilizable (`buscador-en-vivo`) sobre un turbo-frame; Pagos interpreta un solo campo de texto como usuario, fecha, valor o método. Clic en un miembro desde cualquiera de esas listas lleva a su ficha (`admin/users/:id`), ahora ampliada con las mismas gráficas de progreso (peso/calorías/asistencia) que ve el propio miembro en `/progreso` (extraídas a `ProgresoUsuario` + partials `shared/_grafica_*`, con un local `editable:` que decide si se muestran los enlaces de autoservicio) y una card de edición de perfil (nombre, correo, fecha de nacimiento, sexo, nivel de actividad, somatotipo) accesible a todo el staff; el **rol** sigue exclusivo del admin, verificado en el controller — nunca mass-asignado.
+>
+> **Nota 9 (julio 2026):** se adopta la **visión multi-gimnasio** (ver §16): misma app en N subdominios, cada tenant con su base independiente, servida por una instancia Kamal propia. Como primer artefacto se reorganiza `db/seeds.rb` como **seed de arranque de tenant** (documentado, idempotente, parametrizable por `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD`) y se agrega `bin/rails tenant:preparar` (`lib/tasks/tenant.rake`) que orquesta schema + seed + catálogo de ejercicios + reporte con los pasos manuales pendientes. La arquitectura completa NO se implementa aún; §16 documenta la recomendación, el inventario de acoplamientos y el plan de mejoras por fases (A–D).
 
 ---
 
@@ -815,3 +817,68 @@ El sistema está listo para uso real cuando todos estos puntos estén en verde.
 | Blog y novedades muestran solo contenido publicado | Fechas y moneda en formato es-CO; `dip provision` funciona desde cero |
 
 > **Siguiente paso recomendado:** cerrar la Fase 1: campos de perfil + rol en `users` (migración), Pundit con `ApplicationPolicy` y `verify_authorized`, layout base con tokens §06 y logo, y vista de registro (el generador de auth solo trae login/reset). Después, Fase 2 (Membresías & Accesos).
+
+---
+
+## 16 — Visión a futuro: plataforma multi-gimnasio (white-label)
+
+> Estado: **documentada, no implementada** (julio 2026). Único artefacto en código: el seed de arranque de tenant (`db/seeds.rb`) y `bin/rails tenant:preparar` (Nota 9, §11). Esta sección es la fuente de verdad para el salto y queda abierta a mejoras.
+
+### 16.1 — La visión
+
+Misma aplicación para N marcas, cada una en su subdominio y con su **base de datos independiente**:
+
+| Tenant | Subdominio | Base |
+|---|---|---|
+| Advance Fitness | `advance-fitness-app.ynt.codes` | propia |
+| Vital Fitness | `vital-fitness-app.ynt.codes` | propia |
+| Influencer 1 | `influencer1.ynt.codes` | propia |
+
+### 16.2 — Arquitectura elegida: multi-instancia (una imagen, un despliegue por tenant)
+
+Cada gimnasio corre como **un contenedor propio** de la **misma imagen Docker**, con su `DATABASE_URL`, sus ENV de `Negocio`, su alias de red y su entrada en el túnel Cloudflare. Kamal lo soporta nativamente con *destinations* (`config/deploy.<tenant>.yml` + `kamal deploy -d <tenant>`).
+
+**Por qué encaja con este stack:**
+- **Aislamiento absoluto por construcción**: imposible que un query cruce gimnasios; no hay `WHERE gimnasio_id` que olvidar.
+- **Cero refactor del núcleo**: los jobs recurrentes (`VencerMembresiasJob`, etc.), Solid Queue/Cache/Cable y los Turbo Streams operan sobre la conexión del proceso — cada instancia atiende su base y queda correcta sin tocar código.
+- **Chat y tiempo real (Fase 8 Comunidad) escalan por-gimnasio**: Solid Cable por tenant = sin contención entre marcas; la carga de un gimnasio grande no afecta a los demás.
+- **`Negocio` ya existe para esto** (§04): nombre, logo, precios y duración por ENV por instancia.
+- **Fallos aislados**: un tenant caído o migrando no toca a los otros.
+
+**Alternativas descartadas:**
+- *Row-level tenancy* (`gimnasio_id` en cada tabla): refactor total de modelos/policies/queries y un bug = fuga de datos entre gimnasios. Contradice además el requisito de bases independientes.
+- *Un solo proceso con sharding por subdominio* (`connected_to` por request): exige middleware host→shard, `Current.tenant`, jobs iterando N bases y multiplica el pool de conexiones (contra el límite de 15 del pooler de Supabase). Solo se justificaría con decenas de tenants.
+
+**Costo asumido**: ~400–600 MB de RAM por contenedor en el homelab y operación ×N (mitigada por la plantilla de deploy y el runbook). Con **>10–15 tenants** se reevalúa consolidación con métricas reales (RAM, conexiones, tráfico).
+
+**¿Es difícil el salto desde hoy? No.** El inventario (16.3) muestra que el trabajo restante es sobre todo configuración y parametrización de branding, no reescritura.
+
+### 16.3 — Inventario de acoplamientos single-tenant (auditoría julio 2026)
+
+| # | Categoría | Estado | Veredicto |
+|---|---|---|---|
+| 1 | Branding | `_logo`/`_navbar` ya usan `Negocio`; pero ~24 vistas con `"… — Advance Fitness"` literal en `content_for :title`, `shared/_auth_brand` (marca y "Medellín, Colombia" fijos), `<meta application-name>` del layout y manifest PWA con nombre viejo y colores `"red"` | Fácil de parametrizar (Fase A) |
+| 2 | Valores de negocio | Centralizados en `Negocio` + `config/negocio.yml` con override por ENV (`NEGOCIO_NOMBRE`, `PRECIO_*`, `MEMBRESIA_DURACION_DIAS`); horarios de acceso son dato por membresía | Ya listo |
+| 3 | Base de datos | Un solo `DATABASE_URL` por proceso; cache/queue/cable comparten la base física; sin `connected_to`/shards | Neutral en multi-instancia (cada contenedor trae el suyo) |
+| 4 | URLs y host | `default_url_options` en producción sigue en `example.com` → **los correos de reset generan links rotos HOY** (bug prioritario); `config.hosts` comentado | Requiere Fase A (`APP_HOST` por ENV) |
+| 5 | Sesiones / OAuth | Cookie host-only (aislada por subdominio, ideal); OAuth de Google requiere registrar el redirect URI de cada subdominio en Google Cloud y decidir client_id compartido o por tenant (`GOOGLE_CLIENT_ID/SECRET` ya son ENV) | Cookie lista · OAuth = config externa por tenant |
+| 6 | Estado global | `Current` sin tenant (correcto en multi-instancia); `Ejercicios::MediaCache` cachea a volumen propio (contenido inmutable, inofensivo); catálogo `ejercicios` se importa por base (`tenant:preparar`) | Neutral |
+| 7 | Jobs recurrentes | Operan sobre la conexión del proceso (`config/recurring.yml` corre en cada instancia contra su base) | Correcto por construcción |
+| 8 | Deploy | `service`/`image`/`network-alias: rails-app`/volumen con nombres fijos en `config/deploy.yml`; secrets únicos | Requiere plantilla por tenant (Fase B) |
+
+### 16.4 — Runbook de alta de un tenant
+
+1. **Base**: crear la base independiente (proyecto Supabase propio, o Postgres self-hosted en el homelab si el costo/límite de proyectos aprieta). Anotar el `DATABASE_URL` (pooler en modo sesión: recordar el límite de conexiones — ver la lección de la Nota 6 sobre `pool`).
+2. **Secrets/ENV del tenant**: `DATABASE_URL`, `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD`, `NEGOCIO_NOMBRE`, `NEGOCIO_LOGO_URL`, `PRECIO_MENSUALIDAD`, `PRECIO_PERSONALIZADO`, `MEMBRESIA_DURACION_DIAS`, `GEMINI_API_KEY`/`IA_PROVEEDOR`, `GOOGLE_CLIENT_ID/SECRET`, `APP_HOST` (cuando exista, Fase A).
+3. **Deploy**: `config/deploy.<tenant>.yml` con `service`, `image` (o tag), `network-alias` y `volumes` propios → `kamal deploy -d <tenant>`.
+4. **Túnel Cloudflare**: agregar el ingress `https://<subdominio>.ynt.codes → http://<alias>:80` en el compose del túnel (recordar el bug conocido del alias de red post-deploy, DEPLOY.md).
+5. **OAuth**: registrar `https://<subdominio>.ynt.codes/auth/google_oauth2/callback` en Google Cloud.
+6. **Datos**: `bin/rails tenant:preparar` dentro del contenedor — schema + seed + catálogo de ejercicios + reporte de pendientes.
+7. **Smoke test**: login del admin sembrado, alta de una membresía de prueba, check-in, y cambio inmediato de la contraseña del admin.
+
+### 16.5 — Plan de mejoras por fases
+
+- **Fase A — Branding y host (pendiente, prioritaria por el bug del mailer):** `default_url_options` → `APP_HOST` por ENV (arregla los links de correo rotos); títulos de vistas compuestos desde `Negocio.nombre` en el layout (quitar los ~24 literales); `_auth_brand` y `© ciudad` desde `Negocio` (+ `Negocio.ciudad`); manifest PWA parametrizado con colores reales del tema.
+- **Fase B — Plantilla de deploy multi-destino:** `config/deploy.<tenant>.yml` + secrets por destino; probar el runbook 16.4 de punta a punta con un tenant de staging.
+- **Fase C — Piloto:** segundo tenant real (o staging permanente) conviviendo con Advance Fitness en el mismo host; medir RAM/conexiones/latencia.
+- **Fase D — Escala:** a >10–15 tenants, decidir con métricas si se consolida (sharding, más hardware, o mover tenants grandes a su propio host). Tema de color por marca (hoy el tema DaisyUI `advance` es único) se decide aquí si algún tenant lo pide.
