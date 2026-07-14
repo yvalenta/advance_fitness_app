@@ -15,4 +15,12 @@ class DetalleEntrenamiento < ApplicationRecord
   def volumen_kg
     repeticiones * (peso_kg || 0)
   end
+
+  # Resuelve el Ejercicio real para registrar una serie: por id (rutinas
+  # nuevas) o por nombre contra el catálogo (fallback para rutinas viejas
+  # sin ejercicio_id en su JSON, mismo criterio de Ejercicio.buscar_por_nombre
+  # que ya usa EjerciciosController#ayuda). nil si no hay match.
+  def self.ejercicio_para(ejercicio_id:, nombre:)
+    Ejercicio.find_by(id: ejercicio_id) || Ejercicio.buscar_por_nombre(nombre)
+  end
 end

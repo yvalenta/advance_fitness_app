@@ -43,4 +43,21 @@ RSpec.describe DetalleEntrenamiento, type: :model do
     detalle.save!
     expect { registro.destroy! }.to change(DetalleEntrenamiento, :count).by(-1)
   end
+
+  describe ".ejercicio_para" do
+    it "resuelve por id cuando el plan trae ejercicio_id" do
+      resultado = DetalleEntrenamiento.ejercicio_para(ejercicio_id: ejercicio.id, nombre: "otro nombre")
+      expect(resultado).to eq(ejercicio)
+    end
+
+    it "resuelve por nombre normalizado cuando no hay ejercicio_id (planes viejos)" do
+      ejercicio # fuerza la creación antes de buscar por nombre
+      resultado = DetalleEntrenamiento.ejercicio_para(ejercicio_id: nil, nombre: "Press De Banca")
+      expect(resultado).to eq(ejercicio)
+    end
+
+    it "devuelve nil sin id ni nombre coincidente" do
+      expect(DetalleEntrenamiento.ejercicio_para(ejercicio_id: nil, nombre: "Ejercicio inventado")).to be_nil
+    end
+  end
 end

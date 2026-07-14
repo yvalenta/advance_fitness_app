@@ -1,0 +1,51 @@
+<%# locals: (registro:, ejercicio:, detalles:) %>
+<%# Lista de series registradas + formulario para agregar una nueva. Target %>
+<%# de los turbo_stream.replace de create/destroy — el id es estable por %>
+<%# ejercicio, así que sobrevive a cualquiera de las dos acciones. %>
+<div id="detalles_ejercicio_<%= ejercicio.id %>" class="flex flex-col gap-2">
+  <% if detalles.any? %>
+    <table class="table table-sm">
+      <thead>
+        <tr class="text-xs uppercase tracking-wider text-steel-3">
+          <th>Serie</th><th>Reps</th><th>Peso</th><th>RPE</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% detalles.each do |detalle| %>
+          <tr>
+            <td><%= detalle.serie %></td>
+            <td><%= detalle.repeticiones %></td>
+            <td><%= detalle.peso_kg.presence || "peso corporal" %></td>
+            <td><%= detalle.rpe || "—" %></td>
+            <td class="text-right">
+              <%= button_to "Quitar", detalle_entrenamiento_path(detalle), method: :delete,
+                    class: "btn btn-ghost btn-xs text-error", form: { data: { turbo_frame: "registro_series" } } %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <p class="text-sm text-steel-3">Sin series registradas todavía.</p>
+  <% end %>
+
+  <%= form_with url: detalles_entrenamiento_path, method: :post, data: { turbo_frame: "registro_series" },
+        class: "grid grid-cols-[1fr_1fr_1fr_auto] items-end gap-2" do |f| %>
+    <%= f.hidden_field :fecha, value: registro.fecha.iso8601 %>
+    <%= f.hidden_field :ejercicio_id, value: ejercicio.id %>
+    <%= f.hidden_field :nombre, value: ejercicio.nombre %>
+    <label class="input input-sm input-bordered flex items-center gap-1">
+      <span class="text-xs font-bold text-steel-3">Reps</span>
+      <%= f.number_field :repeticiones, min: 1, required: true, class: "w-full text-right", "aria-label": "Repeticiones" %>
+    </label>
+    <label class="input input-sm input-bordered flex items-center gap-1">
+      <span class="text-xs font-bold text-steel-3">kg</span>
+      <%= f.number_field :peso_kg, min: 0, step: 0.5, class: "w-full text-right", "aria-label": "Peso (kg, vacío = corporal)" %>
+    </label>
+    <label class="input input-sm input-bordered flex items-center gap-1">
+      <span class="text-xs font-bold text-steel-3">RPE</span>
+      <%= f.number_field :rpe, min: 1, max: 10, class: "w-full text-right", "aria-label": "RPE (opcional)" %>
+    </label>
+    <%= f.submit "+", class: "btn btn-primary btn-sm" %>
+  <% end %>
+</div>

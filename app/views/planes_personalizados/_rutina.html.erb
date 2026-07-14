@@ -16,7 +16,7 @@
 <% end %>
 
 <div class="card border border-base-300 bg-base-100 shadow-md"
-     data-controller="tabs modo-edicion seguimiento ayuda-ejercicio autosave modal-ejercicios"
+     data-controller="tabs modo-edicion seguimiento ayuda-ejercicio registro-series autosave modal-ejercicios"
      data-seguimiento-url-value="<%= registros_entrenamiento_path %>"
      data-autosave-clave="ejercicio"
      data-modal-ejercicios-crear-url="<%= entrenador_plantillas_ejercicio_path %>"
@@ -81,4 +81,7 @@
     <%= render "planes_personalizados/modal_ejercicios", plantillas: plantillas %>
   <% end %>
   <%= render "ejercicios/dialogo_ayuda" %>
+  <% if con_seguimiento && usuario.premium? %>
+    <%= render "detalles_entrenamiento/dialogo" %>
+  <% end %>
 </div>
