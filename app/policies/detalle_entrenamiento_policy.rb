@@ -5,6 +5,9 @@ class DetalleEntrenamientoPolicy < ApplicationPolicy
   def index? = registro_del_usuario?
   def create? = registro_del_usuario? && user.premium?
   def destroy? = registro_del_usuario?
+  # Disparar el Analista de Performance (SDD §18.4) exige lo mismo que crear
+  # una serie: dueño del registro + suscripción activa al plan Personalizado.
+  def analizar? = create?
 
   private
     def registro_del_usuario?

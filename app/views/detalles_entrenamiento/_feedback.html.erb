@@ -1,0 +1,30 @@
+<%# locals: (registro:, ejercicio:) %>
+<%# Analista de Performance (SDD §18.4): botón manual y resultado del %>
+<%# último análisis, sobre la tendencia real del miembro (no solo este día). %>
+<% feedback = registro.feedback_ia %>
+<div class="mt-2 flex flex-col gap-2 border-t border-base-300 pt-2">
+  <% if feedback.nil? || feedback.fallido? %>
+    <% if feedback&.fallido? %>
+      <p class="text-xs text-error"><%= feedback.error %></p>
+    <% end %>
+    <%= button_to "Analizar mi entrenamiento", analizar_entrenamiento_path,
+          method: :post, class: "btn btn-outline btn-sm",
+          params: { fecha: registro.fecha.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre },
+          form: { data: { turbo_frame: "registro_series" } } %>
+  <% elsif feedback.generando? %>
+    <div class="flex items-center gap-2 text-sm text-steel-3">
+      <span class="loading loading-spinner loading-xs"></span> Analizando tu entrenamiento…
+    </div>
+  <% elsif feedback.listo? %>
+    <% color = { "progreso" => "badge-success", "estancado" => "badge-warning", "alerta" => "badge-error" }.fetch(feedback.diagnostico) %>
+    <div class="flex flex-col gap-1">
+      <span class="badge badge-sm <%= color %> w-fit capitalize"><%= feedback.diagnostico %></span>
+      <p class="text-sm text-steel-7"><%= feedback.analisis %></p>
+      <p class="text-sm font-semibold text-steel-7"><%= feedback.accion_recomendada %></p>
+    </div>
+    <%= button_to "Volver a analizar", analizar_entrenamiento_path,
+          method: :post, class: "btn btn-ghost btn-xs w-fit",
+          params: { fecha: registro.fecha.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre },
+          form: { data: { turbo_frame: "registro_series" } } %>
+  <% end %>
+</div>

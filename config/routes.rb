@@ -32,6 +32,8 @@ Rails.application.routes.draw do
   get "detalles_entrenamiento", to: "detalles_entrenamiento#index", as: :detalles_entrenamiento
   post "detalles_entrenamiento", to: "detalles_entrenamiento#create"
   delete "detalles_entrenamiento/:id", to: "detalles_entrenamiento#destroy", as: :detalle_entrenamiento
+  # Analista de Performance (SDD §18.4): dispara AnalizarEntrenamientoJob.
+  post "detalles_entrenamiento/analizar", to: "detalles_entrenamiento#analizar", as: :analizar_entrenamiento
 
   # Catálogo visual de ejercicios (Fase 6): búsqueda, popup de ayuda y media
   # (GIF/imagen del dataset) servida por proxy con caché en el volumen.

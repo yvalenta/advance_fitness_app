@@ -3,7 +3,7 @@
 # checkbox "hecho" del plan free/reglas (RegistrosEntrenamientoController)
 # no se toca; esto es un dato adicional, exclusivo de user.premium?.
 class DetallesEntrenamientoController < ApplicationController
-  before_action :cargar_registro_y_ejercicio, only: %i[ index create ]
+  before_action :cargar_registro_y_ejercicio, only: %i[ index create analizar ]
 
   # GET — contenido del turbo-frame perezoso del dialog (mismo patrón que
   # EjerciciosController#ayuda). Sin ejercicio resuelto, @ejercicio es nil y
@@ -21,6 +21,20 @@ class DetallesEntrenamientoController < ApplicationController
     @registro.detalles.create!(ejercicio: @ejercicio, serie: siguiente_serie,
                                repeticiones: params[:repeticiones], peso_kg: params[:peso_kg].presence,
                                rpe: params[:rpe].presence)
+
+    @detalles = @registro.detalles.where(ejercicio: @ejercicio).order(:serie)
+    render turbo_stream: reemplazar_lista
+  end
+
+  # Disparador manual del Analista de Performance (SDD §18.4): encola el
+  # análisis y devuelve de inmediato — la IA nunca bloquea la respuesta.
+  def analizar
+    authorize @registro, policy_class: DetalleEntrenamientoPolicy
+    return head :unprocessable_entity unless @ejercicio
+
+    feedback = @registro.feedback_ia || @registro.create_feedback_ia!(estado: "pendiente")
+    feedback.marcar_generando!
+    AnalizarEntrenamientoJob.perform_later(@registro.id)
 
     @detalles = @registro.detalles.where(ejercicio: @ejercicio).order(:serie)
     render turbo_stream: reemplazar_lista

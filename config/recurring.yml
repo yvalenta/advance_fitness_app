@@ -28,3 +28,8 @@ production:
     class: LiberarPlanesEstancadosJob
     queue: default
     schedule: every 5 minutes
+
+  liberar_feedbacks_estancados:
+    class: LiberarFeedbacksEstancadosJob
+    queue: default
+    schedule: every 5 minutes

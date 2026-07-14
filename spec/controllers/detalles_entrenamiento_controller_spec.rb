@@ -111,4 +111,28 @@ RSpec.describe "DetallesEntrenamiento", type: :request do
     expect(response).to have_http_status(:success)
     expect(response.body).to include(ejercicio.nombre)
   end
+
+  describe "POST /detalles_entrenamiento/analizar" do
+    it "un miembro free no puede disparar el análisis" do
+      sign_in_as users(:one)
+
+      expect {
+        post analizar_entrenamiento_path, params: { fecha: Date.current.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre }
+      }.not_to change(FeedbackIa, :count)
+      expect(response).to redirect_to(root_path)
+    end
+
+    it "un miembro premium encola el análisis sin esperar a la IA" do
+      sign_in_as users(:one)
+      premium!(users(:one))
+
+      expect {
+        post analizar_entrenamiento_path, params: { fecha: Date.current.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre }
+      }.to have_enqueued_job(AnalizarEntrenamientoJob)
+      expect(response).to have_http_status(:success)
+
+      registro = users(:one).registros_entrenamiento.find_by(fecha: Date.current)
+      expect(registro.feedback_ia.generando?).to be true
+    end
+  end
 end
