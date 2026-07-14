@@ -1,0 +1,23 @@
+<%# Contenido del dialog de registro de series: llega dentro del turbo-frame %>
+<%# perezoso (Fase 11-A, SDD §18). Sin @ejercicio resuelto (rutina vieja sin %>
+<%# match en el catálogo) se muestra un estado vacío, sin crear nada. %>
+<%= turbo_frame_tag "registro_series" do %>
+  <div class="flex flex-col gap-3">
+    <div class="flex items-start justify-between gap-2">
+      <h3 class="font-display text-lg font-bold leading-tight">
+        <%= @ejercicio&.nombre || params[:nombre] %>
+      </h3>
+      <button type="button" class="btn btn-circle btn-ghost btn-sm shrink-0"
+              data-action="registro-series#cerrar" aria-label="Cerrar">✕</button>
+    </div>
+
+    <% if @ejercicio %>
+      <%= render "detalles_entrenamiento/lista", registro: @registro, ejercicio: @ejercicio, detalles: @detalles %>
+    <% else %>
+      <div class="flex flex-col items-center gap-2 py-6 text-center">
+        <p class="font-semibold">Este ejercicio no está en el catálogo</p>
+        <p class="text-sm text-steel-3">No se puede registrar series hasta vincularlo. Avísale a tu entrenador.</p>
+      </div>
+    <% end %>
+  </div>
+<% end %>

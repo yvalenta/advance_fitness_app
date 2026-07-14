@@ -24,6 +24,15 @@ Rails.application.routes.draw do
   # Seguimiento de entrenamiento del miembro (Fase 5.10): upsert por fecha+ejercicio.
   resources :registros_entrenamiento, only: :create
 
+  # Registro cuantitativo de series (SDD §18, feature premium): index carga
+  # el dialog por fecha+ejercicio (query string, mismo patrón de :ayuda);
+  # create/destroy responden turbo_stream. Rutas nombradas a mano (en vez de
+  # `resources`) para no depender del inflector global: el nombre de tabla
+  # real "detalle_entrenamientos" no coincide con "detalles_entrenamiento".
+  get "detalles_entrenamiento", to: "detalles_entrenamiento#index", as: :detalles_entrenamiento
+  post "detalles_entrenamiento", to: "detalles_entrenamiento#create"
+  delete "detalles_entrenamiento/:id", to: "detalles_entrenamiento#destroy", as: :detalle_entrenamiento
+
   # Catálogo visual de ejercicios (Fase 6): búsqueda, popup de ayuda y media
   # (GIF/imagen del dataset) servida por proxy con caché en el volumen.
   resources :ejercicios, only: :index do

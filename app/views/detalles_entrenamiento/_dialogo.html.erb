@@ -1,0 +1,11 @@
+<%# Popup de registro de series (SDD §18, feature premium): mismo patrón de %>
+<%# "ejercicios/_dialogo_ayuda" — turbo-frame perezoso dentro de un <dialog>, %>
+<%# marco propio para no chocar con el dialog de ayuda de la misma página. %>
+<dialog class="modal" data-registro-series-target="dialogo" data-action="click->registro-series#cerrarEnBackdrop">
+  <div class="modal-box max-w-sm">
+    <%= turbo_frame_tag "registro_series", data: { registro_series_target: "marco" } do %>
+      <div class="flex justify-center py-10"><span class="loading loading-spinner loading-md"></span></div>
+    <% end %>
+  </div>
+  <div class="modal-backdrop"></div>
+</dialog>
