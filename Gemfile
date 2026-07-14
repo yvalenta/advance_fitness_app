@@ -77,7 +77,7 @@ gem "dotenv-rails", "~> 3.2", groups: [ :development, :test ]
 
 # Login con Google (SDD §08)
 gem "omniauth-google-oauth2", "~> 1.2"
-gem "omniauth-rails_csrf_protection", "~> 1.0"
+gem "omniauth-rails_csrf_protection", "~> 2.0"
 
 # Locale es (fechas, errores de ActiveRecord)
 gem "rails-i18n", "~> 8.0"
