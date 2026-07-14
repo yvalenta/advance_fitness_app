@@ -1,0 +1,39 @@
+#!/usr/bin/env sh
+
+# Kamal a veces solo aplica `network-alias: rails-app` (config/deploy.yml) a
+# la red "kamal" y no a "docker-lab_proxy-network", dejando al túnel de
+# Cloudflare sin forma de resolver el contenedor nuevo → 502 aunque el
+# healthcheck de Kamal haya pasado (visto dos veces en producción, julio
+# 2026: deploys de PR #18 y PR #21). Este hook lo detecta y corrige solo,
+# sin esperar a que alguien note el 502.
+#
+# Variables disponibles: KAMAL_HOSTS, KAMAL_VERSION, KAMAL_PERFORMER,
+# KAMAL_DESTINATION, KAMAL_RUNTIME, KAMAL_RECORDED_AT.
+
+set -eu
+
+SERVICE="advance_fitness_app"
+ROLE="web"
+NETWORK="docker-lab_proxy-network"
+ALIAS="rails-app"
+SSH_USER="ynt"
+CONTAINER="${SERVICE}-${ROLE}-${KAMAL_VERSION}"
+
+for HOST in $KAMAL_HOSTS; do
+  echo "post-deploy: verificando alias de red '$ALIAS' en $NETWORK para $CONTAINER en $HOST..."
+
+  ALIASES=$(ssh "${SSH_USER}@${HOST}" \
+    "docker inspect ${CONTAINER} --format '{{json (index .NetworkSettings.Networks \"${NETWORK}\").Aliases}}' 2>/dev/null" || echo "null")
+
+  case "$ALIASES" in
+    *"$ALIAS"*)
+      echo "post-deploy: alias OK, nada que hacer."
+      ;;
+    *)
+      echo "post-deploy: alias ausente en $NETWORK, reconectando..."
+      ssh "${SSH_USER}@${HOST}" \
+        "docker network disconnect ${NETWORK} ${CONTAINER} && docker network connect --alias ${ALIAS} ${NETWORK} ${CONTAINER}"
+      echo "post-deploy: alias reconectado."
+      ;;
+  esac
+done
