@@ -37,7 +37,7 @@
                 <% @suscripciones.each do |suscripcion| %>
                   <tr class="hover:bg-base-200">
                     <td>
-                      <%= link_to admin_user_path(suscripcion.user), class: "flex items-center gap-3 hover:underline" do %>
+                      <%= link_to admin_user_path(suscripcion.user), data: { turbo_frame: "_top" }, class: "flex items-center gap-3 hover:underline" do %>
                         <%= render "shared/avatar", user: suscripcion.user %>
                         <div>
                           <p class="font-semibold"><%= nombre_visible(suscripcion.user) %></p>

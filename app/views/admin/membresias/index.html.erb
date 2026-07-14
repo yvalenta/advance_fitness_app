@@ -37,7 +37,7 @@
                 <% @membresias.each do |membresia| %>
                   <tr class="hover:bg-base-200">
                     <td>
-                      <%= link_to admin_user_path(membresia.user), class: "flex items-center gap-3 hover:underline" do %>
+                      <%= link_to admin_user_path(membresia.user), data: { turbo_frame: "_top" }, class: "flex items-center gap-3 hover:underline" do %>
                         <%= render "shared/avatar", user: membresia.user %>
                         <div>
                           <p class="font-semibold"><%= nombre_visible(membresia.user) %></p>

@@ -19,7 +19,7 @@ Todo comando corre en Docker vía dip; no se ejecuta `rails`/`bundle` en el host
 - Setup desde cero: `dip provision`
 - Servidor: `dip rails s` → http://localhost:3000
 - Consola / migraciones / generadores: `dip rails c` · `dip rails db:migrate` · `dip rails g …`
-- Tests: `dip test` (minitest; base de test propia en el contenedor `db`)
+- Tests: `dip test` (RSpec; base de test propia en el contenedor `db`)
 - Lint y seguridad: `dip rubocop` · `dip brakeman`
 - Postgres: `dip psql` · Shell: `dip bash`
 - `Dockerfile.dev` + `docker-compose.yml` (web + db postgres:17-alpine) son el entorno dev; el `Dockerfile` raíz es solo producción.
@@ -31,5 +31,5 @@ Todo comando corre en Docker vía dip; no se ejecuta `rails`/`bundle` en el host
 - `app/services`: POROs puros (IMC, TDEE, somatotipo) — sin acceso a base ni a sesión. `app/policies`: Pundit. Controllers delgados.
 - Seguridad: strong params siempre; `users.rol` jamás asignable por mass-assignment; historial de pagos **auditable**: se corrige o se anula dejando rastro (`anulado_en`/`anulado_por`), jamás se borra físico.
 - UI y datos en español; moneda COP sin decimales; fechas formato `es-CO`.
-- Tests minitest en cada fase (models, policies, controllers, system); una fase se cierra con `dip test`, `dip rubocop` y `dip brakeman` en verde.
+- Tests RSpec en cada fase (`spec/models`, `spec/policies`, `spec/controllers` como request specs, `spec/services`, `spec/jobs`, `spec/helpers`); fixtures YAML en `test/fixtures/` (no se duplican en `spec/fixtures`). Una fase se cierra con `dip test`, `dip rubocop` y `dip brakeman` en verde.
 - Commits por fase de avance del proyecto (Fase 1: base + auth, Fase 2: membresías…, según SDD §11).

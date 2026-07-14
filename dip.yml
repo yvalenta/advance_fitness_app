@@ -31,11 +31,11 @@ interaction:
           run_options: [service-ports]
 
   test:
-    description: Suite de tests (minitest)
+    description: Suite de tests (RSpec)
     service: web
     environment:
       RAILS_ENV: test
-    command: bin/rails test
+    command: bash -c "bin/rails db:test:prepare && bundle exec rspec"
 
   rubocop:
     description: Lint (rubocop-rails-omakase)
