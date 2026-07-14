@@ -20,11 +20,30 @@ class ApplicationController < ActionController::Base
   # El pooler de Supabase (modo sesión) tiene un límite duro de 15 conexiones
   # para todo el proyecto; en un pico de tráfico (o con desarrollo apuntando
   # a la misma base vía DEV_DATABASE_URL) una petición puede quedarse sin
-  # conexión disponible. Sin este rescate, eso era un 500 genérico —
-  # ahora es un aviso claro y la acción se puede reintentar sin perder nada.
+  # conexión disponible.
+  #
+  # OJO: esto NO puede ser un redirect. Un redirect_back/redirect_to lo sigue
+  # el navegador solo, y si la página de destino también toca la base (y la
+  # base sigue saturada), la siguiente petición vuelve a fallar y redirige de
+  # nuevo → loop infinito autoinfligido que satura aún más el pool (visto en
+  # producción julio 2026: cientos de peticiones a /objetivo sin interacción
+  # del usuario). Por eso se renderiza un cuerpo estático, sin layout (que sí
+  # toca la base para el navbar) y sin ningún redirect: el navegador se
+  # detiene y el reintento queda en manos del usuario.
   rescue_from ActiveRecord::ConnectionNotEstablished, PG::ConnectionBad do
-    redirect_back fallback_location: root_path,
-                  alert: "El servidor está muy ocupado en este momento. Intenta de nuevo en unos segundos."
+    respond_to do |format|
+      format.turbo_stream { head :service_unavailable }
+      format.json { head :service_unavailable }
+      format.any do
+        render layout: false, status: :service_unavailable,
+              html: <<~HTML.html_safe
+                <div style="font-family: sans-serif; max-width: 32rem; margin: 4rem auto; padding: 0 1rem; text-align: center;">
+                  <p>El servidor está muy ocupado en este momento.</p>
+                  <p><a href="#{root_path}">Reintenta en unos segundos</a>.</p>
+                </div>
+              HTML
+      end
+    end
   end
 
   private
