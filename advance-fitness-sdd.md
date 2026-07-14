@@ -927,6 +927,18 @@ No elegir un solo modelo: capturar valor en etapas distintas del cliente.
 4. **Funnel de 24 horas:** webhook al detectar un Reel nuevo del influencer → DM automatizado del "gemelo digital" a los comentaristas invitándolos a la app. (Sujeto a las políticas de automatización de Meta — riesgo regulatorio anotado en §18.5.)
 5. **White-label para agencias:** venta B2B2C por volumen; la agencia opera la relación con el cliente final, el SaaS opera los tenants (runbook §16.4 ya lo soporta operativamente).
 
+### 17.4 — Decisión: no bifurcar el producto hasta el primer cliente real de otra vertical (julio 2026)
+
+**Contexto de la decisión:** hoy hay dos clientes fijos, ambos gimnasios, con el producto tal cual funciona (check-in, membresías, catálogo de ejercicios, IA de plan y de análisis). Cero clientes influencer o entrenador personal — la vía de adquisición para ese segmento (Meta Ads) todavía no arrancó. Surgió la pregunta de si conviene, desde ya, (a) clonar el repo en un segundo software recortado para influencers/entrenadores (sin check-in ni membresía) o (b) generalizar el rol de staff (`gimnasio | entrenador | influencer`) en el mismo código para que un tenant "apague" las features que no necesita.
+
+**Decisión: ninguna de las dos, todavía.**
+
+- **No al fork ahora.** Es la operación barata cuando llegue el momento — la arquitectura multi-instancia de §16.2 (misma imagen, base y branding por tenant vía Kamal destinations) ya resuelve el aislamiento; forkear el repo hoy solo compraría dos bases de código para mantener en paralelo, duplicando cada bugfix, sin tener aún un cliente que valide qué necesita ese producto recortado.
+- **No a generalizar el rol de staff ahora.** Añadir `tipo_negocio`/`rol_staff: influencer|entrenador|gimnasio` sin un cliente real de esas verticales es diseñar una abstracción sobre una suposición: no se sabe todavía si un influencer quiere algo parecido a check-in (¿asistencia a un reto?, ¿sesiones en vivo?), un chat, o directamente nada de lo que hoy existe. Construir esa flexibilidad ahora es casi seguro que haya que rehacerla cuando aparezca el primer cliente de verdad, y mientras tanto añade complejidad al código que sirve a los dos gimnasios que sí pagan hoy.
+- **Camino cuando llegue el primer cliente influencer/entrenador:** levantar su instancia con el mismo mecanismo de §16.4 (base y branding propios) y resolver lo específico de esa vertical con **flags de visibilidad condicionales** por tenant (ocultar check-in/membresía si no aplican), no con un sistema de roles nuevo. Recién con 2-3 clientes de esa vertical, con necesidades reales observadas, se evalúa si conviene formalizar un concepto de "vertical de negocio" — la Fase 12 (§11) ya está marcada como posterior al MVP y condicionada a demanda real; esta nota extiende ese mismo criterio a la pregunta de bifurcar el producto.
+
+**Cómo revisar esta decisión:** cuando exista el primer contrato firmado (o piloto pagado) de un influencer/entrenador, releer esta nota antes de decidir — la respuesta la da la necesidad real observada en ese cliente, no la que se anticipa aquí.
+
 ---
 
 ## 18 — IA analítica de entrenamiento (Analista de Performance)
