@@ -42,6 +42,19 @@ RSpec.describe "Admin::Users", type: :request do
     expect(response.body).not_to include(users(:one).email_address)
   end
 
+  # Fase 6.15: listado paginado (25 por página) para no traer todo de un golpe
+  it "pagina el listado y respeta la búsqueda al cambiar de página" do
+    26.times { |i| User.create!(nombre: "Extra #{i}", email_address: "extra#{i}@test.com", password: "clave1234", rol: "miembro") }
+    sign_in_as users(:entrenador)
+
+    get admin_users_path
+    expect(response).to have_http_status(:success)
+    assert_select "a[data-turbo-frame=resultados_miembros][href*='page=2']"
+
+    get admin_users_path(page: 2)
+    expect(response).to have_http_status(:success)
+  end
+
   # Fase 6.13: dashboard del miembro — datos básicos, gráficas de progreso
   it "el staff ve las gráficas de progreso en la ficha" do
     user = users(:one)

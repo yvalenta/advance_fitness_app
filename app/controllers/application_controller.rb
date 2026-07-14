@@ -17,6 +17,16 @@ class ApplicationController < ActionController::Base
     redirect_to root_path, alert: "No tienes permiso para realizar esa acción."
   end
 
+  # El pooler de Supabase (modo sesión) tiene un límite duro de 15 conexiones
+  # para todo el proyecto; en un pico de tráfico (o con desarrollo apuntando
+  # a la misma base vía DEV_DATABASE_URL) una petición puede quedarse sin
+  # conexión disponible. Sin este rescate, eso era un 500 genérico —
+  # ahora es un aviso claro y la acción se puede reintentar sin perder nada.
+  rescue_from ActiveRecord::ConnectionNotEstablished, PG::ConnectionBad do
+    redirect_back fallback_location: root_path,
+                  alert: "El servidor está muy ocupado en este momento. Intenta de nuevo en unos segundos."
+  end
+
   private
     def pundit_user
       Current.user

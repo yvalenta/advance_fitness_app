@@ -19,7 +19,7 @@
 
         <% if @q.present? %>
           <p class="text-xs text-steel-3">
-            <%= pluralize(@users.size, "resultado") %> para "<%= @q %>" ·
+            <%= pluralize(@users.total_count, "resultado") %> para "<%= @q %>" ·
             <%= link_to "Limpiar", admin_users_path, data: { turbo_frame: "resultados_miembros" }, class: "link" %>
           </p>
         <% end %>
@@ -60,6 +60,9 @@
             </tbody>
           </table>
         </div>
+
+        <%= render "shared/paginacion", coleccion: @users, frame: "resultados_miembros", q: @q,
+              ruta: ->(params) { admin_users_path(**params) } %>
       <% end %>
     </div>
   </div>

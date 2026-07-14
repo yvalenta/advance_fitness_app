@@ -73,6 +73,11 @@ end
 
 gem "pundit", "~> 2.5"
 
+# Paginación de listados largos en el panel de admin (Miembros, Membresías,
+# Suscripciones, Pagos). Sin vistas propias: shared/_paginacion usa los
+# métodos del page object directamente, estilizado con DaisyUI.
+gem "kaminari", "~> 1.2"
+
 gem "dotenv-rails", "~> 3.2", groups: [ :development, :test ]
 
 # Login con Google (SDD §08)
