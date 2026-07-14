@@ -1,0 +1,14 @@
+<%# locals: (coleccion:, ruta:, frame:, q: nil) %>
+<% if coleccion.total_pages > 1 %>
+  <div class="mt-4 flex items-center justify-between text-sm text-steel-3">
+    <p>Página <%= coleccion.current_page %> de <%= coleccion.total_pages %> · <%= pluralize(coleccion.total_count, "resultado") %></p>
+    <div class="join">
+      <%= link_to "‹ Anterior", ruta.call({ page: coleccion.current_page - 1, q: q.presence }.compact),
+            class: "btn btn-sm join-item #{"btn-disabled" if coleccion.first_page?}",
+            data: { turbo_frame: frame } %>
+      <%= link_to "Siguiente ›", ruta.call({ page: coleccion.current_page + 1, q: q.presence }.compact),
+            class: "btn btn-sm join-item #{"btn-disabled" if coleccion.last_page?}",
+            data: { turbo_frame: frame } %>
+    </div>
+  </div>
+<% end %>

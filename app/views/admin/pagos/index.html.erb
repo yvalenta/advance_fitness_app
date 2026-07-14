@@ -19,7 +19,7 @@
 
         <% if @q.present? %>
           <p class="text-xs text-steel-3">
-            <%= pluralize(@pagos.size, "resultado") %> para "<%= @q %>" ·
+            <%= pluralize(@pagos.total_count, "resultado") %> para "<%= @q %>" ·
             <%= link_to "Limpiar", admin_pagos_path, data: { turbo_frame: "resultados_pagos" }, class: "link" %>
           </p>
         <% end %>
@@ -63,6 +63,9 @@
               </tbody>
             </table>
           </div>
+
+          <%= render "shared/paginacion", coleccion: @pagos, frame: "resultados_pagos", q: @q,
+                ruta: ->(params) { admin_pagos_path(**params) } %>
         <% else %>
           <div class="flex flex-col items-center gap-2 rounded-xl bg-base-200 py-12 text-center">
             <%= render "shared/icono", nombre: :tarjeta, clase: "size-8 text-steel-1" %>
