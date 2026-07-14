@@ -4,6 +4,7 @@ class Admin::UsersController < ApplicationController
     @q = params[:q].to_s.strip
     @users = policy_scope(User).includes(:membresia).order(:nombre)
     @users = @users.where("nombre ILIKE :q OR email_address ILIKE :q", q: "%#{User.sanitize_sql_like(@q)}%") if @q.present?
+    @users = @users.page(params[:page]).per(25)
   end
 
   def show

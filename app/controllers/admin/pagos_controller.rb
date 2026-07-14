@@ -4,6 +4,7 @@ class Admin::PagosController < ApplicationController
     @q = params[:q].to_s.strip
     @pagos = policy_scope(Pago).includes(:anulado_por, membresia: :user).order(fecha_pago: :desc, id: :desc)
     @pagos = filtrar(@pagos, @q) if @q.present?
+    @pagos = @pagos.page(params[:page]).per(25)
   end
 
   def edit

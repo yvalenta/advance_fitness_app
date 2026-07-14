@@ -7,6 +7,7 @@ class Admin::SuscripcionesController < ApplicationController
       @suscripciones = @suscripciones.joins(:user)
         .where("users.nombre ILIKE :q OR users.email_address ILIKE :q", q: "%#{User.sanitize_sql_like(@q)}%")
     end
+    @suscripciones = @suscripciones.page(params[:page]).per(25)
   end
 
   def new

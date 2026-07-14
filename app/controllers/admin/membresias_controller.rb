@@ -7,6 +7,7 @@ class Admin::MembresiasController < ApplicationController
       @membresias = @membresias.joins(:user)
         .where("users.nombre ILIKE :q OR users.email_address ILIKE :q", q: "%#{User.sanitize_sql_like(@q)}%")
     end
+    @membresias = @membresias.page(params[:page]).per(25)
   end
 
   def new

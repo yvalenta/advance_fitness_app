@@ -660,6 +660,10 @@ Rutas RESTful de Rails; los nombres siguen el dominio en español. Las de staff 
 | 6 | Catálogo visual de ejercicios & IA con catálogo cerrado | ~1.5 semanas | Tabla **`ejercicios`** importada del dataset abierto [hasaneyldrm/exercises-dataset](https://github.com/hasaneyldrm/exercises-dataset) (1.324 ejercicios con instrucciones en español y GIF/imagen 180×180 © Gym Visual, **atribución visible obligatoria**); media servida por **proxy con caché on-demand** en el volumen `/rails/storage` (no engorda la imagen Docker ni expone al miembro a GitHub); en la rutina del miembro, **tap en el ejercicio abre un popup** (dialog + turbo-frame perezoso, patrón 5.16) con el GIF de ejecución e instrucciones, sin recargar ni perder los checks; la biblioteca del editor gana **thumbnails y catálogo buscable**; el prompt de IA pasa a **catálogo cerrado** (`ejercicio_id` obligatorio de una lista curada por músculo, validador server-side anti-alucinación) y devuelve además `peso_sugerido_kg` y `nota_tecnica` personalizados; **retroalimentación por adherencia** (los registros de entrenamiento de las últimas semanas se resumen en el prompt al regenerar); nombres traducidos al español con IA en lote (rake). Sub-fases 6.1–6.7 | El miembro toca un ejercicio de su rutina y ve el GIF + instrucciones en español sin perder sus checks; la IA solo usa ejercicios existentes del catálogo y los planes regenerados reaccionan a la adherencia real; `dip rails ejercicios:importar` es idempotente |
 | 7 | Nutrición personalizada & Gustos | ~2 semanas | Catálogo `alimentos` (seed colombiano + CRUD admin), calificación de gustos (`/gustos`), armador de comidas con registro del día (`/armador`), gustos + recetas en el prompt de IA, benchmark de modelo Gemini | El miembro califica alimentos y arma su día viendo kcal en vivo; el registro alimenta `/progreso`; el plan IA de un premium no incluye ningún alimento `no_le_gusta` y cada comida trae receta |
 | 8 | Comunidad & Cierre | ~1 semana | Blog, novedades, pulido responsive, checklist MVP completo | Un miembro lee posts y novedades publicadas; todo el checklist §15 en verde |
+| 9 | Multi-gimnasio: preparación técnica | ~1 semana | Parametrización de branding (títulos, `_auth_brand`, manifest PWA) desde `Negocio.nombre`; `default_url_options`/`config.hosts` resueltos por `APP_HOST` en vez del placeholder `example.com`; plantilla de deploy multi-destino (`config/deploy.<tenant>.yml`, Kamal destinations) — corresponde a las Fases A y B de §16.5. Ya adelantado: seed de arranque de tenant (`db/seeds.rb`) y `bin/rails tenant:preparar` (Nota 9) | Ningún texto de cara al usuario dice "Advance Fitness" fuera de `config/negocio.yml`; los correos de reset apuntan al dominio real; `kamal deploy -d <tenant>` funciona con un tenant de staging siguiendo el runbook de §16.4 |
+| 10 | Multi-gimnasio: piloto y escala | ~1 semana + operación continua | Segundo tenant real (o staging permanente) conviviendo con Advance Fitness en el mismo homelab, siguiendo el runbook §16.4 de punta a punta (base, secrets, deploy, túnel, OAuth); métricas de RAM/conexiones/latencia con dos tenants activos; decisión de consolidación al superar ~10–15 tenants — corresponde a las Fases C y D de §16.5 | Un segundo gimnasio opera de forma aislada (su propia base, su propio subdominio) sin degradar a Advance Fitness; hay métricas reales que informan cuándo consolidar |
+| 11 | IA analítica de entrenamiento | ~1.5 semanas | UI de captura de series/reps/peso/RPE sobre **`detalle_entrenamientos`** (tabla y modelo ya implementados — Nota 11); tabla `feedback_ia` + **`AnalizarEntrenamientoJob`** (Solid Queue, adaptadores IA existentes) con el prompt del Analista de Performance (§18.4): progresión de volumen, detección de plateaus (>3 sesiones sin subir carga), alerta de fatiga por RPE; feedback visible para el miembro y el entrenador — ver §18 | El miembro registra sus series reales desde la rutina; tras la sesión recibe un análisis Estado/Análisis/Acción basado en su historial cuantitativo; el sistema detecta un estancamiento sembrado a propósito en datos de prueba |
+| 12 | Pivote SaaS white-label: negocio | por definir (post-piloto) | Modelo de Escalada (§17.2): tiers Starter/Pro con límites y contadores de uso de IA por tenant, pasarela de pagos online, tier Partnership con revenue share y medición de ventas por tenant; tácticas go-to-market de §17.3 según mercado (gimnasios, influencers, agencias white-label) | Un tenant contrata y paga online un tier; los límites de IA del tier Starter se aplican de verdad; existe al menos un tenant Partnership con liquidación de revenue share verificable |
 
 > **Nota (julio 2026):** la Fase 3 se **aplaza** y la Fase 4 se adelanta. Mientras no existan mediciones, los inputs del TDEE se capturan así: fecha de nacimiento, sexo, talla y nivel de actividad en un formulario de **"Completar perfil"** (columnas ya existentes en `users`), y el **peso** como snapshot en `objetivos_nutricionales.peso_kg` al fijar el objetivo. Cuando la Fase 3 llegue, el peso se precargará de la última medición y la recalibración seguirá el Flujo C.
 >
@@ -676,6 +680,12 @@ Rutas RESTful de Rails; los nombres siguen el dominio en español. Las de staff 
 > **Nota 7 (julio 2026, Fase 6.11):** el admin puede **buscar miembros** por nombre o correo en `admin/users` y **editar cualquier medición pasada** (antes solo se podía corregir la de hoy vía upsert). Al guardar una medición, un checkbox opcional "Actualizar el plan de entrenamiento con estas medidas" reencola `GenerarPlanJob` para el plan Personalizado vigente del miembro (no aplica al plan sugerido por reglas, que no usa antropometría) — sin marcarlo, el plan actual queda intacto.
 >
 > **Nota 8 (julio 2026, Fase 6.13):** buscador en vivo (mientras se escribe, sin recargar) en Suscripciones/Membresías/Pagos/Miembros, con un componente Stimulus reutilizable (`buscador-en-vivo`) sobre un turbo-frame; Pagos interpreta un solo campo de texto como usuario, fecha, valor o método. Clic en un miembro desde cualquiera de esas listas lleva a su ficha (`admin/users/:id`), ahora ampliada con las mismas gráficas de progreso (peso/calorías/asistencia) que ve el propio miembro en `/progreso` (extraídas a `ProgresoUsuario` + partials `shared/_grafica_*`, con un local `editable:` que decide si se muestran los enlaces de autoservicio) y una card de edición de perfil (nombre, correo, fecha de nacimiento, sexo, nivel de actividad, somatotipo) accesible a todo el staff; el **rol** sigue exclusivo del admin, verificado en el controller — nunca mass-asignado.
+>
+> **Nota 9 (julio 2026):** se adopta la **visión multi-gimnasio** (ver §16): misma app en N subdominios, cada tenant con su base independiente, servida por una instancia Kamal propia. Como primer artefacto se reorganiza `db/seeds.rb` como **seed de arranque de tenant** (documentado, idempotente, parametrizable por `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD`) y se agrega `bin/rails tenant:preparar` (`lib/tasks/tenant.rake`) que orquesta schema + seed + catálogo de ejercicios + reporte con los pasos manuales pendientes. La arquitectura completa NO se implementa aún; §16 documenta la recomendación, el inventario de acoplamientos y el plan de mejoras por fases (A–D).
+>
+> **Nota 10 (julio 2026):** la visión multi-gimnasio de §16 se formaliza en la tabla de fases como **Fase 9** (preparación técnica: branding parametrizable, host canónico, plantilla de deploy — Fases A/B de §16.5) y **Fase 10** (piloto con un segundo tenant real y decisión de escala/consolidación — Fases C/D de §16.5), después de Comunidad & Cierre (Fase 8). Son fases **posteriores al MVP funcional**: no bloquean el checklist de §15 y arrancan solo cuando exista demanda real de un segundo gimnasio/marca.
+>
+> **Nota 11 (julio 2026):** se adopta la visión de **pivote SaaS white-label** (§17: tiers de pricing, revenue share, go-to-market) y de **IA analítica de entrenamiento** (§18: Analista de Performance), formalizadas como **Fase 11** (IA analítica) y **Fase 12** (negocio SaaS). Nacen de una auditoría externa del esquema contrastada contra la realidad (rastro completo en §18.6): de ella solo aplicó la necesidad de datos cuantitativos de entrenamiento — se implementa ya la tabla **`detalle_entrenamientos`** + modelo `DetalleEntrenamiento` (una fila por serie: reps, peso, RPE; único por registro+ejercicio+serie) como único artefacto de código; `tenant_id`/RLS se descartó (contradice §16.2), el `imc` generado y los índices compuestos ya existían. Igual que las Fases 9–10, son **posteriores al MVP funcional** y no bloquean el checklist de §15.
 
 ---
 
@@ -815,3 +825,179 @@ El sistema está listo para uso real cuando todos estos puntos estén en verde.
 | Blog y novedades muestran solo contenido publicado | Fechas y moneda en formato es-CO; `dip provision` funciona desde cero |
 
 > **Siguiente paso recomendado:** cerrar la Fase 1: campos de perfil + rol en `users` (migración), Pundit con `ApplicationPolicy` y `verify_authorized`, layout base con tokens §06 y logo, y vista de registro (el generador de auth solo trae login/reset). Después, Fase 2 (Membresías & Accesos).
+
+---
+
+## 16 — Visión a futuro: plataforma multi-gimnasio (white-label)
+
+> Estado: **documentada, no implementada** (julio 2026). Único artefacto en código: el seed de arranque de tenant (`db/seeds.rb`) y `bin/rails tenant:preparar` (Nota 9, §11). Formalizada en la tabla de fases (§11) como **Fase 9** (preparación técnica) y **Fase 10** (piloto y escala) — ver Nota 10. Esta sección es la fuente de verdad para el salto y queda abierta a mejoras. La continuación de negocio de esta visión (pricing por tiers, white-label, go-to-market) está en §17.
+
+### 16.1 — La visión
+
+Misma aplicación para N marcas, cada una en su subdominio y con su **base de datos independiente**:
+
+| Tenant | Subdominio | Base |
+|---|---|---|
+| Advance Fitness | `advance-fitness-app.ynt.codes` | propia |
+| Vital Fitness | `vital-fitness-app.ynt.codes` | propia |
+| Influencer 1 | `influencer1.ynt.codes` | propia |
+
+### 16.2 — Arquitectura elegida: multi-instancia (una imagen, un despliegue por tenant)
+
+Cada gimnasio corre como **un contenedor propio** de la **misma imagen Docker**, con su `DATABASE_URL`, sus ENV de `Negocio`, su alias de red y su entrada en el túnel Cloudflare. Kamal lo soporta nativamente con *destinations* (`config/deploy.<tenant>.yml` + `kamal deploy -d <tenant>`).
+
+**Por qué encaja con este stack:**
+- **Aislamiento absoluto por construcción**: imposible que un query cruce gimnasios; no hay `WHERE gimnasio_id` que olvidar.
+- **Cero refactor del núcleo**: los jobs recurrentes (`VencerMembresiasJob`, etc.), Solid Queue/Cache/Cable y los Turbo Streams operan sobre la conexión del proceso — cada instancia atiende su base y queda correcta sin tocar código.
+- **Chat y tiempo real (Fase 8 Comunidad) escalan por-gimnasio**: Solid Cable por tenant = sin contención entre marcas; la carga de un gimnasio grande no afecta a los demás.
+- **`Negocio` ya existe para esto** (§04): nombre, logo, precios y duración por ENV por instancia.
+- **Fallos aislados**: un tenant caído o migrando no toca a los otros.
+
+**Alternativas descartadas:**
+- *Row-level tenancy* (`gimnasio_id` en cada tabla): refactor total de modelos/policies/queries y un bug = fuga de datos entre gimnasios. Contradice además el requisito de bases independientes.
+- *Un solo proceso con sharding por subdominio* (`connected_to` por request): exige middleware host→shard, `Current.tenant`, jobs iterando N bases y multiplica el pool de conexiones (contra el límite de 15 del pooler de Supabase). Solo se justificaría con decenas de tenants.
+
+**Costo asumido**: ~400–600 MB de RAM por contenedor en el homelab y operación ×N (mitigada por la plantilla de deploy y el runbook). Con **>10–15 tenants** se reevalúa consolidación con métricas reales (RAM, conexiones, tráfico).
+
+**¿Es difícil el salto desde hoy? No.** El inventario (16.3) muestra que el trabajo restante es sobre todo configuración y parametrización de branding, no reescritura.
+
+### 16.3 — Inventario de acoplamientos single-tenant (auditoría julio 2026)
+
+| # | Categoría | Estado | Veredicto |
+|---|---|---|---|
+| 1 | Branding | `_logo`/`_navbar` ya usan `Negocio`; pero ~24 vistas con `"… — Advance Fitness"` literal en `content_for :title`, `shared/_auth_brand` (marca y "Medellín, Colombia" fijos), `<meta application-name>` del layout y manifest PWA con nombre viejo y colores `"red"` | Fácil de parametrizar (Fase A) |
+| 2 | Valores de negocio | Centralizados en `Negocio` + `config/negocio.yml` con override por ENV (`NEGOCIO_NOMBRE`, `PRECIO_*`, `MEMBRESIA_DURACION_DIAS`); horarios de acceso son dato por membresía | Ya listo |
+| 3 | Base de datos | Un solo `DATABASE_URL` por proceso; cache/queue/cable comparten la base física; sin `connected_to`/shards | Neutral en multi-instancia (cada contenedor trae el suyo) |
+| 4 | URLs y host | `default_url_options` en producción sigue en `example.com` → **los correos de reset generan links rotos HOY** (bug prioritario); `config.hosts` comentado | Requiere Fase A (`APP_HOST` por ENV) |
+| 5 | Sesiones / OAuth | Cookie host-only (aislada por subdominio, ideal); OAuth de Google requiere registrar el redirect URI de cada subdominio en Google Cloud y decidir client_id compartido o por tenant (`GOOGLE_CLIENT_ID/SECRET` ya son ENV) | Cookie lista · OAuth = config externa por tenant |
+| 6 | Estado global | `Current` sin tenant (correcto en multi-instancia); `Ejercicios::MediaCache` cachea a volumen propio (contenido inmutable, inofensivo); catálogo `ejercicios` se importa por base (`tenant:preparar`) | Neutral |
+| 7 | Jobs recurrentes | Operan sobre la conexión del proceso (`config/recurring.yml` corre en cada instancia contra su base) | Correcto por construcción |
+| 8 | Deploy | `service`/`image`/`network-alias: rails-app`/volumen con nombres fijos en `config/deploy.yml`; secrets únicos | Requiere plantilla por tenant (Fase B) |
+
+### 16.4 — Runbook de alta de un tenant
+
+1. **Base**: crear la base independiente (proyecto Supabase propio, o Postgres self-hosted en el homelab si el costo/límite de proyectos aprieta). Anotar el `DATABASE_URL` (pooler en modo sesión: recordar el límite de conexiones — ver la lección de la Nota 6 sobre `pool`).
+2. **Secrets/ENV del tenant**: `DATABASE_URL`, `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD`, `NEGOCIO_NOMBRE`, `NEGOCIO_LOGO_URL`, `PRECIO_MENSUALIDAD`, `PRECIO_PERSONALIZADO`, `MEMBRESIA_DURACION_DIAS`, `GEMINI_API_KEY`/`IA_PROVEEDOR`, `GOOGLE_CLIENT_ID/SECRET`, `APP_HOST` (cuando exista, Fase A).
+3. **Deploy**: `config/deploy.<tenant>.yml` con `service`, `image` (o tag), `network-alias` y `volumes` propios → `kamal deploy -d <tenant>`.
+4. **Túnel Cloudflare**: agregar el ingress `https://<subdominio>.ynt.codes → http://<alias>:80` en el compose del túnel (recordar el bug conocido del alias de red post-deploy, DEPLOY.md).
+5. **OAuth**: registrar `https://<subdominio>.ynt.codes/auth/google_oauth2/callback` en Google Cloud.
+6. **Datos**: `bin/rails tenant:preparar` dentro del contenedor — schema + seed + catálogo de ejercicios + reporte de pendientes.
+7. **Smoke test**: login del admin sembrado, alta de una membresía de prueba, check-in, y cambio inmediato de la contraseña del admin.
+
+### 16.5 — Plan de mejoras por fases
+
+- **Fase A — Branding y host (pendiente, prioritaria por el bug del mailer):** `default_url_options` → `APP_HOST` por ENV (arregla los links de correo rotos); títulos de vistas compuestos desde `Negocio.nombre` en el layout (quitar los ~24 literales); `_auth_brand` y `© ciudad` desde `Negocio` (+ `Negocio.ciudad`); manifest PWA parametrizado con colores reales del tema.
+- **Fase B — Plantilla de deploy multi-destino:** `config/deploy.<tenant>.yml` + secrets por destino; probar el runbook 16.4 de punta a punta con un tenant de staging.
+- **Fase C — Piloto:** segundo tenant real (o staging permanente) conviviendo con Advance Fitness en el mismo host; medir RAM/conexiones/latencia.
+- **Fase D — Escala:** a >10–15 tenants, decidir con métricas si se consolida (sharding, más hardware, o mover tenants grandes a su propio host). Tema de color por marca (hoy el tema DaisyUI `advance` es único) se decide aquí si algún tenant lo pide.
+
+---
+
+## 17 — Pivote SaaS white-label: modelo de negocio y go-to-market
+
+> Estado: **visión documentada, no implementada** (julio 2026). Sin artefactos en código. La arquitectura multi-instancia de §16 es el habilitador técnico de todo lo descrito aquí: marca, base y dominio propios por tenant = white-label por construcción. Formalizada en la tabla de fases (§11) como **Fase 12** — ver Nota 11.
+
+### 17.1 — Los tres mercados del pivote
+
+La misma plataforma puede venderse a tres perfiles, sin bifurcar el producto:
+
+1. **Gimnasios** (el mercado actual): gestión + IA como valor agregado. Sensibles a la estabilidad.
+2. **Influencers fitness**: su marca en su subdominio, la IA como "gemelo digital" que atiende a sus seguidores. Sensibles al riesgo inicial (poca inversión upfront).
+3. **Agencias de marketing fitness (white-label)**: la agencia pone su marca, cobra a sus clientes y contrata licencias por volumen — un solo canal comercial trae N tenants sin gestionar usuarios finales uno a uno.
+
+### 17.2 — Pricing: el "Modelo de Escalada" (híbrido suscripción + revenue share)
+
+No elegir un solo modelo: capturar valor en etapas distintas del cliente.
+
+| Tier | Para quién | Cobro | Incluye |
+|---|---|---|---|
+| **Starter** | Gimnasios pequeños / influencers emergentes | Fee mensual fijo bajo (ref. ~USD 99/mes — placeholder a validar; COP para gimnasios locales) | Gestión completa + IA con **límites de generación** (planes/mensajes por mes) |
+| **Pro** | Operaciones en escala | Fee mensual mayor (ref. ~USD 299/mes — placeholder) | IA ilimitada + automatización Meta API (posts/stories, §18.5) |
+| **Partnership** | Influencers/gimnasios con ventas propias en la plataforma | Fee reducido + **5–10 % revenue share** de ventas brutas de programas/servicios vendidos vía la plataforma | Todo Pro; el éxito del SaaS queda alineado con el del tenant |
+
+**Dependencias hoy inexistentes (explícitas, sin diseño aún):** pasarela de pagos online (hoy el pago es presencial y auditable, §"pagos"), medición de ventas por tenant (para liquidar el revenue share), y contadores de uso de IA por tenant (para los límites de Starter). Nada de esto bloquea Fases 9–11.
+
+**Nota sobre `pagos` ↔ `suscripciones`:** hoy `pagos` referencia `membresia_id` — decisión deliberada para el flujo presencial (el pago ejecuta el contrato de membresía, con anulación auditable). Si el pivote introduce cobro recurrente online, se evaluará modelar el cobro sobre `suscripciones` como contrato (pago = ejecución del contrato); se registra aquí para no perder la observación, sin cambiar nada mientras el flujo siga siendo presencial.
+
+### 17.3 — Cinco tácticas go-to-market
+
+1. **Lead magnet de conversión instantánea — "Prueba de Clonación":** landing donde el influencer sube una foto y un audio de 30 s; la plataforma devuelve un video corto de su "clon" invitando a sus seguidores. Tangible → conversión alta. (Depende de un proveedor de clonación de voz/video, fuera del stack actual — decisión de proveedor pendiente.)
+2. **"Shadow Coach" en gimnasios:** pantalla/iPad en el piso del gimnasio con consejos de la IA sobre los equipos del lugar; QR → "rutina personalizada del día" por WhatsApp. Captura leads para el gimnasio y valida el SaaS en campo.
+3. **Certificación "Creadores IA":** curso breve cuyo cierre es el acceso a la plataforma; convierte a los influencers en evangelistas y garantiza onboarding correcto.
+4. **Funnel de 24 horas:** webhook al detectar un Reel nuevo del influencer → DM automatizado del "gemelo digital" a los comentaristas invitándolos a la app. (Sujeto a las políticas de automatización de Meta — riesgo regulatorio anotado en §18.5.)
+5. **White-label para agencias:** venta B2B2C por volumen; la agencia opera la relación con el cliente final, el SaaS opera los tenants (runbook §16.4 ya lo soporta operativamente).
+
+### 17.4 — Decisión: no bifurcar el producto hasta el primer cliente real de otra vertical (julio 2026)
+
+**Contexto de la decisión:** hoy hay dos clientes fijos, ambos gimnasios, con el producto tal cual funciona (check-in, membresías, catálogo de ejercicios, IA de plan y de análisis). Cero clientes influencer o entrenador personal — la vía de adquisición para ese segmento (Meta Ads) todavía no arrancó. Surgió la pregunta de si conviene, desde ya, (a) clonar el repo en un segundo software recortado para influencers/entrenadores (sin check-in ni membresía) o (b) generalizar el rol de staff (`gimnasio | entrenador | influencer`) en el mismo código para que un tenant "apague" las features que no necesita.
+
+**Decisión: ninguna de las dos, todavía.**
+
+- **No al fork ahora.** Es la operación barata cuando llegue el momento — la arquitectura multi-instancia de §16.2 (misma imagen, base y branding por tenant vía Kamal destinations) ya resuelve el aislamiento; forkear el repo hoy solo compraría dos bases de código para mantener en paralelo, duplicando cada bugfix, sin tener aún un cliente que valide qué necesita ese producto recortado.
+- **No a generalizar el rol de staff ahora.** Añadir `tipo_negocio`/`rol_staff: influencer|entrenador|gimnasio` sin un cliente real de esas verticales es diseñar una abstracción sobre una suposición: no se sabe todavía si un influencer quiere algo parecido a check-in (¿asistencia a un reto?, ¿sesiones en vivo?), un chat, o directamente nada de lo que hoy existe. Construir esa flexibilidad ahora es casi seguro que haya que rehacerla cuando aparezca el primer cliente de verdad, y mientras tanto añade complejidad al código que sirve a los dos gimnasios que sí pagan hoy.
+- **Camino cuando llegue el primer cliente influencer/entrenador:** levantar su instancia con el mismo mecanismo de §16.4 (base y branding propios) y resolver lo específico de esa vertical con **flags de visibilidad condicionales** por tenant (ocultar check-in/membresía si no aplican), no con un sistema de roles nuevo. Recién con 2-3 clientes de esa vertical, con necesidades reales observadas, se evalúa si conviene formalizar un concepto de "vertical de negocio" — la Fase 12 (§11) ya está marcada como posterior al MVP y condicionada a demanda real; esta nota extiende ese mismo criterio a la pregunta de bifurcar el producto.
+
+**Cómo revisar esta decisión:** cuando exista el primer contrato firmado (o piloto pagado) de un influencer/entrenador, releer esta nota antes de decidir — la respuesta la da la necesidad real observada en ese cliente, no la que se anticipa aquí.
+
+---
+
+## 18 — IA analítica de entrenamiento (Analista de Performance)
+
+> Estado: **base de datos implementada** — tabla `detalle_entrenamientos` + modelo `DetalleEntrenamiento` (julio 2026); el resto (UI de captura, `feedback_ia`, `AnalizarEntrenamientoJob`) es diseño documentado, formalizado en §11 como **Fase 11** — ver Nota 11.
+
+Hoy la IA solo genera planes one-shot (`GenerarPlanJob` → `GeneradorPlanIa` → adaptadores `app/services/ia/`). El salto de valor es que la IA **analice** lo que el usuario realmente hace: progresión de cargas, récords personales (PRs) y detección de estancamiento. Eso exige datos cuantitativos que el JSONB de `registros_entrenamiento.ejercicios` no tiene (solo guarda checkboxes `{hecho, nota, nombre}` + `novedad` — es el tracker cualitativo de la UI del plan, y se conserva tal cual).
+
+### 18.1 — Base de datos (implementada)
+
+`detalle_entrenamientos` — una fila por **serie ejecutada** de un ejercicio en una sesión:
+
+- `registro_entrenamiento_id` (FK, `ON DELETE CASCADE`) · `ejercicio_id` (FK al catálogo)
+- `serie`, `repeticiones` (NOT NULL, ≥1) · `peso_kg` decimal(6,2) **nullable** (NULL = peso corporal/calistenia) · `rpe` (1–10 opcional) · `notas`
+- Índice `(ejercicio_id, registro_entrenamiento_id)` para consultas de progresión; único `(registro, ejercicio, serie)` → registro idempotente.
+- `DetalleEntrenamiento#volumen_kg` = `repeticiones × peso_kg` (la métrica base del análisis; peso corporal aporta 0 porque el volumen mide carga externa).
+
+**No fue una migración de datos**: no existían series/reps/pesos en el JSON; es una capacidad nueva. Sin doble escritura ni script de backfill.
+
+### 18.2 — Tabla `feedback_ia` (diseño, no creada)
+
+Guarda el análisis devuelto por la IA tras cada sesión: `registro_entrenamiento_id` (FK), `estado` (`progreso`/`estancado`/`alerta`), `analisis` (text), `accion_recomendada` (text), `modelo` (proveedor/modelo usado), timestamps. Se crea en la Fase 11 junto con el job.
+
+### 18.3 — Flujo técnico (diseño)
+
+Al cerrar la sesión de entrenamiento (o en digest diario) → **`AnalizarEntrenamientoJob`** (Solid Queue, mismo patrón de `GenerarPlanJob`: revalidar premium, tolerar fallos con estado, reusar los adaptadores `app/services/ia/`) → toma los últimos ~20 `detalle_entrenamientos` del usuario → prompt §18.4 → persiste en `feedback_ia`. **Sin orquestadores externos** (la sugerencia original usaba n8n; queda fuera del stack — Solid Queue cubre el caso de forma nativa).
+
+### 18.4 — Prompts (fuente de verdad)
+
+**System Prompt — Analista de Performance:**
+
+> Actúa como un Entrenador Físico de Élite con especialización en Ciencias del Deporte y Análisis de Datos. Tu objetivo es interpretar la data de entrenamiento del usuario para optimizar su progreso.
+> Contexto de entrada: resumen histórico de los últimos entrenamientos (series, repeticiones, pesos, RPE y fecha).
+> Metodología: (1) **Progresión** — ¿el volumen total de carga (series × reps × peso) asciende, se estanca o desciende? (2) **Plateaus** — ¿lleva más de 3 sesiones sin subir peso o calidad técnica en un ejercicio? (3) **Fatiga** — ¿RPE alto constante sin aumento de carga sugiere sobreentrenamiento? (4) **Ajuste prescriptivo** — consejo técnico de máximo 3 líneas para la próxima sesión.
+> Reglas: directo, técnico pero motivador; nunca sugieras aumento de carga si la técnica fue inconsistente; lenguaje de coaching premium; si hay mejora notable, felicita mencionando el peso específico batido.
+> Formato: **Estado** [Progreso/Estancado/Alerta] · **Análisis** · **Acción Recomendada**.
+
+**Prompt de Selección Dinámica** (evolución del prompt de `GeneradorPlanIa`, que ya recibe perfil + medición + objetivo + catálogo):
+
+> Actúa como fisiólogo del ejercicio. Genera la rutina según: somatotipo (ecto/meso/endomorfo), nivel (principiante/intermedio/avanzado) y equipo disponible. Principiantes: multiarticulares con alta frecuencia de control motor (12–15 reps). Avanzados: sobrecarga progresiva en rangos de hipertrofia (6–10) y técnicas de intensidad. Poco tiempo: full body de alta densidad. En déficit calórico: limitar aislamiento pesado para evitar fatiga excesiva.
+
+**Prompt de validación para el entrenador** (gancho en el flujo de aprobación de planes existente):
+
+> Antes de aprobar este plan verifica: ¿el volumen semanal total es seguro para el somatotipo del usuario? Si detectas riesgo de sobreentrenamiento, ajusta las series antes de notificar "Plan Aprobado".
+
+### 18.5 — Viralidad Meta: "logros que venden" (visión, sin fase asignada)
+
+Flujo: usuario bate un PR → la IA genera el insight de felicitación → se compone una imagen de logro (estética del tenant + dato dinámico: "Nuevo PR en press de banca: 80 kg") → Meta Graph API (`/{ig-user-id}/media`) la publica como IG Story con enlace a la app → lead nuevo. Dependencias: generador de imágenes (servicio externo o ERB→imagen propio), tokens Meta **por tenant**, y revisión de las políticas de la API de Meta (la publicación y los DMs automatizados del "funnel 24h" de §17.3 tienen riesgo de política/baneo — validar antes de construir).
+
+### 18.6 — Auditoría externa del esquema: qué aplica y qué no (julio 2026)
+
+Se recibió una auditoría externa del esquema; se contrastó contra el esquema real y las decisiones del SDD. Rastro:
+
+| Sugerencia externa | Realidad | Veredicto |
+|---|---|---|
+| "`imc` con DEFAULT estático queda desfasado al corregir talla/peso" | `mediciones.imc` es **columna generada `STORED`** — Postgres la recalcula sola | No aplica |
+| "Faltan índices compuestos `(user_id, fecha)`" | Ya existen en `mediciones`, `accesos` (`fecha_hora`) y `registros_calorias` | Ya resuelto |
+| "Añadir `tenant_id` + Row Level Security" | Contradice §16.2: multi-instancia con base por tenant, row-level tenancy descartado. RLS solo se reconsideraría si algún día se consolida (Fase D) | Descartado |
+| "`ejercicios` necesita `tenant_id` para catálogos privados" | Con base por tenant, cada gimnasio ya tiene su catálogo. "Ejercicios personalizados del gimnasio junto al dataset" queda como mejora futura | No aplica |
+| "Migrar el JSON de `registros_entrenamiento` a tabla normalizada" | El JSON no tiene series/reps/pesos que migrar; se implementó `detalle_entrenamientos` como **feature nueva** (§18.1) | Aplicado, redefinido |
+| "Conectar `pagos` a `suscripciones`" | Decisión deliberada del flujo presencial; se reevalúa si llega cobro online (§17.2) | Documentado |
+| "Orquestar con n8n" | Fuera del stack; Solid Queue nativo (§18.3) | Adaptado |
