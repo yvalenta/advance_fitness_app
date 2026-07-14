@@ -3,6 +3,7 @@ class RegistroEntrenamiento < ApplicationRecord
   # Registro cuantitativo (series/reps/peso/RPE) — SDD §18. El JSONB
   # `ejercicios` sigue siendo solo el "marcar hecho" cualitativo de la UI.
   has_many :detalles, class_name: "DetalleEntrenamiento", dependent: :destroy
+  has_one :feedback_ia, dependent: :destroy
 
   validates :fecha, presence: true, uniqueness: { scope: :user_id }
 

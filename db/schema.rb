@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_14_124232) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_14_194622) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -60,6 +60,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_14_124232) do
     t.index ["dataset_id"], name: "index_ejercicios_on_dataset_id", unique: true
     t.index ["musculo"], name: "index_ejercicios_on_musculo"
     t.index ["nombre_normalizado"], name: "index_ejercicios_on_nombre_normalizado"
+  end
+
+  create_table "feedback_ia", force: :cascade do |t|
+    t.text "accion_recomendada"
+    t.text "analisis"
+    t.datetime "created_at", null: false
+    t.string "diagnostico"
+    t.text "error"
+    t.string "estado", default: "pendiente", null: false
+    t.integer "intentos", default: 0, null: false
+    t.string "modelo"
+    t.bigint "registro_entrenamiento_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["registro_entrenamiento_id"], name: "index_feedback_ia_on_registro_entrenamiento_id", unique: true
   end
 
   create_table "mediciones", force: :cascade do |t|
@@ -257,6 +271,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_14_124232) do
   add_foreign_key "accesos", "users"
   add_foreign_key "detalle_entrenamientos", "ejercicios"
   add_foreign_key "detalle_entrenamientos", "registros_entrenamiento", on_delete: :cascade
+  add_foreign_key "feedback_ia", "registros_entrenamiento", on_delete: :cascade
   add_foreign_key "mediciones", "users"
   add_foreign_key "mediciones", "users", column: "tomada_por_id"
   add_foreign_key "membresias", "users"
