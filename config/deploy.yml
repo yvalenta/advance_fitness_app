@@ -53,6 +53,13 @@ env:
     # multi-gimnasio futuros (SDD §16.5 Fase A).
     APP_HOST: advance-fitness-app.ynt.codes
 
+    # libpq no espera indefinidamente al pooler de Supabase cuando está
+    # saturado (límite 15 clientes en modo sesión): sin esto, bin/rails
+    # db:prepare del entrypoint se colgaba para siempre en arranques en frío
+    # (el cuelgue "misterioso" que mitigaba el hook post-deploy). Con timeout,
+    # falla rápido, el contenedor sale y restart/hook lo recuperan.
+    PGCONNECT_TIMEOUT: "10"
+
     # Run the Solid Queue Supervisor inside the web server's Puma process to do jobs.
     # When you start using multiple servers, you should split out job processing to a dedicated machine.
     SOLID_QUEUE_IN_PUMA: true

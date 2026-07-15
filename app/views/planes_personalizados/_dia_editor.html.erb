@@ -90,7 +90,7 @@
             <%# Registro de series reales (SDD §18, feature premium) %>
             <button type="button" class="btn btn-ghost btn-xs shrink-0"
                     data-action="click->registro-series#abrir"
-                    data-registro-series-url="<%= detalles_entrenamiento_path(fecha: fecha, ejercicio_id: ejercicio["ejercicio_id"], nombre: ejercicio["nombre"]) %>">
+                    data-registro-series-url="<%= detalles_entrenamiento_path(fecha: fecha, ejercicio_id: ejercicio["ejercicio_id"], nombre: ejercicio["nombre"], series_plan: ejercicio["series"], repeticiones_plan: ejercicio["repeticiones"]) %>">
               <%= render "shared/icono", nombre: :actividad, clase: "size-3.5" %> Registrar
             </button>
           <% end %>

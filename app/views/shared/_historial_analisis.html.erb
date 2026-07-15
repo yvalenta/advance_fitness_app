@@ -1,0 +1,32 @@
+<%# locals: (progreso:) %>
+<%# Historial del Analista de Performance (Fase 12), solo lectura: lo usan %>
+<%# tanto la vista del miembro como la ficha de staff. Disparar un análisis %>
+<%# nuevo vive aparte, solo para staff. %>
+<div class="card animate-fade-up border border-base-300 bg-base-100 shadow-sm">
+  <div class="card-body">
+    <h2 class="card-title text-base">
+      <span class="flex size-7 items-center justify-center rounded-lg bg-pulse/15 text-pulse">
+        <%= render "shared/icono", nombre: :actividad, clase: "size-4" %>
+      </span>
+      Historial de análisis
+    </h2>
+    <% if progreso.feedbacks_ia.any? %>
+      <ul class="flex flex-col divide-y divide-base-200 text-sm">
+        <% progreso.feedbacks_ia.each do |registro| %>
+          <% feedback = registro.feedback_ia %>
+          <% color = { "progreso" => "badge-success", "estancado" => "badge-warning", "alerta" => "badge-error" }.fetch(feedback.diagnostico) %>
+          <li class="flex flex-col gap-1 py-2">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-steel-5"><%= l registro.fecha, format: :long %></span>
+              <span class="badge badge-sm <%= color %> capitalize"><%= feedback.diagnostico %></span>
+              <span class="badge badge-sm badge-ghost"><%= feedback.origen %></span>
+            </div>
+            <p class="text-xs text-steel-5"><%= feedback.analisis %></p>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="text-sm text-steel-3">Todavía no hay análisis completados.</p>
+    <% end %>
+  </div>
+</div>

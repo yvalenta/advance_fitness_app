@@ -1,0 +1,31 @@
+<%# Novedades públicas para el miembro (Fase 8). Esta vista faltó en el
+    release original: el controller y el link del navbar existían, pero
+    /novedades reventaba con MissingExactTemplate (Fase de Calidad). %>
+<% content_for :title, "Novedades — #{Negocio.nombre}" %>
+
+<%= render "shared/encabezado", titulo: "Novedades", descripcion: "Anuncios del gimnasio: clases, horarios especiales, retos." %>
+
+<div class="mx-auto -mt-8 w-full max-w-3xl px-4 pb-12">
+  <% if @novedades.any? %>
+    <div class="flex flex-col gap-4">
+      <% @novedades.each do |novedad| %>
+        <% cache novedad do %>
+          <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
+            <div class="card-body">
+              <% if novedad.fecha_evento %>
+                <p class="eyebrow text-volt"><%= l novedad.fecha_evento, format: :long %></p>
+              <% end %>
+              <h2 class="font-display text-lg font-bold"><%= novedad.titulo %></h2>
+              <p class="whitespace-pre-line text-sm text-steel-7"><%= novedad.contenido %></p>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="flex flex-col items-center gap-3 rounded-xl bg-base-200 py-12 text-center">
+      <%= render "shared/icono", nombre: :calendario, clase: "size-8 text-steel-1" %>
+      <p class="text-sm text-steel-3">No hay novedades por ahora.</p>
+    </div>
+  <% end %>
+</div>

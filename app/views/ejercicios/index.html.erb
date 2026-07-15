@@ -11,6 +11,10 @@
     <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
   <% end %>
 
+  <%# Fragment cache por búsqueda (Fase de Calidad): el catálogo solo cambia
+      con seeds — con caché la relación @ejercicios ni siquiera se ejecuta.
+      El max(updated_at) invalida todo si el catálogo se re-siembra. %>
+  <% cache [ "catalogo_ejercicios", Ejercicio.normalizar(params[:q].to_s), params[:musculo].to_s, Ejercicio.maximum(:updated_at) ] do %>
   <% if @ejercicios.any? %>
     <div class="grid gap-1.5 sm:grid-cols-2">
       <% @ejercicios.each do |ejercicio| %>
@@ -37,5 +41,6 @@
     </div>
   <% else %>
     <p class="py-4 text-center text-sm text-steel-3">Nada coincide con tu búsqueda en el catálogo.</p>
+  <% end %>
   <% end %>
 <% end %>

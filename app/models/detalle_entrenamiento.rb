@@ -23,4 +23,19 @@ class DetalleEntrenamiento < ApplicationRecord
   def self.ejercicio_para(ejercicio_id:, nombre:)
     Ejercicio.find_by(id: ejercicio_id) || Ejercicio.buscar_por_nombre(nombre)
   end
+
+  # Captura rápida (Fase 12): "cumplido tal cual" registra de una sola vez
+  # las `series` planeadas con el mismo objetivo de reps/peso, en vez de
+  # pedir cada serie una por una — pensado para el celular. `repeticiones`
+  # puede venir como rango del plan ("8-10"): se toma el número menor como
+  # valor conservador registrado.
+  def self.registrar_cumplido!(registro:, ejercicio:, series:, repeticiones:, peso_kg:)
+    reps = repeticiones.to_s[/\d+/].to_i
+    reps = 1 if reps < 1
+    siguiente = registro.detalles.where(ejercicio: ejercicio).maximum(:serie).to_i
+    series.to_i.times.map do |i|
+      registro.detalles.create!(ejercicio: ejercicio, serie: siguiente + i + 1,
+                                repeticiones: reps, peso_kg: peso_kg.presence)
+    end
+  end
 end

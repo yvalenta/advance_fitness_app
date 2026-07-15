@@ -3,6 +3,9 @@
 <%# con caché y solo se descarga al abrir (carga perezosa real). %>
 <%= turbo_frame_tag @marco do %>
   <% if @ejercicio %>
+    <%# Fragment cache por ejercicio (Fase de Calidad): instrucciones y GIF
+        del catálogo no cambian; la clave del registro incluye updated_at. %>
+    <% cache [ @ejercicio, "ayuda" ] do %>
     <div class="flex flex-col gap-3">
       <div class="flex items-start justify-between gap-2">
         <h3 class="font-display text-lg font-bold leading-tight"><%= @ejercicio.nombre %></h3>
@@ -40,6 +43,7 @@
 
       <p class="text-right text-[10px] text-steel-3"><%= @ejercicio.atribucion %></p>
     </div>
+    <% end %>
   <% else %>
     <div class="flex flex-col items-center gap-2 py-6 text-center">
       <p class="font-semibold">Sin ayuda visual para este ejercicio</p>

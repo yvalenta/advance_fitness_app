@@ -9,6 +9,9 @@
     <meta name="theme-color" content="#0b1220">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
+    <%# Turbo 8 morphing (Fase de Calidad): los refreshes actualizan el DOM
+        en sitio y conservan el scroll — sin "flash" de página completa. %>
+    <%= turbo_refreshes_with method: :morph, scroll: :preserve %>
 
     <%= yield :head %>
 

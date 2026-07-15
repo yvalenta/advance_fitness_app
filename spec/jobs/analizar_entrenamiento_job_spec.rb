@@ -59,14 +59,31 @@ RSpec.describe AnalizarEntrenamientoJob, type: :job do
     expect(feedback.error).to match("503")
   end
 
-  it "envía las series más recientes del usuario, sin importar el ejercicio o el día" do
+  it "envía solo las series de la sesión del día, no de otros días" do
     premium!
+    registro.detalles.create!(ejercicio: ejercicio, serie: 1, repeticiones: 10, peso_kg: 60)
+    otro_ejercicio = Ejercicio.create!(dataset_id: "test-job-0002", nombre: "Press banca", nombre_en: "Bench",
+                                      nombre_normalizado: "press banca", categoria: "fuerza", musculo: "pecho")
     otro_dia = RegistroEntrenamiento.create!(user: users(:one), fecha: Date.yesterday)
-    otro_dia.detalles.create!(ejercicio: ejercicio, serie: 1, repeticiones: 8, peso_kg: 50)
+    otro_dia.detalles.create!(ejercicio: otro_ejercicio, serie: 1, repeticiones: 8, peso_kg: 50)
     perfil_visto = nil
 
     con_ia_stub(->(perfil) { perfil_visto = perfil; resultado }) { AnalizarEntrenamientoJob.perform_now(registro.id) }
 
-    expect(perfil_visto[:series].map { |s| s[:ejercicio] }).to include("Sentadilla")
+    ejercicios_vistos = perfil_visto[:series].map { |s| s[:ejercicio] }
+    expect(ejercicios_vistos).to include("Sentadilla")
+    expect(ejercicios_vistos).not_to include("Press banca")
+  end
+
+  it "incluye el historial semanal como contexto" do
+    premium!
+    registro.detalles.create!(ejercicio: ejercicio, serie: 1, repeticiones: 10, peso_kg: 60)
+    semana_pasada = RegistroEntrenamiento.create!(user: users(:one), fecha: Date.current - 1.week)
+    semana_pasada.detalles.create!(ejercicio: ejercicio, serie: 1, repeticiones: 8, peso_kg: 50)
+    perfil_visto = nil
+
+    con_ia_stub(->(perfil) { perfil_visto = perfil; resultado }) { AnalizarEntrenamientoJob.perform_now(registro.id) }
+
+    expect(perfil_visto[:historial]).not_to be_empty
   end
 end

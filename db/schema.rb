@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_15_022429) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_15_173849) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -22,7 +22,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_15_022429) do
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["user_id", "fecha_hora"], name: "index_accesos_on_user_id_and_fecha_hora"
-    t.index ["user_id"], name: "index_accesos_on_user_id"
   end
 
   create_table "action_text_rich_texts", force: :cascade do |t|
@@ -74,9 +73,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_15_022429) do
     t.integer "serie", null: false
     t.datetime "updated_at", null: false
     t.index ["ejercicio_id", "registro_entrenamiento_id"], name: "index_detalles_on_ejercicio_y_registro"
-    t.index ["ejercicio_id"], name: "index_detalle_entrenamientos_on_ejercicio_id"
     t.index ["registro_entrenamiento_id", "ejercicio_id", "serie"], name: "index_detalles_unicos_por_serie", unique: true
-    t.index ["registro_entrenamiento_id"], name: "index_detalle_entrenamientos_on_registro_entrenamiento_id"
   end
 
   create_table "ejercicios", force: :cascade do |t|
@@ -109,6 +106,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_15_022429) do
     t.string "estado", default: "pendiente", null: false
     t.integer "intentos", default: 0, null: false
     t.string "modelo"
+    t.string "origen", default: "manual", null: false
     t.bigint "registro_entrenamiento_id", null: false
     t.datetime "updated_at", null: false
     t.index ["registro_entrenamiento_id"], name: "index_feedback_ia_on_registro_entrenamiento_id", unique: true
@@ -142,7 +140,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_15_022429) do
     t.bigint "user_id", null: false
     t.index ["tomada_por_id"], name: "index_mediciones_on_tomada_por_id"
     t.index ["user_id", "fecha"], name: "index_mediciones_on_user_id_and_fecha", unique: true
-    t.index ["user_id"], name: "index_mediciones_on_user_id"
   end
 
   create_table "membresias", force: :cascade do |t|
@@ -220,7 +217,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_15_022429) do
     t.bigint "user_id", null: false
     t.index ["aprobado_por_id"], name: "index_planes_personalizados_on_aprobado_por_id"
     t.index ["user_id", "estado"], name: "index_planes_personalizados_on_user_id_and_estado"
-    t.index ["user_id"], name: "index_planes_personalizados_on_user_id"
   end
 
   create_table "plantillas_comida", force: :cascade do |t|
@@ -273,7 +269,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_15_022429) do
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["user_id", "fecha"], name: "index_registros_calorias_on_user_id_and_fecha", unique: true
-    t.index ["user_id"], name: "index_registros_calorias_on_user_id"
   end
 
   create_table "registros_entrenamiento", force: :cascade do |t|
@@ -283,7 +278,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_15_022429) do
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["user_id", "fecha"], name: "index_registros_entrenamiento_on_user_id_and_fecha", unique: true
-    t.index ["user_id"], name: "index_registros_entrenamiento_on_user_id"
   end
 
   create_table "sessions", force: :cascade do |t|
@@ -296,6 +290,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_15_022429) do
   end
 
   create_table "suscripciones", force: :cascade do |t|
+    t.string "analisis_tier", default: "mensual", null: false
     t.datetime "created_at", null: false
     t.string "estado", default: "activa", null: false
     t.date "fecha_fin"

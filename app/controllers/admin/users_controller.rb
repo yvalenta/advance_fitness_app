@@ -13,6 +13,7 @@ class Admin::UsersController < ApplicationController
     @accesos = @user.accesos.recientes.limit(10)
     @plan = @user.plan_actual
     @progreso = ProgresoUsuario.para(@user)
+    @registro_reciente = @user.registros_entrenamiento.order(fecha: :desc).first
   end
 
   # Dashboard del miembro (Fase 6.13): datos básicos editables por staff.
@@ -29,6 +30,7 @@ class Admin::UsersController < ApplicationController
       @accesos = @user.accesos.recientes.limit(10)
       @plan = @user.plan_actual
       @progreso = ProgresoUsuario.para(@user)
+      @registro_reciente = @user.registros_entrenamiento.order(fecha: :desc).first
       render :show, status: :unprocessable_entity
     end
   end

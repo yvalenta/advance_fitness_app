@@ -6,12 +6,19 @@
   <% if @posts.any? %>
     <div class="flex flex-col gap-4">
       <% @posts.each do |post| %>
+        <% cache [ post, post.portada.attached? ? post.portada.blob : "sin-portada" ] do %>
         <%= link_to blog_post_path(post.slug), class: "card animate-fade-up border border-base-300 bg-base-100 shadow-md hover:shadow-lg transition-shadow" do %>
+          <% if post.portada.attached? %>
+            <figure class="aspect-[16/9] w-full overflow-hidden">
+              <%= image_tag post.portada.variant(resize_to_fill: [ 800, 450 ]), class: "h-full w-full object-cover" %>
+            </figure>
+          <% end %>
           <div class="card-body">
             <p class="eyebrow text-volt"><%= l post.publicado_en.to_date, format: :long %></p>
             <h2 class="font-display text-xl font-bold"><%= post.titulo %></h2>
             <p class="text-xs text-steel-3">Por <%= post.autor.nombre %></p>
           </div>
+        <% end %>
         <% end %>
       <% end %>
     </div>

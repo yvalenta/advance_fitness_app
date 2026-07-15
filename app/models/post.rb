@@ -1,6 +1,7 @@
 class Post < ApplicationRecord
   belongs_to :autor, class_name: "User"
   has_rich_text :contenido
+  has_one_attached :portada
 
   validates :titulo, :slug, presence: true
   validates :slug, uniqueness: true, format: { with: /\A[a-z0-9]+(?:-[a-z0-9]+)*\z/, message: "solo minúsculas, números y guiones" }

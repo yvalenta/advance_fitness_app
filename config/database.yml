@@ -74,9 +74,14 @@ production:
   # scheduler conexiones simultáneas (con config/queue.yml por defecto, 5) y
   # aborta el boot si el pool es menor — no basta con el "pool" genérico de
   # 3 hilos de Puma. cache/cable casi no se usan aquí, con 2 sobra.
+  # idle_timeout corto (default 300s): las conexiones ociosas vuelven al
+  # pooler de sesión de Supabase (límite 15 clientes) mucho antes — cache y
+  # cable casi no se usan y quedaban reteniendo sus conexiones toda la vida
+  # del proceso, agotando el pooler durante los deploys (julio 2026).
   primary: &primary_production
     <<: *default
     url: <%= ENV["DATABASE_URL"] %>
+    idle_timeout: 60
   cache:
     <<: *primary_production
     pool: 2
