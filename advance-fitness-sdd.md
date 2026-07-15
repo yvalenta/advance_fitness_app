@@ -1005,3 +1005,15 @@ Se recibió una auditoría externa del esquema; se contrastó contra el esquema 
 | "Migrar el JSON de `registros_entrenamiento` a tabla normalizada" | El JSON no tiene series/reps/pesos que migrar; se implementó `detalle_entrenamientos` como **feature nueva** (§18.1) | Aplicado, redefinido |
 | "Conectar `pagos` a `suscripciones`" | Decisión deliberada del flujo presencial; se reevalúa si llega cobro online (§17.2) | Documentado |
 | "Orquestar con n8n" | Fuera del stack; Solid Queue nativo (§18.3) | Adaptado |
+
+### 18.7 — Fase 12: Analista de Performance v2 (implementado, julio 2026)
+
+Rediseño tras la primera prueba real del flujo de la Fase 11-B:
+
+- **Alcance del análisis**: ya no toma las últimas ~20 series globales del usuario; analiza la **sesión completa del día** (`registro.detalles`, todos los ejercicios) como unidad. El contexto de tendencia (progreso/estancamiento) se aporta aparte vía `HistorialEntrenamiento.resumen_semanal` (volumen por semana, últimas 4 semanas) — separado en el prompt de la sesión a analizar.
+- **Captura simplificada (mobile-first)**: el dialog de registro de series ofrece un checkbox "Cumplido tal cual" (marcado por defecto) que registra de una sola vez las series planeadas del día con el objetivo del plan (`DetalleEntrenamiento.registrar_cumplido!`); al desmarcarlo aparecen los campos manuales de reps/peso/RPE para registrar una variación.
+- **Solo staff dispara el análisis**: `DetalleEntrenamientoPolicy#analizar?` pasó de "dueño premium" a `user.staff?` — el miembro solo ve el resultado (lectura), nunca el botón. El staff analiza desde un panel en `admin/users/:id` (`registro_entrenamiento_id` explícito, no ligado a un ejercicio puntual).
+- **Niveles de análisis (asignación manual por staff)**: `suscripciones.analisis_tier` (`mensual` gratis/default, `semanal`, `diario`) — sin pasarela nueva, el staff lo cambia desde `admin/suscripciones` al registrar el pago extra, igual que el resto de flujos de cobro presencial del proyecto. `User#puede_analizar?` aplica la ventana del tier (30/7/1 días) contra el último análisis completado.
+- **Mínimo de datos**: `User#datos_suficientes_para_analisis?` exige al menos 3 semanas distintas con series registradas en las últimas 3 semanas — evita analizar con una sola sesión sin tendencia real.
+- **Historial**: `ProgresoUsuario.para` expone `feedbacks_ia` (últimos 10 análisis completados); se muestra de solo lectura tanto en `/progreso` (miembro) como en la ficha de staff, vía el partial compartido `shared/historial_analisis`.
+- **Trazabilidad**: `feedback_ia.origen` (`manual`/`automatico`, default `manual`) — hoy todo disparo es manual por staff; el campo queda reservado para un futuro disparador sin intervención humana.

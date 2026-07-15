@@ -7,6 +7,10 @@ class Suscripcion < ApplicationRecord
   # Personalizado, se considera "combo" e incluye la suscripción sin cobro
   # aparte (Fase 6.9).
   MONTO_INCLUYE_PERSONALIZADO = ->(monto) { monto.to_i >= Negocio.precio_personalizado }
+  # Nivel de análisis IA (Fase 12): mensual gratis con personalizado,
+  # semanal/diario asignados a mano por staff (sin pasarela nueva).
+  ANALISIS_TIERS = %w[mensual semanal diario].freeze
+  ANALISIS_VENTANA_DIAS = { "mensual" => 30, "semanal" => 7, "diario" => 1 }.freeze
 
   belongs_to :user
   belongs_to :plan
@@ -16,6 +20,7 @@ class Suscripcion < ApplicationRecord
   belongs_to :membresia, optional: true
 
   validates :estado, inclusion: { in: ESTADOS }
+  validates :analisis_tier, inclusion: { in: ANALISIS_TIERS }
   validates :fecha_inicio, presence: true
   validates :user_id, uniqueness: { conditions: -> { where(estado: "activa") },
                                     message: "ya tiene una suscripción activa" },

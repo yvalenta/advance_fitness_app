@@ -1,16 +1,12 @@
 <%# locals: (registro:, ejercicio:) %>
-<%# Analista de Performance (SDD §18.4): botón manual y resultado del %>
-<%# último análisis, sobre la tendencia real del miembro (no solo este día). %>
+<%# Analista de Performance (SDD §18.4, Fase 12): solo lectura para el %>
+<%# miembro — el botón de analizar vive en el panel de staff (ficha admin). %>
 <% feedback = registro.feedback_ia %>
 <div class="mt-2 flex flex-col gap-2 border-t border-base-300 pt-2">
-  <% if feedback.nil? || feedback.fallido? %>
-    <% if feedback&.fallido? %>
-      <p class="text-xs text-error"><%= feedback.error %></p>
-    <% end %>
-    <%= button_to "Analizar mi entrenamiento", analizar_entrenamiento_path,
-          method: :post, class: "btn btn-outline btn-sm",
-          params: { fecha: registro.fecha.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre },
-          form: { data: { turbo_frame: "registro_series" } } %>
+  <% if feedback.nil? %>
+    <p class="text-xs text-steel-3">Aún no hay análisis para este período. Pídele a tu entrenador que lo genere.</p>
+  <% elsif feedback.fallido? %>
+    <p class="text-xs text-error">El análisis no pudo completarse. Pídele a tu entrenador que lo intente de nuevo.</p>
   <% elsif feedback.generando? %>
     <div class="flex items-center gap-2 text-sm text-steel-3">
       <span class="loading loading-spinner loading-xs"></span> Analizando tu entrenamiento…
@@ -22,9 +18,5 @@
       <p class="text-sm text-steel-7"><%= feedback.analisis %></p>
       <p class="text-sm font-semibold text-steel-7"><%= feedback.accion_recomendada %></p>
     </div>
-    <%= button_to "Volver a analizar", analizar_entrenamiento_path,
-          method: :post, class: "btn btn-ghost btn-xs w-fit",
-          params: { fecha: registro.fecha.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre },
-          form: { data: { turbo_frame: "registro_series" } } %>
   <% end %>
 </div>
