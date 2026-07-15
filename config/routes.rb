@@ -79,7 +79,16 @@ Rails.application.routes.draw do
     resources :pagos, only: %i[ index edit update destroy ]
     resources :checkins, only: %i[ index create ]
     resources :suscripciones, only: %i[ index new create update ]
+    resources :posts, only: %i[ index new create edit update destroy ] do
+      post :publicar, on: :member
+    end
+    resources :novedades, only: %i[ index new create edit update destroy ]
   end
+
+  # Comunidad (Fase 8): lectura pública para todo miembro autenticado (SDD §09).
+  resources :novedades, only: :index
+  get "blog", to: "blog#index"
+  get "blog/:id", to: "blog#show", as: :blog_post
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

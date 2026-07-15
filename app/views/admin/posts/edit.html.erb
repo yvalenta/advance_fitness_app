@@ -1,0 +1,11 @@
+<% content_for :title, "Editar post — #{Negocio.nombre}" %>
+
+<%= render "shared/encabezado", titulo: "Editar post", descripcion: @post.titulo %>
+
+<div class="mx-auto -mt-8 w-full max-w-2xl px-4 pb-12">
+  <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
+    <div class="card-body">
+      <%= render "form", post: @post, url: admin_post_path(@post) %>
+    </div>
+  </div>
+</div>
