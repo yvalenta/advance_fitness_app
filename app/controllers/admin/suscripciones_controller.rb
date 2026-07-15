@@ -44,12 +44,19 @@ class Admin::SuscripcionesController < ApplicationController
     render :new, status: :unprocessable_entity
   end
 
-  # Única transición permitida desde el panel: cancelar
+  # Dos transiciones desde el panel: cancelar, o cambiar el nivel de
+  # análisis IA (Fase 12, asignación manual por staff sin pasarela nueva).
   def update
     suscripcion = Suscripcion.find(params[:id])
     authorize suscripcion, :update?
-    suscripcion.cancelar!
-    redirect_to admin_suscripciones_path, notice: "Suscripción cancelada."
+
+    if params[:analisis_tier].present?
+      suscripcion.update!(analisis_tier: params[:analisis_tier])
+      redirect_to admin_suscripciones_path, notice: "Nivel de análisis actualizado."
+    else
+      suscripcion.cancelar!
+      redirect_to admin_suscripciones_path, notice: "Suscripción cancelada."
+    end
   end
 
   private

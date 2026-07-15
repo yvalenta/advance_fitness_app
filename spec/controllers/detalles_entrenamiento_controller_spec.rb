@@ -113,26 +113,47 @@ RSpec.describe "DetallesEntrenamiento", type: :request do
   end
 
   describe "POST /detalles_entrenamiento/analizar" do
-    it "un miembro free no puede disparar el análisis" do
+    def registrar_series_de_semanas(user, semanas:)
+      semanas.times do |i|
+        fecha = Date.current.beginning_of_week - i.weeks
+        registro = user.registros_entrenamiento.create!(fecha: fecha)
+        registro.detalles.create!(ejercicio: ejercicio, serie: 1, repeticiones: 10, peso_kg: 40)
+      end
+      user.registros_entrenamiento.order(:fecha).last
+    end
+
+    it "un miembro no puede disparar el análisis (Fase 12: solo staff)" do
       sign_in_as users(:one)
+      premium!(users(:one))
+      registro = registrar_series_de_semanas(users(:one), semanas: 3)
 
       expect {
-        post analizar_entrenamiento_path, params: { fecha: Date.current.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre }
+        post analizar_entrenamiento_path, params: { registro_entrenamiento_id: registro.id }
       }.not_to change(FeedbackIa, :count)
       expect(response).to redirect_to(root_path)
     end
 
-    it "un miembro premium encola el análisis sin esperar a la IA" do
-      sign_in_as users(:one)
+    it "el staff dispara el análisis cuando hay datos suficientes" do
       premium!(users(:one))
+      registro = registrar_series_de_semanas(users(:one), semanas: 3)
+      sign_in_as users(:entrenador)
 
       expect {
-        post analizar_entrenamiento_path, params: { fecha: Date.current.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre }
+        post analizar_entrenamiento_path, params: { registro_entrenamiento_id: registro.id }
       }.to have_enqueued_job(AnalizarEntrenamientoJob)
-      expect(response).to have_http_status(:success)
+      expect(response).to redirect_to(admin_user_path(users(:one)))
+      expect(registro.reload.feedback_ia.generando?).to be true
+    end
 
-      registro = users(:one).registros_entrenamiento.find_by(fecha: Date.current)
-      expect(registro.feedback_ia.generando?).to be true
+    it "el staff no puede analizar si faltan datos mínimos" do
+      premium!(users(:one))
+      registro = registrar_series_de_semanas(users(:one), semanas: 1)
+      sign_in_as users(:entrenador)
+
+      expect {
+        post analizar_entrenamiento_path, params: { registro_entrenamiento_id: registro.id }
+      }.not_to change(FeedbackIa, :count)
+      expect(response).to redirect_to(admin_user_path(users(:one)))
     end
   end
 end

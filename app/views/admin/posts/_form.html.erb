@@ -15,6 +15,13 @@
     <%= form.text_field :slug, class: "input input-bordered w-full", placeholder: "mi-post" %>
   </label>
   <label class="form-control">
+    <span class="label-text mb-1 text-xs font-semibold">Portada (opcional) — miniatura para el listado del blog</span>
+    <% if post.portada.attached? %>
+      <%= image_tag post.portada.variant(resize_to_fill: [ 400, 225 ]), class: "mb-2 h-28 w-auto rounded-lg object-cover" %>
+    <% end %>
+    <%= form.file_field :portada, accept: "image/*", class: "file-input file-input-bordered w-full" %>
+  </label>
+  <label class="form-control">
     <span class="label-text mb-1 text-xs font-semibold">Contenido</span>
     <%= form.rich_text_area :contenido %>
   </label>

@@ -12,7 +12,8 @@
     </div>
 
     <% if @ejercicio %>
-      <%= render "detalles_entrenamiento/lista", registro: @registro, ejercicio: @ejercicio, detalles: @detalles %>
+      <%= render "detalles_entrenamiento/lista", registro: @registro, ejercicio: @ejercicio, detalles: @detalles,
+            series_plan: @series_plan, repeticiones_plan: @repeticiones_plan %>
     <% else %>
       <div class="flex flex-col items-center gap-2 py-6 text-center">
         <p class="font-semibold">Este ejercicio no está en el catálogo</p>

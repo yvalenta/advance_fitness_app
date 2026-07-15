@@ -13,15 +13,19 @@ module GeneradorFeedbackIa
 
   SYSTEM_PROMPT = <<~PROMPT.freeze
     Actúa como un Entrenador Físico de Élite con especialización en Ciencias
-    del Deporte y Análisis de Datos. Tu objetivo es interpretar la data de
-    entrenamiento del usuario para optimizar su progreso.
+    del Deporte y Análisis de Datos. Tu objetivo es interpretar la sesión de
+    entrenamiento de HOY del usuario (todos sus ejercicios y series) para
+    optimizar su progreso, usando el contexto de las últimas semanas como
+    referencia de tendencia (no como el objeto del análisis).
 
-    Recibirás un resumen histórico de sus últimas series (ejercicio, fecha,
-    número de serie, repeticiones, peso en kg y RPE cuando esté disponible).
+    Recibirás la sesión completa a analizar (ejercicio, número de serie,
+    repeticiones, peso en kg y RPE cuando esté disponible) y, por separado,
+    un resumen semanal de volumen de las últimas semanas.
 
     Metodología:
     1. Progresión: evalúa si el volumen total de carga (series × reps × peso)
-       por ejercicio asciende, se estanca o desciende.
+       por ejercicio en la sesión de hoy asciende, se estanca o desciende
+       respecto al contexto histórico.
     2. Plateaus: detecta si lleva más de 3 sesiones sin subir peso ni
        repeticiones en un mismo ejercicio.
     3. Fatiga: un RPE alto y constante sin aumento de carga sugiere
@@ -42,9 +46,10 @@ module GeneradorFeedbackIa
     }
   PROMPT
 
-  # perfil: { series: [{ ejercicio:, fecha:, serie:, repeticiones:, peso_kg:, rpe: }, ...] }
-  # (más recientes primero, sin objetos ActiveRecord). Devuelve
-  # { diagnostico:, analisis:, accion_recomendada:, modelo: }.
+  # perfil: { series: [{ ejercicio:, fecha:, serie:, repeticiones:, peso_kg:, rpe: }, ...]
+  #           (todas las de la sesión del día, sin objetos ActiveRecord),
+  #           historial: [{ semana:, series:, volumen_kg: }, ...] (opcional) }.
+  # Devuelve { diagnostico:, analisis:, accion_recomendada:, modelo: }.
   def self.generar(perfil)
     respuesta = proveedor.completar(system: SYSTEM_PROMPT, prompt: construir_prompt(perfil))
     parsear(respuesta[:texto]).merge(modelo: respuesta[:modelo])
@@ -59,13 +64,21 @@ module GeneradorFeedbackIa
 
   def self.construir_prompt(perfil)
     series = Array(perfil[:series])
-    return "El miembro aún no tiene series registradas." if series.empty?
+    return "El miembro aún no tiene series registradas en la sesión de hoy." if series.empty?
 
     lineas = series.map do |s|
-      "- #{s[:ejercicio]} (#{s[:fecha]}) serie #{s[:serie]}: #{s[:repeticiones]} reps" \
+      "- #{s[:ejercicio]} serie #{s[:serie]}: #{s[:repeticiones]} reps" \
         "#{s[:peso_kg] ? " × #{s[:peso_kg]} kg" : " (peso corporal)"}#{s[:rpe] ? ", RPE #{s[:rpe]}" : ""}"
     end
-    "Últimas series registradas (más reciente primero):\n#{lineas.join("\n")}"
+    prompt = "Sesión de hoy a analizar (#{series.first[:fecha]}):\n#{lineas.join("\n")}"
+
+    historial = Array(perfil[:historial])
+    if historial.any?
+      contexto = historial.map { |h| "- semana del #{h[:semana]}: #{h[:series]} series, #{h[:volumen_kg]} kg de volumen" }
+      prompt += "\n\nContexto de las últimas semanas:\n#{contexto.join("\n")}"
+    end
+
+    prompt
   end
 
   # Tolera un diagnóstico fuera del contrato (cae a "alerta" con nota) para no

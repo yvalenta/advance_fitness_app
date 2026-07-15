@@ -5,9 +5,11 @@ module ProgresoUsuario
   DIAS_CALORIAS = 14
   SEMANAS_ASISTENCIA = 8
 
+  FEEDBACKS_MAX = 10
+
   Resultado = Struct.new(:pesos, :fuente_peso, :mediciones, :objetivos_historial,
                           :objetivo, :calorias, :asistencia, :visitas_mes,
-                          :dias_registrados, :dias_en_meta, keyword_init: true)
+                          :dias_registrados, :dias_en_meta, :feedbacks_ia, keyword_init: true)
 
   def self.para(usuario)
     # Peso: desde la Fase 5.9 la serie lee de `mediciones` (auto-registro del
@@ -46,7 +48,13 @@ module ProgresoUsuario
     dias_registrados = del_mes.count
     dias_en_meta = objetivo ? del_mes.where(kcal_consumidas: ..objetivo.objetivo_kcal).count : 0
 
+    # Historial del Analista de Performance (Fase 12): últimos análisis
+    # completados, más reciente primero.
+    feedbacks_ia = usuario.registros_entrenamiento
+                          .joins(:feedback_ia).where(feedback_ia: { estado: "listo" })
+                          .includes(:feedback_ia).order(fecha: :desc).limit(FEEDBACKS_MAX)
+
     Resultado.new(pesos:, fuente_peso:, mediciones:, objetivos_historial:, objetivo:, calorias:,
-                  asistencia:, visitas_mes:, dias_registrados:, dias_en_meta:)
+                  asistencia:, visitas_mes:, dias_registrados:, dias_en_meta:, feedbacks_ia:)
   end
 end

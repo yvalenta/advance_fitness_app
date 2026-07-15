@@ -54,6 +54,31 @@ class User < ApplicationRecord
     suscripcion_activa&.plan&.personalizado? || false
   end
 
+  # Mínimo de datos para desbloquear el Analista de Performance (Fase 12):
+  # al menos 3 semanas distintas con series registradas en las últimas 3
+  # semanas — evita un análisis con una sola sesión sin tendencia real.
+  MINIMO_SEMANAS_PARA_ANALISIS = 3
+
+  def datos_suficientes_para_analisis?
+    desde = Date.current.beginning_of_week - (MINIMO_SEMANAS_PARA_ANALISIS - 1).weeks
+    fechas = DetalleEntrenamiento.joins(:registro_entrenamiento)
+                                 .where(registro_entrenamiento: { user_id: id, fecha: desde..Date.current })
+                                 .distinct.pluck(:fecha)
+    fechas.map(&:beginning_of_week).uniq.size >= MINIMO_SEMANAS_PARA_ANALISIS
+  end
+
+  # Ventana de frecuencia del tier de análisis asignado por staff (Fase 12).
+  def puede_analizar?
+    return false unless premium?
+    tier = suscripcion_activa.analisis_tier
+    ultimo = FeedbackIa.joins(:registro_entrenamiento)
+                       .where(registro_entrenamiento: { user_id: id }, estado: "listo")
+                       .maximum(:created_at)
+    return true if ultimo.nil?
+
+    ultimo < Suscripcion::ANALISIS_VENTANA_DIAS.fetch(tier).days.ago
+  end
+
   def plan_aprobado = planes_personalizados.aprobados.order(created_at: :desc).first
 
   # El plan más reciente del miembro (borrador o publicado) — el que edita el staff

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_15_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_15_173849) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -106,6 +106,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_15_120000) do
     t.string "estado", default: "pendiente", null: false
     t.integer "intentos", default: 0, null: false
     t.string "modelo"
+    t.string "origen", default: "manual", null: false
     t.bigint "registro_entrenamiento_id", null: false
     t.datetime "updated_at", null: false
     t.index ["registro_entrenamiento_id"], name: "index_feedback_ia_on_registro_entrenamiento_id", unique: true
@@ -289,6 +290,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_15_120000) do
   end
 
   create_table "suscripciones", force: :cascade do |t|
+    t.string "analisis_tier", default: "mensual", null: false
     t.datetime "created_at", null: false
     t.string "estado", default: "activa", null: false
     t.date "fecha_fin"
