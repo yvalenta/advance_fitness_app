@@ -1,0 +1,55 @@
+<% content_for :title, "Blog — #{Negocio.nombre}" %>
+
+<%= render "shared/encabezado",
+      titulo: "Blog",
+      descripcion: "Posts del blog: solo los publicados son visibles para los miembros.",
+      accion: link_to(new_admin_post_path, class: "btn btn-primary font-bold") { "Nuevo post" } %>
+
+<div class="mx-auto -mt-8 w-full max-w-4xl px-4 pb-12">
+  <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
+    <div class="card-body">
+      <% if @posts.any? %>
+        <div class="overflow-x-auto">
+          <table class="table">
+            <thead>
+              <tr class="text-xs uppercase tracking-wider text-steel-3">
+                <th>Título</th><th>Autor</th><th>Estado</th><th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @posts.each do |post| %>
+                <tr class="hover:bg-base-200">
+                  <td class="font-semibold"><%= post.titulo %></td>
+                  <td class="text-sm text-steel-5"><%= post.autor.nombre %></td>
+                  <td>
+                    <% if post.publicado? %>
+                      <span class="badge badge-sm badge-success">publicado</span>
+                    <% else %>
+                      <span class="badge badge-sm badge-ghost">borrador</span>
+                    <% end %>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex justify-end gap-1">
+                      <% unless post.publicado? %>
+                        <%= button_to "Publicar", publicar_admin_post_path(post), class: "btn btn-ghost btn-xs" %>
+                      <% end %>
+                      <%= link_to "Editar", edit_admin_post_path(post), class: "btn btn-ghost btn-xs" %>
+                      <%= button_to "Eliminar", admin_post_path(post), method: :delete, class: "btn btn-ghost btn-xs text-error",
+                            data: { turbo_confirm: "¿Eliminar el post \"#{post.titulo}\"?" } %>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <div class="flex flex-col items-center gap-3 rounded-xl bg-base-200 py-12 text-center">
+          <%= render "shared/icono", nombre: :lapiz, clase: "size-8 text-steel-1" %>
+          <p class="text-sm text-steel-3">Aún no hay posts.</p>
+          <%= link_to "Crear el primero", new_admin_post_path, class: "btn btn-primary btn-sm font-bold" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

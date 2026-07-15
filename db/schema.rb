@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_14_194622) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_15_022429) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -23,6 +23,44 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_14_194622) do
     t.bigint "user_id", null: false
     t.index ["user_id", "fecha_hora"], name: "index_accesos_on_user_id_and_fecha_hora"
     t.index ["user_id"], name: "index_accesos_on_user_id"
+  end
+
+  create_table "action_text_rich_texts", force: :cascade do |t|
+    t.text "body"
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.bigint "record_id", null: false
+    t.string "record_type", null: false
+    t.datetime "updated_at", null: false
+    t.index ["record_type", "record_id", "name"], name: "index_action_text_rich_texts_uniqueness", unique: true
+  end
+
+  create_table "active_storage_attachments", force: :cascade do |t|
+    t.bigint "blob_id", null: false
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.bigint "record_id", null: false
+    t.string "record_type", null: false
+    t.index ["blob_id"], name: "index_active_storage_attachments_on_blob_id"
+    t.index ["record_type", "record_id", "name", "blob_id"], name: "index_active_storage_attachments_uniqueness", unique: true
+  end
+
+  create_table "active_storage_blobs", force: :cascade do |t|
+    t.bigint "byte_size", null: false
+    t.string "checksum"
+    t.string "content_type"
+    t.datetime "created_at", null: false
+    t.string "filename", null: false
+    t.string "key", null: false
+    t.text "metadata"
+    t.string "service_name", null: false
+    t.index ["key"], name: "index_active_storage_blobs_on_key", unique: true
+  end
+
+  create_table "active_storage_variant_records", force: :cascade do |t|
+    t.bigint "blob_id", null: false
+    t.string "variation_digest", null: false
+    t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
   create_table "detalle_entrenamientos", force: :cascade do |t|
@@ -119,6 +157,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_14_194622) do
     t.index ["user_id"], name: "index_membresias_on_user_id", unique: true
   end
 
+  create_table "novedades", force: :cascade do |t|
+    t.text "contenido", null: false
+    t.datetime "created_at", null: false
+    t.date "fecha_evento"
+    t.boolean "publicado", default: false, null: false
+    t.string "titulo", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "objetivos_nutricionales", force: :cascade do |t|
     t.boolean "activo", default: true, null: false
     t.datetime "created_at", null: false
@@ -206,6 +253,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_14_194622) do
     t.index ["musculo", "nombre"], name: "index_plantillas_ejercicio_on_musculo_and_nombre", unique: true
   end
 
+  create_table "posts", force: :cascade do |t|
+    t.bigint "autor_id", null: false
+    t.datetime "created_at", null: false
+    t.boolean "publicado", default: false, null: false
+    t.datetime "publicado_en"
+    t.string "slug", null: false
+    t.string "titulo", null: false
+    t.datetime "updated_at", null: false
+    t.index ["autor_id"], name: "index_posts_on_autor_id"
+    t.index ["slug"], name: "index_posts_on_slug", unique: true
+  end
+
   create_table "registros_calorias", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.jsonb "detalle", default: {}, null: false
@@ -269,6 +328,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_14_194622) do
   end
 
   add_foreign_key "accesos", "users"
+  add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "detalle_entrenamientos", "ejercicios"
   add_foreign_key "detalle_entrenamientos", "registros_entrenamiento", on_delete: :cascade
   add_foreign_key "feedback_ia", "registros_entrenamiento", on_delete: :cascade
@@ -284,6 +345,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_14_194622) do
   add_foreign_key "plantillas_comida", "users", column: "creado_por_id"
   add_foreign_key "plantillas_ejercicio", "ejercicios"
   add_foreign_key "plantillas_ejercicio", "users", column: "creado_por_id"
+  add_foreign_key "posts", "users", column: "autor_id"
   add_foreign_key "registros_calorias", "users"
   add_foreign_key "registros_entrenamiento", "users"
   add_foreign_key "sessions", "users"

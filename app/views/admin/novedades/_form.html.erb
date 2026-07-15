@@ -1,0 +1,30 @@
+<% if novedad.errors.any? %>
+  <div role="alert" class="alert alert-error text-sm">
+    <%= render "shared/icono", nombre: :alerta, clase: "size-5 shrink-0" %>
+    <span><%= novedad.errors.full_messages.to_sentence %></span>
+  </div>
+<% end %>
+
+<%= form_with model: novedad, url: url, class: "flex flex-col gap-4" do |form| %>
+  <label class="form-control">
+    <span class="label-text mb-1 text-xs font-semibold">Título</span>
+    <%= form.text_field :titulo, class: "input input-bordered w-full", required: true %>
+  </label>
+  <label class="form-control">
+    <span class="label-text mb-1 text-xs font-semibold">Contenido</span>
+    <%= form.text_area :contenido, class: "textarea textarea-bordered w-full", rows: 4, required: true %>
+  </label>
+  <label class="form-control">
+    <span class="label-text mb-1 text-xs font-semibold">Fecha del evento (opcional)</span>
+    <%= form.date_field :fecha_evento, class: "input input-bordered w-full" %>
+  </label>
+  <label class="label cursor-pointer justify-start gap-2">
+    <%= form.check_box :publicado, class: "checkbox" %>
+    <span class="label-text text-sm font-semibold">Publicada (visible para los miembros)</span>
+  </label>
+
+  <div class="flex gap-2 pt-2">
+    <%= form.submit "Guardar", class: "btn btn-primary font-bold" %>
+    <%= link_to "Cancelar", admin_novedades_path, class: "btn btn-ghost" %>
+  </div>
+<% end %>

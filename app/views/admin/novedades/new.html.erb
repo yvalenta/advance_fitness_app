@@ -1,0 +1,11 @@
+<% content_for :title, "Nueva novedad — #{Negocio.nombre}" %>
+
+<%= render "shared/encabezado", titulo: "Nueva novedad", descripcion: "Anuncio corto para los miembros." %>
+
+<div class="mx-auto -mt-8 w-full max-w-2xl px-4 pb-12">
+  <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
+    <div class="card-body">
+      <%= render "form", novedad: @novedad, url: admin_novedades_path %>
+    </div>
+  </div>
+</div>

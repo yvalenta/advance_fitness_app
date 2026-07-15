@@ -1,0 +1,26 @@
+<% if post.errors.any? %>
+  <div role="alert" class="alert alert-error text-sm">
+    <%= render "shared/icono", nombre: :alerta, clase: "size-5 shrink-0" %>
+    <span><%= post.errors.full_messages.to_sentence %></span>
+  </div>
+<% end %>
+
+<%= form_with model: post, url: url, class: "flex flex-col gap-4" do |form| %>
+  <label class="form-control">
+    <span class="label-text mb-1 text-xs font-semibold">Título</span>
+    <%= form.text_field :titulo, class: "input input-bordered w-full", required: true %>
+  </label>
+  <label class="form-control">
+    <span class="label-text mb-1 text-xs font-semibold">Slug (URL) — se genera solo si lo dejas vacío</span>
+    <%= form.text_field :slug, class: "input input-bordered w-full", placeholder: "mi-post" %>
+  </label>
+  <label class="form-control">
+    <span class="label-text mb-1 text-xs font-semibold">Contenido</span>
+    <%= form.rich_text_area :contenido %>
+  </label>
+
+  <div class="flex gap-2 pt-2">
+    <%= form.submit "Guardar", class: "btn btn-primary font-bold" %>
+    <%= link_to "Cancelar", admin_posts_path, class: "btn btn-ghost" %>
+  </div>
+<% end %>
