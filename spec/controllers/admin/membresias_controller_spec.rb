@@ -72,6 +72,12 @@ RSpec.describe "Admin::Membresias", type: :request do
     assert_select "a[href=?][data-turbo-frame=?]", admin_user_path(membresias(:vencida_two).user), "_top"
   end
 
+  it "el link Gestionar rompe el turbo_frame del buscador (si no, Turbo muestra Content missing)" do
+    sign_in_as users(:admin)
+    get admin_membresias_path
+    assert_select "a[href=?][data-turbo-frame=?]", edit_admin_membresia_path(membresias(:vencida_two)), "_top"
+  end
+
   it "un entrenador no puede renovar (solo admin registra pagos)" do
     sign_in_as users(:entrenador)
 

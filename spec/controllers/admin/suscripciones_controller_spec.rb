@@ -129,6 +129,16 @@ RSpec.describe "Admin::Suscripciones", type: :request do
     assert_select "a[href=?][data-turbo-frame=?]", admin_user_path(suscripcion.user), "_top"
   end
 
+  it "el badge 'Incluida con membresía' rompe el turbo_frame del buscador" do
+    suscripcion = Suscripcion.create!(user: users(:one), plan: planes(:personalizado), estado: "activa",
+                                      fecha_inicio: Date.current, membresia: membresias(:vencida_two))
+    sign_in_as users(:admin)
+
+    get admin_suscripciones_path
+
+    assert_select "a[href=?][data-turbo-frame=?]", edit_admin_membresia_path(suscripcion.membresia), "_top"
+  end
+
   it "cancelar deja al miembro sin premium" do
     sign_in_as users(:admin)
     suscripcion = Suscripcion.create!(user: users(:one), plan: planes(:personalizado),
