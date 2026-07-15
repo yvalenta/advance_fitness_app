@@ -1,0 +1,46 @@
+<%# locals: (user:, registro_reciente:) %>
+<%# Panel de Analista de Performance (Fase 12.1): nivel de análisis + botón %>
+<%# de disparo, todo en la ficha del miembro (ya no una columna en el listado %>
+<%# de suscripciones). Cambiar el nivel exige confirmación explícita porque %>
+<%# puede implicar un cargo adicional al miembro. %>
+<div id="panel_analisis_<%= user.id %>" class="card animate-fade-up border border-base-300 bg-base-100 shadow-sm">
+  <div class="card-body">
+    <h2 class="card-title text-base">
+      <span class="flex size-7 items-center justify-center rounded-lg bg-ocean/15 text-ocean">
+        <%= render "shared/icono", nombre: :actividad, clase: "size-4" %>
+      </span>
+      Analista de Performance
+    </h2>
+
+    <% if user.premium? %>
+      <%= form_with url: admin_suscripcion_path(user.suscripcion_activa), method: :patch,
+            class: "flex flex-wrap items-end gap-2 border-b border-base-200 pb-3" do |f| %>
+        <label class="form-control">
+          <span class="label-text mb-1 text-xs font-semibold">Nivel de análisis</span>
+          <%= f.select :analisis_tier, Suscripcion::ANALISIS_TIERS, { selected: user.suscripcion_activa.analisis_tier },
+                { class: "select select-bordered select-sm" } %>
+        </label>
+        <%= f.submit "Guardar nivel", class: "btn btn-outline btn-sm",
+              data: { turbo_confirm: "¿Cambiar el nivel de análisis de #{nombre_visible(user)}? Un nivel más frecuente (semanal/diario) puede implicar un cargo adicional en su próxima suscripción." } %>
+      <% end %>
+    <% end %>
+
+    <% if registro_reciente %>
+      <p class="mt-2 text-sm text-steel-5">Última sesión registrada: <%= l registro_reciente.fecha, format: :long %>
+        (<%= registro_reciente.detalles.count %> series).</p>
+
+      <% if !user.premium? %>
+        <p class="text-xs text-steel-3">Sin suscripción personalizada activa.</p>
+      <% elsif !user.datos_suficientes_para_analisis? %>
+        <p class="text-xs text-warning">Aún necesita registrar series por <%= User::MINIMO_SEMANAS_PARA_ANALISIS %> semanas para desbloquear el análisis.</p>
+      <% elsif !user.puede_analizar? %>
+        <p class="text-xs text-warning">Ya se usó el análisis disponible este período (nivel: <%= user.suscripcion_activa.analisis_tier %>).</p>
+      <% else %>
+        <%= button_to "Analizar entrenamiento", analizar_entrenamiento_path(registro_entrenamiento_id: registro_reciente.id),
+              method: :post, class: "btn btn-primary btn-sm font-bold" %>
+      <% end %>
+    <% else %>
+      <p class="mt-2 text-sm text-steel-3">Este miembro aún no ha registrado ninguna sesión.</p>
+    <% end %>
+  </div>
+</div>

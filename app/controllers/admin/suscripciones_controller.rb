@@ -44,15 +44,22 @@ class Admin::SuscripcionesController < ApplicationController
     render :new, status: :unprocessable_entity
   end
 
-  # Dos transiciones desde el panel: cancelar, o cambiar el nivel de
-  # análisis IA (Fase 12, asignación manual por staff sin pasarela nueva).
+  # Dos transiciones desde el panel: cancelar (desde el listado), o cambiar
+  # el nivel de análisis IA (Fase 12, asignación manual por staff sin
+  # pasarela nueva — se dispara desde la ficha del miembro, no el listado,
+  # y responde turbo_stream para no salir de esa página).
   def update
     suscripcion = Suscripcion.find(params[:id])
     authorize suscripcion, :update?
 
     if params[:analisis_tier].present?
       suscripcion.update!(analisis_tier: params[:analisis_tier])
-      redirect_to admin_suscripciones_path, notice: "Nivel de análisis actualizado."
+      user = suscripcion.user
+      render turbo_stream: turbo_stream.replace(
+        "panel_analisis_#{user.id}",
+        partial: "admin/users/panel_analisis",
+        locals: { user: user, registro_reciente: user.registros_entrenamiento.order(fecha: :desc).first }
+      )
     else
       suscripcion.cancelar!
       redirect_to admin_suscripciones_path, notice: "Suscripción cancelada."
