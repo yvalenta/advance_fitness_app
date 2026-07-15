@@ -1,0 +1,168 @@
+<%# Página de rescate para ActiveRecord::ConnectionNotEstablished/PG::ConnectionBad
+    (app/controllers/application_controller.rb). Sin layout, sin acceso a base,
+    sin ningún redirect (ver el comentario junto al rescue_from: un redirect
+    aquí puede generar un loop infinito autoinfligido si la base sigue
+    saturada). Todo el juego es JS vanilla inline: no depende del importmap ni
+    de Stimulus, para que funcione incluso si el resto de la app está mal. %>
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title><%= Negocio.nombre %> — servidor ocupado</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        background: #0b1220;
+        color: #e2e8f0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        text-align: center;
+        padding: 1rem;
+      }
+      p { margin: 0; }
+      canvas {
+        background: #1e293b;
+        border-radius: 0.75rem;
+        max-width: 100%;
+        touch-action: manipulation;
+      }
+      a { color: #b4f000; }
+      #nivel { font-size: 0.8rem; color: #94a3b8; }
+      #mensaje { min-height: 1.2rem; font-size: 0.9rem; font-weight: 600; color: #b4f000; }
+    </style>
+  </head>
+  <body>
+    <p>El servidor está muy ocupado en este momento.</p>
+    <p id="mensaje">Mientras reintentas, levanta unas pesas — espacio o toca la pantalla para saltar.</p>
+    <canvas id="juego" width="320" height="160" aria-label="Mini juego: levantador de pesas saltando obstáculos"></canvas>
+    <p id="nivel">Nivel 1 · Puntaje 0</p>
+    <p><a href="<%= root_path %>">Reintenta en unos segundos</a>.</p>
+
+    <script>
+      (function () {
+        var canvas = document.getElementById("juego");
+        var ctx = canvas.getContext("2d");
+        var nivelEl = document.getElementById("nivel");
+        var mensajeEl = document.getElementById("mensaje");
+        var ancho = canvas.width, alto = canvas.height, suelo = alto - 20;
+
+        var VOLT = "#b4f000", STEEL_1 = "#cbd5e1";
+        var NIVELES = [
+          { nombre: 1, velocidad: 3.2, meta: 120 },
+          { nombre: 2, velocidad: 4.6, meta: 280 },
+          { nombre: 3, velocidad: 6.2, meta: 500 }
+        ];
+
+        var jugador, obstaculos, puntaje, nivelIndice, corriendo, ganado, cuadro;
+
+        function reiniciar() {
+          jugador = { x: 30, y: suelo - 24, ancho: 16, alto: 24, vy: 0, saltando: false };
+          obstaculos = [];
+          puntaje = 0;
+          nivelIndice = 0;
+          corriendo = true;
+          ganado = false;
+          cuadro = 0;
+          mensajeEl.textContent = "Espacio o toca la pantalla para saltar.";
+          requestAnimationFrame(bucle);
+        }
+
+        function saltar() {
+          if (!corriendo) { reiniciar(); return; }
+          if (!jugador.saltando) {
+            jugador.vy = -8.5;
+            jugador.saltando = true;
+          }
+        }
+
+        function agregarObstaculo() {
+          var alturaBarra = 14;
+          obstaculos.push({ x: ancho + 10, y: suelo - alturaBarra, ancho: 18, alto: alturaBarra });
+        }
+
+        function dibujarBarra(o) {
+          ctx.fillStyle = STEEL_1;
+          ctx.fillRect(o.x + 3, o.y - 3, o.ancho - 6, o.alto + 6);
+          ctx.beginPath();
+          ctx.arc(o.x + 3, o.y + o.alto / 2, 7, 0, Math.PI * 2);
+          ctx.arc(o.x + o.ancho - 3, o.y + o.alto / 2, 7, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        function dibujarJugador() {
+          ctx.fillStyle = VOLT;
+          ctx.fillRect(jugador.x, jugador.y, jugador.ancho, jugador.alto);
+          // barra sobre la cabeza, sube con el salto: el "levantador" celebra en el aire
+          ctx.fillStyle = STEEL_1;
+          ctx.fillRect(jugador.x - 6, jugador.y - 6, jugador.ancho + 12, 4);
+        }
+
+        function bucle() {
+          if (!corriendo) return;
+          cuadro++;
+          var nivel = NIVELES[nivelIndice];
+
+          ctx.clearRect(0, 0, ancho, alto);
+          ctx.strokeStyle = "#334155";
+          ctx.beginPath();
+          ctx.moveTo(0, suelo + 4);
+          ctx.lineTo(ancho, suelo + 4);
+          ctx.stroke();
+
+          jugador.vy += 0.45;
+          jugador.y += jugador.vy;
+          if (jugador.y >= suelo - jugador.alto) {
+            jugador.y = suelo - jugador.alto;
+            jugador.vy = 0;
+            jugador.saltando = false;
+          }
+
+          if (cuadro % Math.max(40, 70 - nivelIndice * 12) === 0) agregarObstaculo();
+
+          for (var i = obstaculos.length - 1; i >= 0; i--) {
+            var o = obstaculos[i];
+            o.x -= nivel.velocidad;
+            if (o.x + o.ancho < 0) { obstaculos.splice(i, 1); puntaje += 5; continue; }
+
+            var choque = jugador.x < o.x + o.ancho - 4 && jugador.x + jugador.ancho > o.x + 4 &&
+                         jugador.y + jugador.alto > o.y;
+            if (choque) {
+              corriendo = false;
+              mensajeEl.textContent = "¡Uy! Toca la pantalla o espacio para volver a intentar.";
+            }
+            dibujarBarra(o);
+          }
+
+          dibujarJugador();
+          puntaje += 0.3;
+
+          if (!ganado && nivelIndice < NIVELES.length - 1 && puntaje >= nivel.meta) {
+            nivelIndice++;
+            mensajeEl.textContent = "¡Nivel " + NIVELES[nivelIndice].nombre + "!";
+          } else if (!ganado && nivelIndice === NIVELES.length - 1 && puntaje >= nivel.meta) {
+            ganado = true;
+            corriendo = false;
+            mensajeEl.textContent = "¡Completaste los 3 niveles! El servidor ya debería estar mejor — reintenta.";
+          }
+
+          nivelEl.textContent = "Nivel " + nivel.nombre + " · Puntaje " + Math.floor(puntaje);
+
+          if (corriendo) requestAnimationFrame(bucle);
+        }
+
+        document.addEventListener("keydown", function (e) {
+          if (e.code === "Space" || e.code === "ArrowUp") { e.preventDefault(); saltar(); }
+        });
+        canvas.addEventListener("pointerdown", saltar);
+
+        reiniciar();
+      })();
+    </script>
+  </body>
+</html>

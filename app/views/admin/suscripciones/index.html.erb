@@ -1,4 +1,4 @@
-<% content_for :title, "Suscripciones — Advance Fitness" %>
+<% content_for :title, "Suscripciones — #{Negocio.nombre}" %>
 
 <%= render "shared/encabezado",
       titulo: "Suscripciones",
@@ -49,6 +49,7 @@
                       <span class="badge badge-sm <%= suscripcion.plan.personalizado? ? "badge-primary" : "badge-ghost" %>"><%= suscripcion.plan.nombre %></span>
                       <% if suscripcion.incluida_en_membresia? %>
                         <%= link_to edit_admin_membresia_path(suscripcion.membresia),
+                              data: { turbo_frame: "_top" },
                               class: "badge badge-sm badge-outline ml-1", title: "Incluida con la membresía pagada el #{l suscripcion.membresia.fecha_inicio}" do %>
                           Incluida con membresía
                         <% end %>

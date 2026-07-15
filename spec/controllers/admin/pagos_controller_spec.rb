@@ -68,6 +68,12 @@ RSpec.describe "Admin::Pagos", type: :request do
     assert_select "a[href=?][data-turbo-frame=?]", admin_user_path(pagos(:inicial_one).membresia.user), "_top"
   end
 
+  it "el link Editar rompe el turbo_frame del buscador" do
+    sign_in_as users(:admin)
+    get admin_pagos_path
+    assert_select "a[href=?][data-turbo-frame=?]", edit_admin_pago_path(pagos(:inicial_one)), "_top"
+  end
+
   it "el entrenador no corrige ni elimina pagos" do
     sign_in_as users(:entrenador)
 

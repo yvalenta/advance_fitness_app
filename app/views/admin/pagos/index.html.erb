@@ -1,4 +1,4 @@
-<% content_for :title, "Pagos — Advance Fitness" %>
+<% content_for :title, "Pagos — #{Negocio.nombre}" %>
 
 <%= render "shared/encabezado",
       titulo: "Pagos",
@@ -51,7 +51,7 @@
                         <span class="badge badge-sm badge-error" title="Anulado el <%= l pago.anulado_en.to_date %> por <%= pago.anulado_por&.nombre %>">eliminado</span>
                       <% else %>
                         <div class="flex justify-end gap-1">
-                          <%= link_to "Editar", edit_admin_pago_path(pago), class: "btn btn-ghost btn-xs" %>
+                          <%= link_to "Editar", edit_admin_pago_path(pago), data: { turbo_frame: "_top" }, class: "btn btn-ghost btn-xs" %>
                           <%= button_to "Eliminar", admin_pago_path(pago), method: :delete,
                                 class: "btn btn-ghost btn-xs text-error",
                                 data: { turbo_confirm: "El pago quedará en el historial marcado como eliminado. ¿Continuar?" } %>
