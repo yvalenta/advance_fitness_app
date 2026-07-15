@@ -26,12 +26,18 @@ class GestionComidasController < ApplicationController
 
   private
 
+    # Dos objetivos porque el mismo alta/baja puede venir del editor completo
+    # de staff (#editor_nutricional) o del toggle inline del propio miembro
+    # en /mi_plan (Fase 12.1, sin ese contenedor) — Turbo ignora en silencio
+    # el turbo_stream cuyo target no existe en la página actual.
     def render_editor
-      render turbo_stream: turbo_stream.replace(
-        "editor_nutricional",
-        partial: "planes_personalizados/editor",
-        locals: { plan: @plan, plantillas: PlantillaComida.ordenadas }
-      )
+      plantillas = PlantillaComida.ordenadas
+      render turbo_stream: [
+        turbo_stream.replace("editor_nutricional",
+          partial: "planes_personalizados/editor", locals: { plan: @plan, plantillas: plantillas }),
+        turbo_stream.replace(ActionView::RecordIdentifier.dom_id(@plan, :comidas_editables),
+          partial: "planes_personalizados/comidas_editables", locals: { plan: @plan, plantillas: plantillas })
+      ]
     end
 
     def cargar_plan
