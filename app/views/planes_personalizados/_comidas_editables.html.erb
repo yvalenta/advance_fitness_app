@@ -1,0 +1,64 @@
+<%# Grid de comidas editables con autosave + plantillas (SDD Fase 5.6, %>
+<%# extraído en Fase 12.1 para reutilizarse tanto en el editor completo de %>
+<%# staff (_editor) como inline en la vista del propio miembro (_plan), sin %>
+<%# duplicar el markup del autosave. locals: (plan:, plantillas:) %>
+<% comidas = plan.comidas %>
+
+<div id="<%= dom_id(plan, :comidas_editables) %>">
+<div class="mt-3 grid gap-3 lg:grid-cols-2">
+  <% comidas.each_with_index do |comida, indice| %>
+    <div class="flex flex-col gap-2 rounded-xl border border-base-300 bg-base-100 p-3"
+         data-autosave-target="card" data-url="<%= plan_personalizado_comida_path(plan, indice) %>">
+      <div class="flex items-center gap-2">
+        <input type="text" name="comida[nombre]" value="<%= comida["nombre"] %>" required
+               class="input input-sm input-bordered w-full font-semibold" aria-label="Nombre de la comida"
+               data-action="input->autosave#programar">
+        <label class="input input-sm input-bordered flex w-28 shrink-0 items-center gap-1">
+          <input type="number" name="comida[kcal]" value="<%= comida["kcal"] %>" min="0" required
+                 class="w-full text-right font-semibold" aria-label="Calorías"
+                 data-action="input->autosave#programar">
+          <span class="text-xs text-steel-3">kcal</span>
+        </label>
+      </div>
+      <textarea name="comida[descripcion]" rows="3" aria-label="Descripción"
+                class="textarea textarea-bordered w-full text-sm leading-snug"
+                data-action="input->autosave#programar"><%= comida["descripcion"] %></textarea>
+      <div class="grid grid-cols-3 gap-2">
+        <% { "proteinas_g" => "P", "carbohidratos_g" => "C", "grasas_g" => "G" }.each do |campo, letra| %>
+          <label class="input input-sm input-bordered flex items-center gap-1">
+            <span class="text-xs font-bold text-steel-3"><%= letra %></span>
+            <input type="number" name="comida[<%= campo %>]" value="<%= comida[campo] %>" min="0" step="0.5"
+                   class="w-full text-right" aria-label="<%= campo.humanize %>"
+                   data-action="input->autosave#programar">
+            <span class="text-xs text-steel-3">g</span>
+          </label>
+        <% end %>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button type="button" class="btn btn-ghost btn-xs" data-action="modal-plantillas#abrir">
+          <%= render "shared/icono", nombre: :busqueda, clase: "size-3.5" %> Plantilla
+        </button>
+        <% if Current.user&.staff? %>
+          <button type="button" class="btn btn-ghost btn-xs text-steel-5"
+                  data-action="modal-plantillas#guardarPlantilla"
+                  data-tipo="<%= PlantillaComida.tipo_para(comida["nombre"]) %>">
+            Guardar como plantilla
+          </button>
+        <% end %>
+        <button type="button" class="btn btn-ghost btn-xs ml-auto text-error"
+                data-action="autosave#eliminar" aria-label="Eliminar comida">
+          <%= render "shared/icono", nombre: :alerta, clase: "size-3.5" %>
+        </button>
+        <span class="badge badge-sm gap-1 font-semibold estado-autosave" hidden
+              data-autosave-target="estado" data-action="click->autosave#reintentar"></span>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<button type="button" class="btn btn-outline btn-sm mt-3 w-full border-dashed" data-action="autosave#agregar">
+  + Agregar comida
+</button>
+
+<%= render "planes_personalizados/modal_plantillas", plantillas: plantillas %>
+</div>
