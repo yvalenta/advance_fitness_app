@@ -3,6 +3,7 @@
 # precios son en COP sin decimales; la duración, en días.
 default: &default
   nombre: "Advance Fitness"
+  ciudad: "Medellín, Colombia"
   moneda: "COP"
   # Logo: vacío = usa el fisicoculturista vectorial de marca; o una URL/ruta
   # (p. ej. "brand/mi-logo.svg" en app/assets/images) para otro negocio.

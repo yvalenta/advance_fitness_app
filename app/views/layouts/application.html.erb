@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="es" data-theme="advance">
   <head>
-    <title><%= content_for(:title) || "Advance Fitness" %></title>
+    <title><%= content_for(:title) || Negocio.nombre %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="application-name" content="Advance Fitness">
+    <meta name="application-name" content="<%= Negocio.nombre %>">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0b1220">
     <%= csrf_meta_tags %>

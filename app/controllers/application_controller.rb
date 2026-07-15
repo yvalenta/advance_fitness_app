@@ -34,15 +34,7 @@ class ApplicationController < ActionController::Base
     respond_to do |format|
       format.turbo_stream { head :service_unavailable }
       format.json { head :service_unavailable }
-      format.any do
-        render layout: false, status: :service_unavailable,
-              html: <<~HTML.html_safe
-                <div style="font-family: sans-serif; max-width: 32rem; margin: 4rem auto; padding: 0 1rem; text-align: center;">
-                  <p>El servidor está muy ocupado en este momento.</p>
-                  <p><a href="#{root_path}">Reintenta en unos segundos</a>.</p>
-                </div>
-              HTML
-      end
+      format.any { render "errors/servidor_ocupado", layout: false, status: :service_unavailable }
     end
   end
 

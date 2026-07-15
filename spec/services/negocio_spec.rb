@@ -6,6 +6,7 @@ RSpec.describe Negocio, type: :model do
     expect(Negocio.precio_personalizado).to eq(350_000)
     expect(Negocio.duracion_dias).to eq(30)
     expect(Negocio.nombre.present?).to be_truthy
+    expect(Negocio.ciudad.present?).to be_truthy
   end
 
   it "una variable de entorno sobreescribe la config" do
