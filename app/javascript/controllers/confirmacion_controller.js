@@ -16,7 +16,14 @@ export default class extends Controller {
     window.confirmarAccion = (mensaje) => this.preguntar(mensaje)
   }
 
+  // Reentrancia (doble tap en el botón, típico en el ícono pequeño de
+  // "eliminar" en móvil): si el diálogo ya estaba abierto de un llamado
+  // anterior, showModal() sobre un <dialog> ya abierto lanza una excepción
+  // no capturada dentro de la promesa — el resolver nunca se llama y el
+  // botón que esperaba la respuesta queda colgado hasta recargar la página.
+  // Se resuelve primero el pendiente como cancelado antes de abrir el nuevo.
   preguntar(mensaje) {
+    if (this.element.open) this.cerrar(false)
     this.mensajeTarget.textContent = mensaje
     this.element.showModal()
     return new Promise((resolver) => { this.resolver = resolver })
