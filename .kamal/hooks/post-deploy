@@ -36,4 +36,41 @@ for HOST in $KAMAL_HOSTS; do
       echo "post-deploy: alias reconectado."
       ;;
   esac
+
+  # El entrypoint (bin/rails db:prepare, antes de arrancar Puma) se ha
+  # quedado colgado en un arranque en frío varias veces seguidas (julio
+  # 2026: deploys de la v1.0.0/v1.0.1), sin logs y sin abrir el puerto 80 —
+  # Kamal ya había reportado el contenedor como "healthy" (solo mira
+  # docker ps, no si el server realmente responde) así que el 502 solo se
+  # nota después. Un `docker restart` simple siempre lo destrabó. Este
+  # bloque espera a que /up responda de verdad y, si no lo hace, reinicia
+  # el contenedor una vez.
+  echo "post-deploy: verificando que $CONTAINER responda en /up..."
+  LISTO=""
+  i=0
+  while [ "$i" -lt 10 ]; do
+    CODIGO=$(ssh "${SSH_USER}@${HOST}" \
+      "docker exec ${CONTAINER} curl -s -o /dev/null -w '%{http_code}' http://localhost:80/up" 2>/dev/null || echo "000")
+    if [ "$CODIGO" = "200" ]; then
+      LISTO="1"
+      break
+    fi
+    i=$((i + 1))
+    sleep 3
+  done
+
+  if [ -z "$LISTO" ]; then
+    echo "post-deploy: $CONTAINER no respondió en /up tras 30s (probable cuelgue en db:prepare), reiniciando..."
+    ssh "${SSH_USER}@${HOST}" "docker restart ${CONTAINER}"
+    sleep 10
+    CODIGO=$(ssh "${SSH_USER}@${HOST}" \
+      "docker exec ${CONTAINER} curl -s -o /dev/null -w '%{http_code}' http://localhost:80/up" 2>/dev/null || echo "000")
+    if [ "$CODIGO" = "200" ]; then
+      echo "post-deploy: recuperado tras el reinicio."
+    else
+      echo "post-deploy: sigue sin responder tras el reinicio, revisar manualmente."
+    fi
+  else
+    echo "post-deploy: /up OK, nada que reiniciar."
+  fi
 done
