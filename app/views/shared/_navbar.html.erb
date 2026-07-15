@@ -7,13 +7,17 @@
   cuenta = [
     [ "Nutrición", objetivo_path, :fuego ],
     [ "Progreso", progreso_path, :tendencia_alta ],
-    [ "Mi plan", mi_plan_path, :actividad ]
+    [ "Mi plan", mi_plan_path, :actividad ],
+    [ "Blog", blog_path, :lapiz ],
+    [ "Novedades", novedades_path, :calendario ]
   ]
   gestion = []
   if Current.user.staff?
     gestion << [ "Check-in", admin_checkins_path, :check ]
     gestion << [ "Miembros", admin_users_path, :usuarios ]
     gestion << [ "Membresías", admin_membresias_path, :escudo ]
+    gestion << [ "Blog", admin_posts_path, :lapiz ]
+    gestion << [ "Novedades", admin_novedades_path, :calendario ]
   end
   if Current.user.admin?
     gestion << [ "Pagos", admin_pagos_path, :tarjeta ]

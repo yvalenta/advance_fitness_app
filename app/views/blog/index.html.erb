@@ -1,0 +1,24 @@
+<% content_for :title, "Blog — #{Negocio.nombre}" %>
+
+<%= render "shared/encabezado", titulo: "Blog", descripcion: "Novedades, tips y contenido del equipo." %>
+
+<div class="mx-auto -mt-8 w-full max-w-3xl px-4 pb-12">
+  <% if @posts.any? %>
+    <div class="flex flex-col gap-4">
+      <% @posts.each do |post| %>
+        <%= link_to blog_post_path(post.slug), class: "card animate-fade-up border border-base-300 bg-base-100 shadow-md hover:shadow-lg transition-shadow" do %>
+          <div class="card-body">
+            <p class="eyebrow text-volt"><%= l post.publicado_en.to_date, format: :long %></p>
+            <h2 class="font-display text-xl font-bold"><%= post.titulo %></h2>
+            <p class="text-xs text-steel-3">Por <%= post.autor.nombre %></p>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="flex flex-col items-center gap-3 rounded-xl bg-base-200 py-12 text-center">
+      <%= render "shared/icono", nombre: :lapiz, clase: "size-8 text-steel-1" %>
+      <p class="text-sm text-steel-3">Todavía no hay posts publicados.</p>
+    </div>
+  <% end %>
+</div>
