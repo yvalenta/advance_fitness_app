@@ -53,7 +53,7 @@
                   </td>
                   <td class="text-sm text-steel-5"><%= l usuario.fecha_ingreso %></td>
                   <td class="text-right">
-                    <%= link_to "Ver", admin_user_path(usuario), class: "btn btn-ghost btn-xs" %>
+                    <%= link_to "Ver", admin_user_path(usuario), data: { turbo_frame: "_top" }, class: "btn btn-ghost btn-xs" %>
                   </td>
                 </tr>
               <% end %>

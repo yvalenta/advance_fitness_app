@@ -42,6 +42,12 @@ RSpec.describe "Admin::Users", type: :request do
     expect(response.body).not_to include(users(:one).email_address)
   end
 
+  it "el link Ver rompe el turbo_frame del buscador" do
+    sign_in_as users(:entrenador)
+    get admin_users_path
+    assert_select "a[href=?][data-turbo-frame=?]", admin_user_path(users(:one)), "_top"
+  end
+
   # Fase 6.15: listado paginado (25 por página) para no traer todo de un golpe
   it "pagina el listado y respeta la búsqueda al cambiar de página" do
     26.times { |i| User.create!(nombre: "Extra #{i}", email_address: "extra#{i}@test.com", password: "clave1234", rol: "miembro") }

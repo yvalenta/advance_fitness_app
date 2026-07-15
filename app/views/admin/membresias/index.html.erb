@@ -69,7 +69,7 @@
             <%= render "shared/icono", nombre: :escudo, clase: "size-8 text-steel-1" %>
             <p class="text-sm text-steel-3"><%= @q.present? ? "Nada coincide con tu búsqueda." : "Aún no hay membresías." %></p>
             <% unless @q.present? %>
-              <%= link_to "Crear la primera", new_admin_membresia_path, class: "btn btn-primary btn-sm font-bold" %>
+              <%= link_to "Crear la primera", new_admin_membresia_path, data: { turbo_frame: "_top" }, class: "btn btn-primary btn-sm font-bold" %>
             <% end %>
           </div>
         <% end %>
