@@ -199,33 +199,7 @@
 
   <%# ── Analista de Performance (Fase 12): solo staff dispara el análisis ── %>
   <div class="mt-6 grid items-start gap-6 lg:grid-cols-2">
-    <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-sm">
-      <div class="card-body">
-        <h2 class="card-title text-base">
-          <span class="flex size-7 items-center justify-center rounded-lg bg-ocean/15 text-ocean">
-            <%= render "shared/icono", nombre: :actividad, clase: "size-4" %>
-          </span>
-          Analizar entrenamiento
-        </h2>
-        <% if @registro_reciente %>
-          <p class="text-sm text-steel-5">Última sesión registrada: <%= l @registro_reciente.fecha, format: :long %>
-            (<%= @registro_reciente.detalles.count %> series).</p>
-
-          <% if !@user.premium? %>
-            <p class="text-xs text-steel-3">Sin suscripción personalizada activa.</p>
-          <% elsif !@user.datos_suficientes_para_analisis? %>
-            <p class="text-xs text-warning">Aún necesita registrar series por <%= User::MINIMO_SEMANAS_PARA_ANALISIS %> semanas para desbloquear el análisis.</p>
-          <% elsif !@user.puede_analizar? %>
-            <p class="text-xs text-warning">Ya se usó el análisis disponible este período (nivel: <%= @user.suscripcion_activa.analisis_tier %>).</p>
-          <% else %>
-            <%= button_to "Analizar entrenamiento", analizar_entrenamiento_path(registro_entrenamiento_id: @registro_reciente.id),
-                  method: :post, class: "btn btn-primary btn-sm font-bold" %>
-          <% end %>
-        <% else %>
-          <p class="text-sm text-steel-3">Este miembro aún no ha registrado ninguna sesión.</p>
-        <% end %>
-      </div>
-    </div>
+    <%= render "admin/users/panel_analisis", user: @user, registro_reciente: @registro_reciente %>
 
     <%= render "shared/historial_analisis", progreso: @progreso %>
   </div>

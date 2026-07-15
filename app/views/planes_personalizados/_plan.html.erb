@@ -30,6 +30,9 @@
         </span>
         Plan nutricional
         <span class="badge badge-ghost badge-sm ml-auto"><%= number_with_delimiter(objetivo_dia, delimiter: ".") %> kcal/día</span>
+        <% if propio %>
+          <%= link_to "Editar comidas", plan_personalizado_path(plan), class: "btn btn-ghost btn-xs" %>
+        <% end %>
       </h2>
 
       <%# Distribución de macros del día — se despliega al cargar %>

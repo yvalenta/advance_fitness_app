@@ -57,16 +57,30 @@ RSpec.describe "GestionComidas", type: :request do
     expect(response).to have_http_status(:redirect)
   end
 
-  # Fase 5.12: el miembro edita la rutina de su plan de IA una vez publicado,
-  # pero la NUTRICIÓN de un plan de IA sigue siendo exclusiva del staff.
-  it "ni publicado el miembro edita la nutrición de su plan de IA" do
+  # Fase 12.1: una vez publicado, el miembro también edita la nutrición de
+  # su propio plan de IA (no solo la rutina) — para acomodarla a su gusto y
+  # llegar a su objetivo diario, con las mismas opciones que ve el staff.
+  it "una vez publicado, el miembro sí edita la nutrición de su plan de IA" do
     publicado = PlanPersonalizado.create!(user: users(:one), generado_por: "ia", estado: "aprobado",
                                           aprobado_por: users(:entrenador), rutina: rutina, plan_nutricional: nutricion)
     sign_in_as users(:one)
 
-    expect {
-      patch plan_personalizado_comida_path(publicado, 0), as: :json, params: { comida: { kcal: "999" } }
-    }.not_to change { publicado.reload.comidas.first["kcal"] }
+    patch plan_personalizado_comida_path(publicado, 0), as: :json, params: { comida: { kcal: "999" } }
+
+    expect(response).to have_http_status(:success)
+    expect(publicado.reload.comidas.first["kcal"]).to eq(999)
+  end
+
+  # El "modo avanzado" (JSON crudo) sigue siendo exclusivo del staff, aunque
+  # el miembro ya pueda editar comidas por autosave.
+  it "un miembro no puede usar el editor JSON crudo, aunque sea su plan aprobado" do
+    publicado = PlanPersonalizado.create!(user: users(:one), generado_por: "ia", estado: "aprobado",
+                                          aprobado_por: users(:entrenador), rutina: rutina, plan_nutricional: nutricion)
+    sign_in_as users(:one)
+
+    patch plan_personalizado_path(publicado), params: { plan_nutricional: nutricion.merge("kcal_diarias" => 1).to_json }
+
     expect(response).to have_http_status(:redirect)
+    expect(publicado.reload.plan_nutricional["kcal_diarias"]).to eq(900)
   end
 end
