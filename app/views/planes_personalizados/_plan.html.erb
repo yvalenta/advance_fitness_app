@@ -14,6 +14,7 @@
 <% objetivo_dia = nutricion["kcal_diarias"].to_i %>
 <% objetivo_dia = comidas.sum { |c| c["kcal"].to_i } if objetivo_dia.zero? %>
 <% propio = plan.user_id == usuario&.id %>
+<% plantillas = local_assigns[:plantillas] || (PlantillaComida.ordenadas if propio) %>
 
 <div id="<%= dom_id(plan, :mi_plan) %>" class="flex flex-col gap-6">
   <%= render "planes_personalizados/rutina", rutina: plan.rutina, plan: plan, usuario: usuario %>
@@ -21,8 +22,12 @@
   <%# El plan sugerido por reglas es solo entrenamiento: sin comidas no hay card %>
   <% if comidas.any? %>
   <div class="card border border-base-300 bg-base-100 shadow-md"
-       data-controller="plan-nutricional"
-       data-plan-nutricional-objetivo-value="<%= objetivo_dia %>">
+       data-controller="plan-nutricional<%= " modo-edicion autosave modal-plantillas" if propio %>"
+       data-plan-nutricional-objetivo-value="<%= objetivo_dia %>"
+       <% if propio %>
+         data-autosave-clave="comida" data-autosave-crear-url="<%= plan_personalizado_comidas_path(plan) %>"
+         data-modal-plantillas-crear-url="<%= entrenador_plantillas_comida_path %>"
+       <% end %>>
     <div class="card-body">
       <h2 class="card-title text-base">
         <span class="flex size-7 items-center justify-center rounded-lg bg-pulse/15 text-pulse">
@@ -31,7 +36,10 @@
         Plan nutricional
         <span class="badge badge-ghost badge-sm ml-auto"><%= number_with_delimiter(objetivo_dia, delimiter: ".") %> kcal/día</span>
         <% if propio %>
-          <%= link_to "Editar comidas", plan_personalizado_path(plan), class: "btn btn-ghost btn-xs" %>
+          <button type="button" class="btn btn-ghost btn-xs gap-1 font-semibold"
+                  data-action="modo-edicion#alternar" data-modo-edicion-target="boton">
+            <%= render "shared/icono", nombre: :lapiz, clase: "size-3.5" %> Editar
+          </button>
         <% end %>
       </h2>
 
@@ -73,6 +81,7 @@
         <p hidden class="mt-2 rounded-lg px-3 py-2 text-xs font-semibold" data-plan-nutricional-target="alerta"></p>
       </div>
 
+      <div <%= "data-modo-edicion-target=\"lectura\"".html_safe if propio %>>
       <% if propio %>
         <p class="mt-3 text-xs text-steel-3">Marca lo que comiste y, si cambiaste algo, ajusta las kcal y anota qué comiste.</p>
       <% end %>
@@ -142,6 +151,14 @@
           </button>
           <p class="text-center text-xs text-steel-3">Reemplaza tu registro de calorías de hoy con lo que marcaste.</p>
         <% end %>
+      <% end %>
+      </div>
+
+      <% if propio %>
+        <div data-modo-edicion-target="edicion" hidden>
+          <%= render "planes_personalizados/comidas_editables", plan: plan, plantillas: plantillas %>
+          <p class="mt-3 text-center text-xs text-steel-3">Los cambios se guardan solos y se reflejan al instante.</p>
+        </div>
       <% end %>
     </div>
   </div>

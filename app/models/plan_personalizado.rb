@@ -185,11 +185,16 @@ class PlanPersonalizado < ApplicationRecord
       end
     end
 
-    # Solo un plan publicado es visible para el miembro; al reeditar su rutina o
-    # nutrición se reemplaza su vista de "Mi plan" sin recargar. En un broadcast
-    # NO hay Current.user, por eso el partial recibe `usuario:` explícito.
+    # Solo un plan publicado es visible para el miembro; si el STAFF reedita
+    # su rutina o nutrición se reemplaza su vista de "Mi plan" sin recargar.
+    # Si el cambio lo hizo el propio dueño (Fase 12.1: ya puede editar su
+    # nutrición), NO se difunde: su respuesta directa ya actualizó su vista,
+    # y este broadcast de página completa le resetearía el toggle de edición
+    # a mitad de una sesión de guardado. En un broadcast NO hay Current.user,
+    # por eso el partial recibe `usuario:` explícito.
     def difundir_a_miembro
       return unless aprobado? && (saved_change_to_rutina? || saved_change_to_plan_nutricional?)
+      return if Current.user&.id == user_id
 
       broadcast_replace_to(self, target: ActionView::RecordIdentifier.dom_id(self, :mi_plan),
                            partial: "planes_personalizados/plan", locals: { plan: self, usuario: user })
