@@ -5,6 +5,7 @@ module Negocio
   DATOS = Rails.application.config_for(:negocio).freeze
 
   def self.nombre = ENV["NEGOCIO_NOMBRE"].presence || DATOS[:nombre]
+  def self.ciudad = ENV["NEGOCIO_CIUDAD"].presence || DATOS[:ciudad]
   def self.moneda = ENV["NEGOCIO_MONEDA"].presence || DATOS[:moneda]
   # Si se define, el logo se renderiza como imagen (white-label); si no, se usa
   # el fisicoculturista vectorial de marca (shared/_logo).

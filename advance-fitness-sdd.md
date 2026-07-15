@@ -865,10 +865,10 @@ Cada gimnasio corre como **un contenedor propio** de la **misma imagen Docker**,
 
 | # | Categoría | Estado | Veredicto |
 |---|---|---|---|
-| 1 | Branding | `_logo`/`_navbar` ya usan `Negocio`; pero ~24 vistas con `"… — Advance Fitness"` literal en `content_for :title`, `shared/_auth_brand` (marca y "Medellín, Colombia" fijos), `<meta application-name>` del layout y manifest PWA con nombre viejo y colores `"red"` | Fácil de parametrizar (Fase A) |
+| 1 | Branding | `_logo`/`_navbar`, títulos (`content_for :title`), `shared/_auth_brand` y manifest PWA ya leen de `Negocio` (nombre, ciudad, colores del tema) | Resuelto (Fase A, julio 2026) |
 | 2 | Valores de negocio | Centralizados en `Negocio` + `config/negocio.yml` con override por ENV (`NEGOCIO_NOMBRE`, `PRECIO_*`, `MEMBRESIA_DURACION_DIAS`); horarios de acceso son dato por membresía | Ya listo |
 | 3 | Base de datos | Un solo `DATABASE_URL` por proceso; cache/queue/cable comparten la base física; sin `connected_to`/shards | Neutral en multi-instancia (cada contenedor trae el suyo) |
-| 4 | URLs y host | `default_url_options` en producción sigue en `example.com` → **los correos de reset generan links rotos HOY** (bug prioritario); `config.hosts` comentado | Requiere Fase A (`APP_HOST` por ENV) |
+| 4 | URLs y host | `default_url_options`/`config.hosts` resueltos por `APP_HOST` (ENV) desde PR #14 — los correos de reset ya apuntan al dominio real | Resuelto (Fase A) |
 | 5 | Sesiones / OAuth | Cookie host-only (aislada por subdominio, ideal); OAuth de Google requiere registrar el redirect URI de cada subdominio en Google Cloud y decidir client_id compartido o por tenant (`GOOGLE_CLIENT_ID/SECRET` ya son ENV) | Cookie lista · OAuth = config externa por tenant |
 | 6 | Estado global | `Current` sin tenant (correcto en multi-instancia); `Ejercicios::MediaCache` cachea a volumen propio (contenido inmutable, inofensivo); catálogo `ejercicios` se importa por base (`tenant:preparar`) | Neutral |
 | 7 | Jobs recurrentes | Operan sobre la conexión del proceso (`config/recurring.yml` corre en cada instancia contra su base) | Correcto por construcción |
@@ -886,7 +886,7 @@ Cada gimnasio corre como **un contenedor propio** de la **misma imagen Docker**,
 
 ### 16.5 — Plan de mejoras por fases
 
-- **Fase A — Branding y host (pendiente, prioritaria por el bug del mailer):** `default_url_options` → `APP_HOST` por ENV (arregla los links de correo rotos); títulos de vistas compuestos desde `Negocio.nombre` en el layout (quitar los ~24 literales); `_auth_brand` y `© ciudad` desde `Negocio` (+ `Negocio.ciudad`); manifest PWA parametrizado con colores reales del tema.
+- **Fase A — Branding y host (completada, julio 2026):** `default_url_options` → `APP_HOST` por ENV (arregló los links de correo rotos, PR #14); títulos de vistas compuestos desde `Negocio.nombre` (los ~26 literales `"… — Advance Fitness"` pasaron a `"… — #{Negocio.nombre}"`, más `<title>`/`<meta application-name>` del layout); `_auth_brand` (nombre de marca y `©`) y manifest PWA (`name`/`description`/`theme_color`/`background_color`, antes con placeholder `"red"`) parametrizados desde `Negocio` (+ nuevo `Negocio.ciudad`). Pendiente de decisión futura (Fase D): el tema DaisyUI `advance` y el logo vectorial siguen siendo únicos — un tenant white-label con paleta propia necesitaría su propio tema o un `logo_url` (ya soportado por `Negocio.logo_url`).
 - **Fase B — Plantilla de deploy multi-destino:** `config/deploy.<tenant>.yml` + secrets por destino; probar el runbook 16.4 de punta a punta con un tenant de staging.
 - **Fase C — Piloto:** segundo tenant real (o staging permanente) conviviendo con Advance Fitness en el mismo host; medir RAM/conexiones/latencia.
 - **Fase D — Escala:** a >10–15 tenants, decidir con métricas si se consolida (sharding, más hardware, o mover tenants grandes a su propio host). Tema de color por marca (hoy el tema DaisyUI `advance` es único) se decide aquí si algún tenant lo pide.

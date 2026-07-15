@@ -6,7 +6,7 @@
     <span class="flex size-10 items-center justify-center rounded-xl bg-volt text-steel shadow-[0_0_18px_rgba(180,240,0,0.35)]">
       <%= render "shared/logo", clase: "h-6 w-6 text-steel" %>
     </span>
-    <span class="font-display text-sm font-bold tracking-[0.18em] text-white">ADVANCE<span class="text-volt">FITNESS</span></span>
+    <span class="font-display text-sm font-bold tracking-[0.18em] text-white"><%= Negocio.nombre.upcase %></span>
   </div>
 
   <div class="relative max-w-md">
@@ -32,5 +32,5 @@
     </ul>
   </div>
 
-  <p class="relative text-xs text-white/30">© <%= Date.current.year %> Advance Fitness · Medellín, Colombia</p>
+  <p class="relative text-xs text-white/30">© <%= Date.current.year %> <%= Negocio.nombre %> · <%= Negocio.ciudad %></p>
 </div>
