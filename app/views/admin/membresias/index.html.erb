@@ -54,7 +54,7 @@
                       <%= membresia.hora_apertura ? "#{membresia.hora_apertura}–#{membresia.hora_cierre}" : "libre" %>
                     </td>
                     <td class="text-right">
-                      <%= link_to "Gestionar", edit_admin_membresia_path(membresia), class: "btn btn-ghost btn-xs" %>
+                      <%= link_to "Gestionar", edit_admin_membresia_path(membresia), data: { turbo_frame: "_top" }, class: "btn btn-ghost btn-xs" %>
                     </td>
                   </tr>
                 <% end %>
