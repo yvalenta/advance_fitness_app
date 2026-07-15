@@ -29,6 +29,9 @@ class AnalizarEntrenamientoJob < ApplicationJob
       modelo: resultado[:modelo]
     )
   rescue StandardError => error
+    # Sin conexión no hay cómo persistir el fallo — se re-lanza para que el
+    # retry_on de ApplicationJob lo reintente pasada la ventana de deploy.
+    raise if error.is_a?(ActiveRecord::ConnectionNotEstablished)
     feedback&.fallar!(error.message)
   end
 
