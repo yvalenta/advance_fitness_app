@@ -149,4 +149,20 @@ RSpec.describe "Admin::Suscripciones", type: :request do
     expect(suscripcion.reload.estado).to eq("cancelada")
     expect(users(:one).premium?).to be_falsey
   end
+
+  # Fase 12.1: el nivel de análisis se cambia desde la ficha del miembro (ya
+  # no una columna en este listado) y responde turbo_stream, sin recargar.
+  it "cambiar el nivel de análisis responde turbo_stream sin recargar" do
+    sign_in_as users(:admin)
+    suscripcion = Suscripcion.create!(user: users(:one), plan: planes(:personalizado),
+                                      estado: "activa", fecha_inicio: Date.current)
+
+    patch admin_suscripcion_path(suscripcion), params: { analisis_tier: "semanal" },
+          headers: { "Accept" => "text/vnd.turbo-stream.html" }
+
+    expect(response).to have_http_status(:success)
+    expect(response.media_type).to match("turbo-stream")
+    assert_select "turbo-stream[action=replace][target=?]", "panel_analisis_#{users(:one).id}"
+    expect(suscripcion.reload.analisis_tier).to eq("semanal")
+  end
 end

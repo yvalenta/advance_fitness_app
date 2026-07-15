@@ -45,10 +45,14 @@
         </div>
       </div>
     <% else %>
-      <div class="animate-fade-up">
-        <%= render "planes_personalizados/rutina", rutina: @plan.rutina, plan: @plan,
-              plantillas: @plantillas_ejercicio, siempre_editando: true %>
-      </div>
+      <%# La rutina la edita el miembro desde /mi_plan (vista más liviana); %>
+      <%# aquí solo el staff la ve, en modo edición permanente. %>
+      <% if Current.user.staff? %>
+        <div class="animate-fade-up">
+          <%= render "planes_personalizados/rutina", rutina: @plan.rutina, plan: @plan,
+                plantillas: @plantillas_ejercicio, siempre_editando: true %>
+        </div>
+      <% end %>
       <div class="animate-fade-up fade-delay-1">
         <%= render "planes_personalizados/editor", plan: @plan, plantillas: @plantillas %>
       </div>
@@ -85,8 +89,14 @@
             </li>
           <% end %>
         </ul>
-        <%= link_to "Volver", (Current.user.admin? ? admin_suscripciones_path : entrenador_borradores_path),
-              class: "btn btn-ghost btn-sm mt-2" %>
+        <% volver_a = if !Current.user.staff?
+                        mi_plan_path
+                      elsif Current.user.admin?
+                        admin_suscripciones_path
+                      else
+                        entrenador_borradores_path
+                      end %>
+        <%= link_to "Volver", volver_a, class: "btn btn-ghost btn-sm mt-2" %>
       </div>
     </div>
   </aside>

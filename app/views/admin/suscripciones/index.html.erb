@@ -30,7 +30,7 @@
             <table class="table">
               <thead>
                 <tr class="text-xs uppercase tracking-wider text-steel-3">
-                  <th>Miembro</th><th>Plan</th><th>Estado</th><th>Análisis</th><th>Inicio</th><th>Fin</th><th></th>
+                  <th>Miembro</th><th>Plan</th><th>Estado</th><th>Inicio</th><th>Fin</th><th></th>
                 </tr>
               </thead>
               <tbody>
@@ -59,16 +59,6 @@
                       <span class="badge badge-sm <%= { "activa" => "badge-success", "programada" => "badge-info", "cancelada" => "badge-ghost", "expirada" => "badge-error" }[suscripcion.estado] %>">
                         <%= suscripcion.estado %>
                       </span>
-                    </td>
-                    <td>
-                      <% if suscripcion.activa? && suscripcion.plan.personalizado? %>
-                        <%= form_with url: admin_suscripcion_path(suscripcion), method: :patch, class: "inline" do |f| %>
-                          <%= f.select :analisis_tier, Suscripcion::ANALISIS_TIERS, { selected: suscripcion.analisis_tier },
-                                { class: "select select-bordered select-xs", onchange: "this.form.requestSubmit()" } %>
-                        <% end %>
-                      <% else %>
-                        <span class="text-xs text-steel-3"><%= suscripcion.analisis_tier %></span>
-                      <% end %>
                     </td>
                     <td class="text-sm text-steel-5"><%= l suscripcion.fecha_inicio %></td>
                     <td class="text-sm text-steel-5"><%= suscripcion.fecha_fin ? l(suscripcion.fecha_fin) : "—" %></td>

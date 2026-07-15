@@ -33,7 +33,7 @@ class GestionPlanesController < ApplicationController
   # Las comidas normalmente se editan por autosave (GestionComidasController).
   def update
     @plan = PlanPersonalizado.find(params[:id])
-    authorize @plan, :editar?
+    authorize @plan, :editar_json?
     @plan.update!(
       rutina: parsear_json(params[:rutina]) || @plan.rutina,
       plan_nutricional: parsear_json(params[:plan_nutricional]) || @plan.plan_nutricional
