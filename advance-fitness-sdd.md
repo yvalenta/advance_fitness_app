@@ -1017,3 +1017,12 @@ Rediseño tras la primera prueba real del flujo de la Fase 11-B:
 - **Mínimo de datos**: `User#datos_suficientes_para_analisis?` exige al menos 3 semanas distintas con series registradas en las últimas 3 semanas — evita analizar con una sola sesión sin tendencia real.
 - **Historial**: `ProgresoUsuario.para` expone `feedbacks_ia` (últimos 10 análisis completados); se muestra de solo lectura tanto en `/progreso` (miembro) como en la ficha de staff, vía el partial compartido `shared/historial_analisis`.
 - **Trazabilidad**: `feedback_ia.origen` (`manual`/`automatico`, default `manual`) — hoy todo disparo es manual por staff; el campo queda reservado para un futuro disparador sin intervención humana.
+
+### 18.8 — Fase 12.2: acceso VIP (implementado, julio 2026)
+
+Membresías y suscripciones siempre se crean manualmente en recepción (SDD flujos B/D) y duran un período fijo (`Negocio.duracion_dias`, 30 días por defecto): al vencer, el miembro cae a acceso básico (sin las funciones que habilita la membresía/suscripción) hasta que el staff registre una renovación.
+
+- **`users.vip`** (boolean, default `false`): flag asignado a mano por un **admin** (no un entrenador) desde `admin/users/:id`, mismo patrón de protección que `rol` — nunca se mass-asigna, y el checkbox pide una confirmación explícita (vía el `<dialog>` global de `confirmacion_controller.js`) antes de aplicarse, dado que otorga acceso gratuito indefinido.
+- **Nunca vence**: `Membresia#activa?` y `Suscripcion#activa?` devuelven `true` para un usuario VIP sin importar el estado/fecha guardados; `Membresia.para_vencer` y `Suscripcion.para_vencer` excluyen a los usuarios VIP, así que `VencerMembresiasJob`/`VencerSuscripcionesJob` (diarios, `config/recurring.yml`) nunca los tocan.
+- **`User#premium?`** es `true` para cualquier VIP, tenga o no una suscripción al plan Personalizado — desbloquea las mismas funciones que un premium pago (incluida la elegibilidad para el Analista de Performance, sujeta igual al mínimo de datos del §18.7).
+- **Suscripciones con vencimiento real**: antes de esta fase una suscripción sin `fecha_fin` se consideraba indefinida y nunca vencía (comportamiento no documentado). Ahora `Suscripcion` fija `fecha_fin` a `fecha_inicio + Negocio.duracion_dias` por defecto si el staff no la especifica al crearla, y `VencerSuscripcionesJob` la expira igual que a una membresía — el único acceso verdaderamente indefinido es el VIP.

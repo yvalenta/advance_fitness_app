@@ -90,6 +90,22 @@ RSpec.describe "Admin::Users", type: :request do
     expect(users(:one).reload.rol).to eq("entrenador")
   end
 
+  it "el entrenador no puede marcar VIP" do
+    sign_in_as users(:entrenador)
+    patch admin_user_path(users(:one)), params: { user: { nombre: users(:one).nombre, vip: "1" } }
+
+    expect(users(:one).reload.vip?).to be_falsey
+  end
+
+  it "el admin sí puede marcar y desmarcar VIP" do
+    sign_in_as users(:admin)
+    patch admin_user_path(users(:one)), params: { user: { nombre: users(:one).nombre, vip: "1" } }
+    expect(users(:one).reload.vip?).to be_truthy
+
+    patch admin_user_path(users(:one)), params: { user: { nombre: users(:one).nombre, vip: "0" } }
+    expect(users(:one).reload.vip?).to be_falsey
+  end
+
   it "un miembro no puede editar el perfil de otro" do
     sign_in_as users(:one)
     patch admin_user_path(users(:two)), params: { user: { nombre: "Hackeado" } }

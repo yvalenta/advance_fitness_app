@@ -66,17 +66,29 @@ RSpec.describe Suscripcion, type: :model do
     expect(programada.incluida_en_membresia?).to be_truthy
   end
 
-  it "incluir_con_membresia! no duplica si ya hay una activa sin fecha de fin" do
-    membresia = membresias(:activa_one)
-    membresia.pagos.create!(monto: Negocio.precio_personalizado, metodo: "efectivo",
-                            registrado_por: users(:entrenador), fecha_pago: Date.current,
-                            periodo_inicio: Date.current, periodo_fin: Date.current + 30)
-    Suscripcion.create!(user: membresia.user, plan: planes(:personalizado),
-                       estado: "activa", fecha_inicio: Date.current - 10)
+  it "fija fecha_fin a un mes desde el inicio si no se especifica (Fase 12.2)" do
+    suscripcion = Suscripcion.create!(user: users(:one), plan: planes(:personalizado),
+                                      estado: "activa", fecha_inicio: Date.current)
 
-    expect {
-      Suscripcion.incluir_con_membresia!(membresia)
-    }.not_to change { Suscripcion.count }
+    expect(suscripcion.fecha_fin).to eq(Date.current + Negocio.duracion_dias.days)
+  end
+
+  it "VIP: activa? siempre es verdadero aunque la fecha_fin ya haya pasado" do
+    users(:one).update!(vip: true)
+    suscripcion = Suscripcion.create!(user: users(:one), plan: planes(:personalizado),
+                                      estado: "activa", fecha_inicio: Date.current - 40,
+                                      fecha_fin: Date.current - 10)
+
+    expect(suscripcion.activa?).to be_truthy
+    expect(Suscripcion.para_vencer).not_to include(suscripcion)
+  end
+
+  it "para_vencer incluye una suscripción activa no-VIP vencida" do
+    suscripcion = Suscripcion.create!(user: users(:one), plan: planes(:personalizado),
+                                      estado: "activa", fecha_inicio: Date.current - 40,
+                                      fecha_fin: Date.current - 10)
+
+    expect(Suscripcion.para_vencer).to include(suscripcion)
   end
 
   it "activar_programadas! activa las que llegaron su turno y expira la anterior" do
