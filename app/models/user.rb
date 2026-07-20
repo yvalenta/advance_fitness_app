@@ -49,9 +49,10 @@ class User < ApplicationRecord
 
   def suscripcion_activa = suscripciones.activas.includes(:plan).first
 
-  # Premium = suscripción activa al plan personalizado (validado en DB, SDD §08)
+  # Premium = suscripción activa al plan personalizado (validado en DB, SDD §08).
+  # VIP (Fase 12.2, marcado a mano por staff) siempre cuenta como premium.
   def premium?
-    suscripcion_activa&.plan&.personalizado? || false
+    vip? || suscripcion_activa&.plan&.personalizado? || false
   end
 
   # Mínimo de datos para desbloquear el Analista de Performance (Fase 12):

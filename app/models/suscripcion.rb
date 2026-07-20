@@ -12,6 +12,10 @@ class Suscripcion < ApplicationRecord
   ANALISIS_TIERS = %w[mensual semanal diario].freeze
   ANALISIS_VENTANA_DIAS = { "mensual" => 30, "semanal" => 7, "diario" => 1 }.freeze
 
+  # Duración por defecto de una suscripción (SDD §07/Fase 12.2): 1 mes desde
+  # el alta si el staff no fija una fecha_fin propia al crearla.
+  def self.duracion = Negocio.duracion_dias.days
+
   belongs_to :user
   belongs_to :plan
   # Presente solo en la suscripción incluida automáticamente con una
@@ -31,8 +35,14 @@ class Suscripcion < ApplicationRecord
 
   scope :activas, -> { where(estado: "activa") }
   scope :programadas, -> { where(estado: "programada") }
+  # VIP (Fase 12.2) nunca vence: el job diario la deja fuera aunque su
+  # fecha_fin ya pasó.
+  scope :para_vencer, -> { where(estado: "activa").where.not(fecha_fin: nil).where(fecha_fin: ...Date.current).joins(:user).merge(User.where(vip: false)) }
 
-  def activa? = estado == "activa"
+  before_validation :fijar_fecha_fin_por_defecto, on: :create
+
+  # VIP siempre cuenta como activa, sin importar el estado guardado.
+  def activa? = estado == "activa" || user.vip?
   def programada? = estado == "programada"
   def incluida_en_membresia? = membresia_id.present?
 
@@ -76,4 +86,9 @@ class Suscripcion < ApplicationRecord
       end
     end
   end
+
+  private
+    def fijar_fecha_fin_por_defecto
+      self.fecha_fin ||= fecha_inicio + self.class.duracion if fecha_inicio.present?
+    end
 end
