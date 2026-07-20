@@ -9,6 +9,11 @@
       <h1 class="font-display text-2xl font-bold text-white sm:text-3xl"><%= nombre_visible(@user) %></h1>
       <p class="mt-1.5 flex flex-wrap items-center gap-2 text-sm text-white/60">
         <span class="badge badge-sm badge-ghost"><%= @user.rol %></span>
+        <% if @user.vip? %>
+          <span class="badge badge-sm badge-warning gap-1 font-semibold">
+            <%= render "shared/icono", nombre: :fuego, clase: "size-3" %> VIP
+          </span>
+        <% end %>
         miembro desde <%= l @user.fecha_ingreso, format: :long %>
       </p>
     </div>
@@ -66,6 +71,16 @@
                 <option value="<%= rol %>" <%= "selected" if @user.rol == rol %>><%= rol %></option>
               <% end %>
             </select>
+          </label>
+          <label class="form-control justify-end">
+            <span class="label-text mb-1 text-xs font-semibold">Acceso VIP</span>
+            <label class="label cursor-pointer justify-start gap-2 rounded-lg border border-base-300 px-3 py-2">
+              <input type="hidden" name="user[vip]" value="0">
+              <input type="checkbox" name="user[vip]" value="1" <%= "checked" if @user.vip? %>
+                     class="checkbox checkbox-warning"
+                     onchange="if(this.checked){window.confirmarAccion('¿Marcar a <%= j nombre_visible(@user) %> como VIP? Su membresía y suscripción nunca vencerán y siempre tendrá acceso completo, sin importar el estado de sus pagos.').then(ok => { if (!ok) this.checked = false })}">
+              <span class="text-sm">Nunca vence, acceso completo garantizado</span>
+            </label>
           </label>
         <% end %>
         <div class="sm:col-span-2">

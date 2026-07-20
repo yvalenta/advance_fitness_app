@@ -13,10 +13,13 @@ class Membresia < ApplicationRecord
   validate :vencimiento_posterior_al_inicio
 
   scope :activas, -> { where(estado: "activa") }
-  scope :para_vencer, -> { where(estado: "activa").where(fecha_vencimiento: ...Date.current) }
+  # VIP (Fase 12.2) nunca vence: el job diario la deja fuera aunque su fecha
+  # de vencimiento ya pasó.
+  scope :para_vencer, -> { where(estado: "activa").where(fecha_vencimiento: ...Date.current).joins(:user).merge(User.where(vip: false)) }
 
-  def activa? = estado == "activa"
-  def vencida? = estado == "vencida"
+  # VIP siempre cuenta como activa, sin importar el estado/vencimiento guardado.
+  def activa? = estado == "activa" || user.vip?
+  def vencida? = estado == "vencida" && !user.vip?
 
   def dias_restantes
     (fecha_vencimiento - Date.current).to_i
