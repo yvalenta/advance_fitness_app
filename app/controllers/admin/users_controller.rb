@@ -17,12 +17,14 @@ class Admin::UsersController < ApplicationController
   end
 
   # Dashboard del miembro (Fase 6.13): datos básicos editables por staff.
-  # El rol NUNCA se mass-asigna (regla del proyecto) — se aplica aparte y
-  # solo si quien edita es admin (un entrenador no puede ascender a nadie).
+  # El rol y el VIP NUNCA se mass-asignan (regla del proyecto) — se aplican
+  # aparte y solo si quien edita es admin (un entrenador no puede ascender a
+  # nadie ni otorgar acceso VIP sin vencimiento, Fase 12.2).
   def update
     @user = User.find(params[:id])
     authorize @user
     @user.rol = params[:user][:rol] if Current.user.admin? && params[:user][:rol].present?
+    @user.vip = ActiveModel::Type::Boolean.new.cast(params[:user][:vip]) if Current.user.admin? && params[:user].key?(:vip)
 
     if @user.update(user_params)
       redirect_to admin_user_path(@user), notice: "Perfil actualizado."

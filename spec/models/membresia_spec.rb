@@ -32,6 +32,15 @@ RSpec.describe Membresia, type: :model do
     expect(Membresia.para_vencer).not_to include(membresias(:vencida_two))
   end
 
+  it "VIP: activa? es verdadero y para_vencer la excluye aunque esté vencida (Fase 12.2)" do
+    membresia = membresias(:activa_one)
+    membresia.update!(fecha_vencimiento: Date.current - 1, fecha_inicio: Date.current - 40)
+    membresia.user.update!(vip: true)
+
+    expect(membresia.activa?).to be_truthy
+    expect(Membresia.para_vencer).not_to include(membresia)
+  end
+
   it "el vencimiento debe ser posterior al inicio" do
     membresia = Membresia.new(user: users(:admin), fecha_inicio: Date.current, fecha_vencimiento: Date.current)
     expect(membresia.valid?).to be_falsey
