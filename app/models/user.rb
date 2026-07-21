@@ -1,5 +1,8 @@
 class User < ApplicationRecord
-  ROLES = %w[miembro entrenador admin].freeze
+  # miembro/entrenador/admin viven dentro de un tenant; superadmin y
+  # comercializador operan en el portal comercial global (SDD §16.6).
+  ROLES = %w[miembro entrenador admin superadmin comercializador].freeze
+  ROLES_GLOBALES = %w[superadmin comercializador].freeze
   SOMATOTIPOS = %w[ectomorfo mesomorfo endomorfo].freeze
 
   # Factores de actividad para el TDEE (SDD §07: 1.2–1.9). La columna es
@@ -13,6 +16,7 @@ class User < ApplicationRecord
   }.freeze
 
   has_secure_password
+  belongs_to :tenant, optional: true
   has_many :sessions, dependent: :destroy
   has_one :membresia, dependent: :destroy
   has_many :accesos, dependent: :destroy
@@ -31,6 +35,8 @@ class User < ApplicationRecord
 
   validates :email_address, presence: true, uniqueness: true
   validates :rol, inclusion: { in: ROLES }
+  # superadmin/comercializador no pertenecen a ningún tenant; los demás sí.
+  validates :tenant, presence: true, unless: -> { rol.in?(ROLES_GLOBALES) }
   validates :sexo, inclusion: { in: %w[M F] }, allow_nil: true
   validates :somatotipo, inclusion: { in: SOMATOTIPOS }, allow_nil: true
   validates :talla_cm, numericality: { greater_than: 0 }, allow_nil: true
@@ -39,6 +45,9 @@ class User < ApplicationRecord
   def staff? = rol.in?(%w[entrenador admin])
   def admin? = rol == "admin"
   def entrenador? = rol == "entrenador"
+  def superadmin? = rol == "superadmin"
+  def comercializador? = rol == "comercializador"
+  def global? = rol.in?(ROLES_GLOBALES)
 
   def objetivo_activo = objetivos_nutricionales.find_by(activo: true)
 
@@ -100,11 +109,13 @@ class User < ApplicationRecord
 
   # Login con Google: encuentra o crea el usuario por email verificado.
   # Los usuarios creados vía OAuth reciben un password aleatorio (pueden
-  # fijar el suyo luego con el flujo de reset).
-  def self.from_omniauth(auth)
+  # fijar el suyo luego con el flujo de reset). En multi-tenant (SDD §16.6)
+  # el nuevo user hereda el tenant del request (nil = portal comercial).
+  def self.from_omniauth(auth, tenant: Current.tenant)
     find_or_create_by!(email_address: auth.info.email) do |user|
       user.nombre = auth.info.name.to_s
       user.password = SecureRandom.base58(32)
+      user.tenant = tenant
     end
   end
 end

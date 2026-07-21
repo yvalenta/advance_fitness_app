@@ -81,6 +81,9 @@ Rails.application.configure do
 
   # Enable DNS rebinding protection and other `Host` header attacks.
   config.hosts << ENV.fetch("APP_HOST", "example.com")
+  # Multi-tenant por subdominio (SDD §16.6): el punto inicial matchea el apex
+  # y todos los subdominios (`megaplex.ynt.codes`, `comercial.ynt.codes`, …).
+  config.hosts << ".ynt.codes"
 
   # Skip DNS rebinding protection for the default health check endpoint.
   config.host_authorization = { exclude: ->(request) { request.path == "/up" } }

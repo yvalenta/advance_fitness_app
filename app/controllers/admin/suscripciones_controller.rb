@@ -2,9 +2,12 @@ class Admin::SuscripcionesController < ApplicationController
   def index
     authorize Suscripcion, :index?
     @q = params[:q].to_s.strip
-    @suscripciones = Suscripcion.includes(:user, :plan).order(created_at: :desc)
+    # Aislado por tenant vía user (SDD §16.6): sin este join, un admin de un
+    # tenant vería suscripciones de otros.
+    @suscripciones = Suscripcion.joins(:user).where(users: { tenant_id: Current.user.tenant_id })
+                                .includes(:user, :plan).order(created_at: :desc)
     if @q.present?
-      @suscripciones = @suscripciones.joins(:user)
+      @suscripciones = @suscripciones
         .where("users.nombre ILIKE :q OR users.email_address ILIKE :q", q: "%#{User.sanitize_sql_like(@q)}%")
     end
     @suscripciones = @suscripciones.page(params[:page]).per(25)

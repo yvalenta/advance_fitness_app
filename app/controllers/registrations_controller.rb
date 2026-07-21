@@ -7,7 +7,7 @@ class RegistrationsController < ApplicationController
   end
 
   def create
-    @user = User.new(registration_params)
+    @user = User.new(registration_params.merge(tenant: Current.tenant))
     if @user.save
       start_new_session_for @user
       redirect_to root_path, notice: "¡Bienvenido a Advance Fitness!"

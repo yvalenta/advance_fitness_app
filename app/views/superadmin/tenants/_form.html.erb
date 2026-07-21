@@ -1,0 +1,121 @@
+<% # locals: (tenant:, con_admin:) %>
+<% if tenant.errors.any? %>
+  <div role="alert" class="alert alert-error text-sm">
+    <%= render "shared/icono", nombre: :alerta, clase: "size-5 shrink-0" %>
+    <span><%= tenant.errors.full_messages.to_sentence %></span>
+  </div>
+<% end %>
+
+<%= form_with model: tenant, url: (tenant.persisted? ? superadmin_tenant_path(tenant) : superadmin_tenants_path),
+      class: "flex flex-col gap-6" do |form| %>
+
+  <fieldset class="grid gap-4 sm:grid-cols-2">
+    <label class="form-control sm:col-span-2">
+      <span class="label-text mb-1 text-xs font-semibold">Nombre visible</span>
+      <%= form.text_field :nombre, class: "input input-bordered w-full", required: true %>
+    </label>
+
+    <label class="form-control">
+      <span class="label-text mb-1 text-xs font-semibold">Subdominio (slug)</span>
+      <%= form.text_field :slug, class: "input input-bordered w-full font-mono",
+            placeholder: "megaplex", required: true %>
+      <span class="mt-1 text-xs text-steel-3">
+        La app quedará en <span class="font-mono"><%= tenant.slug.presence || "{slug}" %>.ynt.codes</span>
+      </span>
+    </label>
+
+    <label class="form-control">
+      <span class="label-text mb-1 text-xs font-semibold">Tipo</span>
+      <%= form.select :tipo_entidad, Tenant::TIPOS.map { |t| [ t.capitalize, t ] },
+            {}, class: "select select-bordered w-full", required: true %>
+    </label>
+
+    <label class="form-control sm:col-span-2">
+      <span class="label-text mb-1 text-xs font-semibold">Correo de contacto</span>
+      <%= form.email_field :email_contacto, class: "input input-bordered w-full", required: true %>
+    </label>
+  </fieldset>
+
+  <fieldset class="border-t border-base-200 pt-4">
+    <legend class="mb-3 text-sm font-bold">Módulos</legend>
+    <label class="label cursor-pointer justify-start gap-3 rounded-lg border border-base-300 px-3 py-2">
+      <%= form.fields_for :features_habilitadas, OpenStruct.new(membresias: tenant.membresias_habilitadas?) do |f| %>
+        <%= f.check_box :membresias, class: "checkbox checkbox-primary" %>
+      <% end %>
+      <span class="text-sm">Habilitar módulo de <strong>membresías</strong> (check-ins, pagos mensuales)</span>
+    </label>
+    <p class="mt-1 text-xs text-steel-3">Los entrenadores e influencers no lo necesitan normalmente.</p>
+  </fieldset>
+
+  <fieldset class="grid gap-4 border-t border-base-200 pt-4 sm:grid-cols-3">
+    <legend class="col-span-full mb-3 text-sm font-bold">
+      Precios y duración
+      <span class="ml-2 font-normal text-steel-3">(en blanco = usa el default global)</span>
+    </legend>
+    <label class="form-control">
+      <span class="label-text mb-1 text-xs font-semibold">Mensualidad (COP)</span>
+      <%= form.number_field :precio_mensualidad, class: "input input-bordered w-full", placeholder: Negocio.precio_mensualidad %>
+    </label>
+    <label class="form-control">
+      <span class="label-text mb-1 text-xs font-semibold">Plan Personalizado (COP)</span>
+      <%= form.number_field :precio_personalizado, class: "input input-bordered w-full", placeholder: Negocio.precio_personalizado %>
+    </label>
+    <label class="form-control">
+      <span class="label-text mb-1 text-xs font-semibold">Duración (días)</span>
+      <%= form.number_field :duracion_dias, class: "input input-bordered w-full", placeholder: Negocio.duracion_dias %>
+    </label>
+  </fieldset>
+
+  <fieldset class="grid gap-4 border-t border-base-200 pt-4 sm:grid-cols-3">
+    <legend class="col-span-full mb-3 text-sm font-bold">Paleta de marca</legend>
+    <% %w[volt primary accent].each do |token| %>
+      <label class="form-control">
+        <span class="label-text mb-1 text-xs font-semibold capitalize"><%= token %></span>
+        <%= form.fields_for :paleta_colores, OpenStruct.new(tenant.paleta_colores) do |f| %>
+          <%= f.color_field token, value: tenant.paleta_colores[token].presence,
+                class: "input input-bordered h-10 w-full p-1" %>
+        <% end %>
+      </label>
+    <% end %>
+  </fieldset>
+
+  <label class="form-control">
+    <span class="label-text mb-1 text-xs font-semibold">Logo (opcional)</span>
+    <%= form.file_field :logo, accept: "image/*", class: "file-input file-input-bordered w-full" %>
+    <% if tenant.logo.attached? %>
+      <div class="mt-2">
+        <%= image_tag tenant.logo.variant(resize_to_limit: [ 200, 60 ]) %>
+      </div>
+    <% end %>
+  </label>
+
+  <label class="label cursor-pointer justify-start gap-3">
+    <%= form.check_box :activo, class: "checkbox checkbox-success" %>
+    <span class="text-sm">Tenant activo (si se apaga, su subdominio deja de resolver)</span>
+  </label>
+
+  <% if con_admin %>
+    <fieldset class="border-t border-base-200 pt-4">
+      <legend class="mb-3 text-sm font-bold">Admin inicial del tenant</legend>
+      <p class="mb-3 text-xs text-steel-3">
+        Le enviaremos un correo con el enlace para fijar su contraseña. Podrá entrar en
+        <span class="font-mono"><%= tenant.slug.presence || "{slug}" %>.ynt.codes</span>.
+      </p>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label class="form-control">
+          <span class="label-text mb-1 text-xs font-semibold">Nombre</span>
+          <%= form.text_field :admin_nombre, class: "input input-bordered w-full" %>
+        </label>
+        <label class="form-control">
+          <span class="label-text mb-1 text-xs font-semibold">Correo</span>
+          <%= form.email_field :admin_email, class: "input input-bordered w-full" %>
+        </label>
+      </div>
+    </fieldset>
+  <% end %>
+
+  <div class="flex justify-end gap-2">
+    <%= link_to "Cancelar", superadmin_tenants_path, class: "btn btn-ghost" %>
+    <%= form.submit (tenant.persisted? ? "Guardar cambios" : "Crear tenant"), class: "btn btn-primary font-bold" %>
+  </div>
+<% end %>

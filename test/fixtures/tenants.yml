@@ -1,0 +1,19 @@
+advance_fitness:
+  nombre: Advance Fitness
+  slug: advance-fitness
+  tipo_entidad: gimnasio
+  email_contacto: hola@advancefitness.local
+  paleta_colores: {}
+  features_habilitadas:
+    membresias: true
+  activo: true
+
+megaplex:
+  nombre: Megaplex
+  slug: megaplex
+  tipo_entidad: gimnasio
+  email_contacto: contacto@megaplex.local
+  paleta_colores: {}
+  features_habilitadas:
+    membresias: true
+  activo: true

@@ -51,6 +51,12 @@ RSpec.configure do |config|
   Dir[Rails.root.join("spec/support/**/*.rb")].sort.each { |f| require f }
   config.infer_spec_type_from_file_location!
 
+  # Multi-tenant (SDD §16.6): `ActiveSupport::CurrentAttributes` resetea
+  # entre requests, no entre specs. Sin esto, `Current.tenant` de un request
+  # spec anterior fuga a specs de modelo posteriores y usuarios recién
+  # creados heredan un tenant equivocado.
+  config.before(:each) { Current.reset }
+
   # You can uncomment this line to turn off ActiveRecord support entirely.
   # config.use_active_record = false
 

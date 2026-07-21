@@ -22,7 +22,13 @@ class UserPolicy < ApplicationPolicy
 
   class Scope < ApplicationPolicy::Scope
     def resolve
-      user.staff? ? scope.all : scope.where(id: user.id)
+      # Staff ve solo miembros de su tenant (SDD §16.6); miembro solo se ve
+      # a sí mismo.
+      if user.staff?
+        scope.where(tenant_id: user.tenant_id)
+      else
+        scope.where(id: user.id)
+      end
     end
   end
 
