@@ -1,5 +1,5 @@
 module Landing
-  class CampañasController < ApplicationController
+  class CampanasController < ApplicationController
     # Página pública de conversión — sin auth requerida
     skip_before_action :require_authentication
     # Tampoco verificar pertenencia: es una landing pública
