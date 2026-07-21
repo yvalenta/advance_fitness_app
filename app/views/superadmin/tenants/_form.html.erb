@@ -84,7 +84,7 @@
     <%= form.file_field :logo, accept: "image/*", class: "file-input file-input-bordered w-full" %>
     <% if tenant.logo.attached? %>
       <div class="mt-2">
-        <%= image_tag tenant.logo.variant(resize_to_limit: [ 200, 60 ]) %>
+        <%= image_tag tenant.logo, class: "max-h-16 w-auto rounded-lg object-contain" %>
       </div>
     <% end %>
   </label>

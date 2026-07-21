@@ -13,7 +13,7 @@
     <div class="hidden lg:flex lg:flex-col lg:justify-between lg:p-14">
       <div class="flex items-center gap-3">
         <% if Current.tenant&.logo&.attached? %>
-          <%= image_tag Current.tenant.logo.variant(resize_to_limit: [40, 40]),
+          <%= image_tag Current.tenant.logo,
                 class: "size-10 rounded-xl object-contain ring-1 ring-white/10", alt: Negocio.nombre %>
         <% else %>
           <span class="flex size-10 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15">
@@ -40,7 +40,7 @@
 
         <div class="mb-8 flex flex-col items-center gap-3 lg:hidden">
           <% if Current.tenant&.logo&.attached? %>
-            <%= image_tag Current.tenant.logo.variant(resize_to_limit: [64, 64]),
+            <%= image_tag Current.tenant.logo,
                   class: "size-16 rounded-2xl object-contain ring-1 ring-white/15 shadow-lg", alt: Negocio.nombre %>
           <% else %>
             <span class="flex size-16 items-center justify-center rounded-2xl bg-white/8 ring-1 ring-white/15 shadow-lg">

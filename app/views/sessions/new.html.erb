@@ -20,7 +20,7 @@
       <%# Logo + wordmark %>
       <div class="flex items-center gap-3">
         <% if Current.tenant&.logo&.attached? %>
-          <%= image_tag Current.tenant.logo.variant(resize_to_limit: [40, 40]),
+          <%= image_tag Current.tenant.logo,
                 class: "size-10 rounded-xl object-contain ring-1 ring-white/10",
                 alt: Negocio.nombre %>
         <% else %>
@@ -70,7 +70,7 @@
         <%# Logo mobile (solo < lg) %>
         <div class="mb-8 flex flex-col items-center gap-3 lg:hidden">
           <% if Current.tenant&.logo&.attached? %>
-            <%= image_tag Current.tenant.logo.variant(resize_to_limit: [64, 64]),
+            <%= image_tag Current.tenant.logo,
                   class: "size-16 rounded-2xl object-contain ring-1 ring-white/15 shadow-lg",
                   alt: Negocio.nombre %>
           <% else %>
