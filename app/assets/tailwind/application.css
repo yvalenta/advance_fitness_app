@@ -4,31 +4,31 @@
 
 @plugin "./daisyui.mjs";
 
-/* ── Tema "advance" — design tokens del SDD §06 ── */
+/* ── Tema "advance" — dark tech (SDD §06 rev. Fase 13.3) ── */
 @plugin "./daisyui-theme.mjs" {
   name: "advance";
   default: true;
-  color-scheme: light;
+  color-scheme: dark;
 
-  --color-base-100: #ffffff; /* card                              */
-  --color-base-200: #f4f7fa; /* surface                           */
-  --color-base-300: #e2e8f0; /* bordes                            */
-  --color-base-content: #1e293b; /* steel — texto base            */
+  --color-base-100: #111827; /* card / modal                      */
+  --color-base-200: #0c1322; /* page background                   */
+  --color-base-300: #1e2d42; /* bordes, divisores                 */
+  --color-base-content: #e2e8f0; /* texto base                    */
   --color-primary: #b4f000; /* volt — acción principal, CTA      */
-  --color-primary-content: #1e293b;
-  --color-secondary: #1e293b; /* steel — nav, botones secundarios */
-  --color-secondary-content: #f8fafc;
+  --color-primary-content: #0b1220;
+  --color-secondary: #1e2d42;
+  --color-secondary-content: #e2e8f0;
   --color-accent: #0ea5e9; /* ocean — biometría, info           */
   --color-accent-content: #ffffff;
-  --color-neutral: #1e293b;
-  --color-neutral-content: #f8fafc;
+  --color-neutral: #1a2638;
+  --color-neutral-content: #e2e8f0;
   --color-info: #0ea5e9;
   --color-info-content: #ffffff;
-  --color-success: #8fbf00; /* volt-d — progreso positivo        */
-  --color-success-content: #1e293b;
+  --color-success: #8fbf00;
+  --color-success-content: #0b1220;
   --color-warning: #f59e0b;
-  --color-warning-content: #1e293b;
-  --color-error: #ef4444; /* pulse — alertas, vencido          */
+  --color-warning-content: #0b1220;
+  --color-error: #ef4444;
   --color-error-content: #ffffff;
 
   --radius-selector: 0.5rem;
