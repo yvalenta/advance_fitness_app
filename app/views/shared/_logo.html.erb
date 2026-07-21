@@ -2,7 +2,9 @@
 <%# definido, se usa esa imagen; si no, el fisicoculturista vectorial monocromo. %>
 <%# locals: (clase: "h-7 w-7 text-primary") %>
 <% clase = local_assigns.fetch(:clase, "h-7 w-7 text-primary") %>
-<% if Negocio.logo_url %>
+<% if Current.tenant&.logo&.attached? %>
+  <%= image_tag Current.tenant.logo, alt: Current.tenant.nombre, class: clase %>
+<% elsif Negocio.logo_url %>
   <%= image_tag Negocio.logo_url, alt: Negocio.nombre, class: clase %>
 <% else %>
   <svg viewBox="0 0 64 68" class="<%= clase %>" aria-hidden="true">

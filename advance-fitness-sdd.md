@@ -895,6 +895,34 @@ Cada gimnasio corre como **un contenedor propio** de la **misma imagen Docker**,
 - **Fase C — Piloto:** segundo tenant real (o staging permanente) conviviendo con Advance Fitness en el mismo host; medir RAM/conexiones/latencia.
 - **Fase D — Escala:** a >10–15 tenants, decidir con métricas si se consolida (sharding, más hardware, o mover tenants grandes a su propio host). Tema de color por marca (hoy el tema DaisyUI `advance` es único) se decide aquí si algún tenant lo pide.
 
+### 16.6 — ADR revertido: multi-tenancy row-level por subdominio (julio 2026, v1.4.0)
+
+**Reversa explícita de §16.2.** Se reemplaza "una base independiente por tenant" por row-level tenancy en una sola base Postgres, resuelto por subdominio (`{slug}.ynt.codes`). Motivos: (a) permitir venta directa por un rol comercializador voz-a-voz desde un solo despliegue; (b) parametrizar precios/marca por tenant sin duplicar infra; (c) el costo operativo real de N despliegues Kamal + N bases Supabase superaba el riesgo de una fuga de datos bien acotada por Pundit.
+
+**Alcance del PR (rama `feature/multi-tenant-superadmin`):**
+- Nuevo modelo `Tenant` (nombre, `slug` único con normalización + subdominios reservados, `tipo_entidad` gimnasio/entrenador/influencer, `email_contacto`, `paleta_colores` jsonb, `features_habilitadas` jsonb, precios opcionales por tenant, `logo` vía Active Storage).
+- `users` gana `tenant_id` (nullable — `superadmin`/`comercializador` son globales, validado en el modelo). Igual `posts` y `novedades` (aislados por tenant).
+- **Catálogos globales**: `Plan`, `Ejercicio`, `PlantillaComida`, `PlantillaEjercicio` NO se aíslan (evita duplicar el catálogo visual de ~1.324 ejercicios y romper la unicidad de `Plan.codigo`).
+- Resolución por subdominio: nuevo concern `TenantScoping` con `prepend_before_action :resolver_tenant`. `comercial`/`app` → modo portal comercial (`Current.tenant = nil`); `www`/`advance-fitness-app` y apex → tenant AF (back-compat); slug conocido → tenant respectivo; slug desconocido/inactivo → 404. `verificar_pertenencia_al_tenant` post-auth rechaza a usuarios que no pertenezcan al tenant del subdominio (defensa en profundidad).
+- **Cookie de sesión sigue host-only** (sin `domain`): cada `{slug}.ynt.codes` tiene su propia sesión aislada. Sin SSO cross-subdominio en esta fase.
+- **Google OAuth solo en subdominio central**: se mantiene el callback ya registrado (`advance-fitness-app.ynt.codes` para back-compat, `app.ynt.codes` a registrar para el portal); los subdominios de tenant nuevos usan solo login por contraseña.
+- `Negocio.*` ahora consulta `Current.tenant` primero (precios, `nombre`); si no hay tenant o el campo es nulo, cae al ENV/YAML global — ningún call-site existente cambia.
+- Pundit: `ApplicationPolicy::Scope#del_tenant` reemplaza los `scope.all` de las ramas de staff en `UserPolicy`/`MembresiaPolicy`/`AccesoPolicy`/`PagoPolicy`. `Admin::SuscripcionesController#index` (que listaba sin `policy_scope`) filtra explícitamente por `users.tenant_id`. Nuevo `TenantPolicy` solo autoriza superadmin.
+- Portal comercial: `namespace :superadmin` con CRUD de tenants, form para el admin inicial que dispara el flujo de "reset de contraseña" existente. Navbar reducido para `superadmin`/`comercializador`.
+- Theming: `<style>` inline en el `<head>` inyecta `--color-{volt,primary,accent}` desde `Tenant#paleta_colores` (solo acepta hex para evitar CSS injection); `shared/_logo` prefiere `Current.tenant.logo` si está attached, con fallback al `Negocio.logo_url` y luego al vector de marca.
+- Backfill: `bin/rails multi_tenant:migrar` (rake task idempotente): crea el tenant AF si no existe, asocia todos los `User`/`Post`/`Novedad` sin tenant a AF, crea superadmin (`SUPERADMIN_EMAIL`) y comercializador semilla (`COMERCIALIZADOR_EMAIL`). Se corre a mano en producción con confirmación explícita, mismo ritual que `demo:sembrar`.
+- Tests: 27 specs nuevos (Tenant, User global vs tenant, `Negocio` tenant-aware, aislamiento cross-tenant en 4 policies, TenantPolicy, resolución por subdominio, CRUD superadmin). 398/398 en verde.
+
+**Fuera del PR (runbook de infra, responsabilidad del usuario):**
+1. Wildcard DNS `*.ynt.codes` → túnel Cloudflare.
+2. Ingress `*.ynt.codes` en el compose del túnel.
+3. TLS wildcard (Cloudflare Universal SSL cubre un nivel).
+4. `config.hosts` ya acepta `.ynt.codes` en producción; `APP_HOST` sigue apuntando a `advance-fitness-app.ynt.codes` para no romper links de correo/back-compat.
+5. En Google Cloud: agregar `https://app.ynt.codes/auth/google_oauth2/callback` cuando se active el portal comercial con Google login.
+6. Post-deploy: correr `bin/kamal app exec --interactive --reuse "bin/rails multi_tenant:migrar"` para el backfill (una sola vez).
+
+**Qué queda pendiente para fases futuras:** SSO cross-subdominio (bootstrap por token firmado), Google login en subdominios de tenant nuevos, catálogos por tenant si algún cliente lo pide, plan de superadmin para desactivar/pausar tenants desde la UI (hoy solo activo/inactivo).
+
 ---
 
 ## 17 — Pivote SaaS white-label: modelo de negocio y go-to-market

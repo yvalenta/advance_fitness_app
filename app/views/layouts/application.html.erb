@@ -31,6 +31,21 @@
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= stylesheet_link_tag "actiontext", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
+
+    <%# Paleta del tenant (SDD §16.6): overrides de los tokens CSS del tema
+        DaisyUI/Tailwind. Solo se aceptan colores hex (#rgb, #rgba, #rrggbb,
+        #rrggbbaa) para evitar CSS injection desde el jsonb. %>
+    <% if Current.tenant&.paleta_colores.is_a?(Hash) && Current.tenant.paleta_colores.any? %>
+      <style>
+        :root {
+          <% Current.tenant.paleta_colores.each do |token, valor| %>
+            <% if valor.to_s.match?(/\A#[0-9a-fA-F]{3,8}\z/) && %w[volt primary accent].include?(token.to_s) %>
+              --color-<%= token %>: <%= valor %>;
+            <% end %>
+          <% end %>
+        }
+      </style>
+    <% end %>
   </head>
 
   <body class="min-h-screen bg-base-200 font-sans text-base-content">

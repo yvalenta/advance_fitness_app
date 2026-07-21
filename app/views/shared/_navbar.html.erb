@@ -4,7 +4,11 @@
   íconos, targets grandes y estado activo.
 %>
 <%
-  cuenta = [
+  # superadmin y comercializador viven en el portal comercial (SDD §16.6):
+  # su navbar es reducido y no incluye funciones de miembro/staff de tenant.
+  membresias_on = Current.tenant.nil? || Current.tenant.membresias_habilitadas?
+
+  cuenta = Current.user.global? ? [] : [
     [ "Nutrición", objetivo_path, :fuego ],
     [ "Progreso", progreso_path, :tendencia_alta ],
     [ "Mi plan", mi_plan_path, :actividad ],
@@ -12,15 +16,18 @@
     [ "Novedades", novedades_path, :calendario ]
   ]
   gestion = []
+  if Current.user.superadmin?
+    gestion << [ "Tenants", superadmin_tenants_path, :usuarios ]
+  end
   if Current.user.staff?
-    gestion << [ "Check-in", admin_checkins_path, :check ]
+    gestion << [ "Check-in", admin_checkins_path, :check ] if membresias_on
     gestion << [ "Miembros", admin_users_path, :usuarios ]
-    gestion << [ "Membresías", admin_membresias_path, :escudo ]
+    gestion << [ "Membresías", admin_membresias_path, :escudo ] if membresias_on
     gestion << [ "Blog", admin_posts_path, :lapiz ]
     gestion << [ "Novedades", admin_novedades_path, :calendario ]
   end
   if Current.user.admin?
-    gestion << [ "Pagos", admin_pagos_path, :tarjeta ]
+    gestion << [ "Pagos", admin_pagos_path, :tarjeta ] if membresias_on
     gestion << [ "Suscripciones", admin_suscripciones_path, :rayo ]
   end
   gestion << [ "Borradores", entrenador_borradores_path, :busqueda ] if Current.user.entrenador? || Current.user.admin?

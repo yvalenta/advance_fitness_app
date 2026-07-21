@@ -1,0 +1,51 @@
+<% content_for :title, "Tenants — Portal comercial" %>
+
+<%= render "shared/encabezado",
+      titulo: "Tenants",
+      descripcion: "Gimnasios, entrenadores e influencers con acceso a la plataforma.",
+      accion: link_to(new_superadmin_tenant_path, class: "btn btn-primary font-bold") { "Nuevo tenant" } %>
+
+<div class="mx-auto -mt-8 w-full max-w-6xl px-4 pb-12">
+  <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
+    <div class="card-body">
+      <% if @tenants.any? %>
+        <div class="overflow-x-auto">
+          <table class="table">
+            <thead>
+              <tr class="text-xs uppercase text-steel-3">
+                <th>Nombre</th>
+                <th>Subdominio</th>
+                <th>Tipo</th>
+                <th>Estado</th>
+                <th class="text-right">Usuarios</th>
+                <th class="text-right"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @tenants.each do |tenant| %>
+                <tr>
+                  <td class="font-semibold"><%= tenant.nombre %></td>
+                  <td class="text-sm font-mono text-steel-5"><%= tenant.slug %>.ynt.codes</td>
+                  <td><span class="badge badge-ghost badge-sm"><%= tenant.tipo_entidad %></span></td>
+                  <td>
+                    <% if tenant.activo? %>
+                      <span class="badge badge-success badge-sm">activo</span>
+                    <% else %>
+                      <span class="badge badge-error badge-sm">inactivo</span>
+                    <% end %>
+                  </td>
+                  <td class="text-right text-sm"><%= tenant.users.size %></td>
+                  <td class="text-right">
+                    <%= link_to "Editar", edit_superadmin_tenant_path(tenant), class: "btn btn-ghost btn-xs" %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <p class="py-12 text-center text-sm text-steel-3">Aún no hay tenants. Crea el primero.</p>
+      <% end %>
+    </div>
+  </div>
+</div>
