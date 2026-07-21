@@ -39,7 +39,7 @@
   <fieldset class="border-t border-base-200 pt-4">
     <legend class="mb-3 text-sm font-bold">Módulos</legend>
     <label class="label cursor-pointer justify-start gap-3 rounded-lg border border-base-300 px-3 py-2">
-      <%= form.fields_for :features_habilitadas, OpenStruct.new(membresias: tenant.membresias_habilitadas?) do |f| %>
+      <%= form.fields_for :features_habilitadas, Struct.new(:membresias).new(tenant.membresias_habilitadas?) do |f| %>
         <%= f.check_box :membresias, class: "checkbox checkbox-primary" %>
       <% end %>
       <span class="text-sm">Habilitar módulo de <strong>membresías</strong> (check-ins, pagos mensuales)</span>
@@ -71,7 +71,7 @@
     <% %w[volt primary accent].each do |token| %>
       <label class="form-control">
         <span class="label-text mb-1 text-xs font-semibold capitalize"><%= token %></span>
-        <%= form.fields_for :paleta_colores, OpenStruct.new(tenant.paleta_colores) do |f| %>
+        <%= form.fields_for :paleta_colores, Struct.new(*%w[volt primary accent].map(&:to_sym)).new(*tenant.paleta_colores.values_at("volt","primary","accent")) do |f| %>
           <%= f.color_field token, value: tenant.paleta_colores[token].presence,
                 class: "input input-bordered h-10 w-full p-1" %>
         <% end %>
