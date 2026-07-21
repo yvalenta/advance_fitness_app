@@ -1,64 +1,141 @@
-<%# Grid de comidas editables con autosave + plantillas (SDD Fase 5.6, %>
-<%# extraído en Fase 12.1 para reutilizarse tanto en el editor completo de %>
-<%# staff (_editor) como inline en la vista del propio miembro (_plan), sin %>
-<%# duplicar el markup del autosave. locals: (plan:, plantillas:) %>
+<%# Grid de comidas editables con autosave + macro-tracker en vivo (Fase 5.6 / mejorado Fase 13.1) %>
+<%# locals: (plan:, plantillas:, meta_proteina: nil) %>
 <% comidas = plan.comidas %>
+<% meta_p = local_assigns[:meta_proteina].to_i %>
 
-<div id="<%= dom_id(plan, :comidas_editables) %>">
-<div class="mt-3 grid gap-3 lg:grid-cols-2">
-  <% comidas.each_with_index do |comida, indice| %>
-    <div class="flex flex-col gap-2 rounded-xl border border-base-300 bg-base-100 p-3"
-         data-autosave-target="card" data-url="<%= plan_personalizado_comida_path(plan, indice) %>">
-      <div class="flex items-center gap-2">
-        <input type="text" name="comida[nombre]" value="<%= comida["nombre"] %>" required
-               class="input input-sm input-bordered w-full font-semibold" aria-label="Nombre de la comida"
-               data-action="input->autosave#programar">
-        <label class="input input-sm input-bordered flex w-28 shrink-0 items-center gap-1">
-          <input type="number" name="comida[kcal]" value="<%= comida["kcal"] %>" min="0" required
-                 class="w-full text-right font-semibold" aria-label="Calorías"
-                 data-action="input->autosave#programar">
-          <span class="text-xs text-steel-3">kcal</span>
-        </label>
-      </div>
-      <textarea name="comida[descripcion]" rows="3" aria-label="Descripción"
-                class="textarea textarea-bordered w-full text-sm leading-snug"
-                data-action="input->autosave#programar"><%= comida["descripcion"] %></textarea>
-      <div class="grid grid-cols-3 gap-2">
-        <% { "proteinas_g" => "P", "carbohidratos_g" => "C", "grasas_g" => "G" }.each do |campo, letra| %>
+<div id="<%= dom_id(plan, :comidas_editables) %>"
+     data-controller="macro-tracker"
+     data-macro-tracker-meta-proteina-value="<%= meta_p %>">
+
+  <%# ── Banner de proteínas ────────────────────────────────────────── %>
+  <% if meta_p > 0 %>
+  <div class="mb-4 rounded-xl border border-volt/30 bg-volt/8 px-4 py-3">
+    <div class="flex items-center justify-between gap-3 text-sm">
+      <span class="font-semibold text-volt-d">
+        Meta de proteína:
+        <span class="font-display text-base" data-macro-tracker-target="proteinas">0</span>
+        / <%= meta_p %>g
+      </span>
+      <span class="text-xs text-steel-5" data-macro-tracker-target="textoProteina">Calculando…</span>
+    </div>
+    <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-base-200">
+      <div class="h-full rounded-full bg-volt transition-[width] duration-500 ease-out"
+           style="width: 0%" data-macro-tracker-target="barraProteina"></div>
+    </div>
+  </div>
+  <% end %>
+
+  <%# ── Resumen de macros en vivo ──────────────────────────────────── %>
+  <div class="mb-3 flex flex-wrap gap-3 rounded-xl bg-base-200 px-4 py-3 text-sm">
+    <span class="flex items-center gap-1.5 font-semibold">
+      <span class="size-2.5 rounded-full bg-volt"></span>
+      P <span class="font-display" data-macro-tracker-target="proteinas">0</span>g
+    </span>
+    <span class="flex items-center gap-1.5 font-semibold">
+      <span class="size-2.5 rounded-full bg-ocean"></span>
+      C <span class="font-display" data-macro-tracker-target="carbos">0</span>g
+    </span>
+    <span class="flex items-center gap-1.5 font-semibold">
+      <span class="size-2.5 rounded-full bg-warning"></span>
+      G <span class="font-display" data-macro-tracker-target="grasas">0</span>g
+    </span>
+    <span class="ml-auto font-semibold text-steel-5">
+      Total: <span class="font-display text-base-content" data-macro-tracker-target="kcal">0</span> kcal
+    </span>
+  </div>
+
+  <%# ── Cards de comidas ───────────────────────────────────────────── %>
+  <div class="grid gap-3 lg:grid-cols-2">
+    <% comidas.each_with_index do |comida, indice| %>
+      <%# Macros en vivo de esta comida (para mini-barra) %>
+      <% cp = comida["proteinas_g"].to_i * 4 %>
+      <% cc = comida["carbohidratos_g"].to_i * 4 %>
+      <% cg = comida["grasas_g"].to_i * 9 %>
+      <% cm = cp + cc + cg %>
+      <% cpct = ->(v) { cm.positive? ? ((v * 100.0) / cm).round : 0 } %>
+
+      <div class="flex flex-col gap-2 rounded-xl border border-base-300 bg-base-100 p-3"
+           data-autosave-target="card" data-url="<%= plan_personalizado_comida_path(plan, indice) %>">
+
+        <%# Nombre + kcal %>
+        <div class="flex items-center gap-2">
+          <input type="text" name="comida[nombre]" value="<%= comida["nombre"] %>" required
+                 class="input input-sm input-bordered w-full font-semibold" aria-label="Nombre de la comida"
+                 data-action="input->autosave#programar input->macro-tracker#recalcular">
+          <label class="input input-sm input-bordered flex w-28 shrink-0 items-center gap-1">
+            <input type="number" name="comida[kcal]" value="<%= comida["kcal"] %>" min="0" required
+                   class="w-full text-right font-semibold" aria-label="Calorías"
+                   data-action="input->autosave#programar input->macro-tracker#recalcular">
+            <span class="text-xs text-steel-3">kcal</span>
+          </label>
+        </div>
+
+        <%# Descripción %>
+        <textarea name="comida[descripcion]" rows="3" aria-label="¿Qué comes? Ajústalo a tu gusto"
+                  placeholder="Describe lo que comes — puedes adaptarlo a tus gustos"
+                  class="textarea textarea-bordered w-full text-sm leading-snug"
+                  data-action="input->autosave#programar"><%= comida["descripcion"] %></textarea>
+
+        <%# Macros editables %>
+        <div class="grid grid-cols-3 gap-2">
           <label class="input input-sm input-bordered flex items-center gap-1">
-            <span class="text-xs font-bold text-steel-3"><%= letra %></span>
-            <input type="number" name="comida[<%= campo %>]" value="<%= comida[campo] %>" min="0" step="0.5"
-                   class="w-full text-right" aria-label="<%= campo.humanize %>"
-                   data-action="input->autosave#programar">
+            <span class="text-xs font-bold text-volt-d">P</span>
+            <input type="number" name="comida[proteinas_g]" value="<%= comida["proteinas_g"] %>" min="0" step="0.5"
+                   class="w-full text-right" aria-label="Proteínas"
+                   data-action="input->autosave#programar input->macro-tracker#recalcular">
             <span class="text-xs text-steel-3">g</span>
           </label>
-        <% end %>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <button type="button" class="btn btn-ghost btn-xs" data-action="modal-plantillas#abrir">
-          <%= render "shared/icono", nombre: :busqueda, clase: "size-3.5" %> Plantilla
-        </button>
-        <% if Current.user&.staff? %>
-          <button type="button" class="btn btn-ghost btn-xs text-steel-5"
-                  data-action="modal-plantillas#guardarPlantilla"
-                  data-tipo="<%= PlantillaComida.tipo_para(comida["nombre"]) %>">
-            Guardar como plantilla
+          <label class="input input-sm input-bordered flex items-center gap-1">
+            <span class="text-xs font-bold text-ocean">C</span>
+            <input type="number" name="comida[carbohidratos_g]" value="<%= comida["carbohidratos_g"] %>" min="0" step="0.5"
+                   class="w-full text-right" aria-label="Carbohidratos"
+                   data-action="input->autosave#programar input->macro-tracker#recalcular">
+            <span class="text-xs text-steel-3">g</span>
+          </label>
+          <label class="input input-sm input-bordered flex items-center gap-1">
+            <span class="text-xs font-bold text-warning">G</span>
+            <input type="number" name="comida[grasas_g]" value="<%= comida["grasas_g"] %>" min="0" step="0.5"
+                   class="w-full text-right" aria-label="Grasas"
+                   data-action="input->autosave#programar input->macro-tracker#recalcular">
+            <span class="text-xs text-steel-3">g</span>
+          </label>
+        </div>
+
+        <%# Mini-barra de macros de esta comida %>
+        <div class="flex h-1.5 w-full overflow-hidden rounded-full bg-base-200">
+          <div class="bg-volt transition-[width] duration-300" style="width: <%= cpct.call(cp) %>%"></div>
+          <div class="bg-ocean transition-[width] duration-300" style="width: <%= cpct.call(cc) %>%"></div>
+          <div class="bg-warning transition-[width] duration-300" style="width: <%= cpct.call(cg) %>%"></div>
+        </div>
+
+        <%# Acciones %>
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" class="btn btn-ghost btn-xs gap-1" data-action="modal-plantillas#abrir">
+            <%= render "shared/icono", nombre: :busqueda, clase: "size-3.5" %>
+            💡 Sugerir alimentos
           </button>
-        <% end %>
-        <button type="button" class="btn btn-ghost btn-xs ml-auto text-error"
-                data-action="autosave#eliminar" aria-label="Eliminar comida">
-          <%= render "shared/icono", nombre: :alerta, clase: "size-3.5" %>
-        </button>
-        <span class="badge badge-sm gap-1 font-semibold estado-autosave" hidden
-              data-autosave-target="estado" data-action="click->autosave#reintentar"></span>
+          <% if Current.user&.staff? %>
+            <button type="button" class="btn btn-ghost btn-xs text-steel-5"
+                    data-action="modal-plantillas#guardarPlantilla"
+                    data-tipo="<%= PlantillaComida.tipo_para(comida["nombre"]) %>">
+              Guardar como plantilla
+            </button>
+          <% end %>
+          <button type="button" class="btn btn-ghost btn-xs ml-auto gap-1 text-error"
+                  data-action="autosave#eliminar" aria-label="Quitar comida">
+            <%= render "shared/icono", nombre: :alerta, clase: "size-3.5" %>
+            Quitar
+          </button>
+          <span class="badge badge-sm gap-1 font-semibold estado-autosave" hidden
+                data-autosave-target="estado" data-action="click->autosave#reintentar"></span>
+        </div>
       </div>
-    </div>
-  <% end %>
-</div>
+    <% end %>
+  </div>
 
-<button type="button" class="btn btn-outline btn-sm mt-3 w-full border-dashed" data-action="autosave#agregar">
-  + Agregar comida
-</button>
+  <button type="button" class="btn btn-outline btn-sm mt-3 w-full border-dashed" data-action="autosave#agregar">
+    + Agregar comida
+  </button>
 
-<%= render "planes_personalizados/modal_plantillas", plantillas: plantillas %>
+  <%= render "planes_personalizados/modal_plantillas", plantillas: plantillas %>
 </div>
