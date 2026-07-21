@@ -18,7 +18,7 @@
         <label class="form-control">
           <span class="label-text mb-1 text-xs font-semibold">Miembro</span>
           <%= form.collection_select :user_id,
-                User.where.not(id: Suscripcion.activas.select(:user_id)).order(:nombre), :id, :nombre,
+                @miembros_disponibles, :id, :nombre,
                 { prompt: "Selecciona un miembro" }, { class: "select select-bordered w-full", required: true } %>
         </label>
 

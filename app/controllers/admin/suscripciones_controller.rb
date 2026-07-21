@@ -17,6 +17,7 @@ class Admin::SuscripcionesController < ApplicationController
     authorize Suscripcion, :create?
     @suscripcion = Suscripcion.new(fecha_inicio: Date.current)
     @medicion = Medicion.new(fecha: Date.current)
+    @miembros_disponibles = miembros_sin_suscripcion_activa
   end
 
   # Alta del plan personalizado pagado en recepción (SDD flujo B paso 2): se
@@ -26,6 +27,16 @@ class Admin::SuscripcionesController < ApplicationController
     authorize Suscripcion, :create?
     datos = params.expect(suscripcion: %i[user_id fecha_inicio fecha_fin])
     medicion_datos = medicion_params
+    @miembros_disponibles = miembros_sin_suscripcion_activa
+
+    # Verificar que el usuario pertenece al tenant y es miembro
+    unless miembros_del_tenant.exists?(id: datos[:user_id])
+      @suscripcion = Suscripcion.new(datos)
+      @medicion = Medicion.new(medicion_datos)
+      @suscripcion.errors.add(:user_id, "no es un miembro válido de este gimnasio")
+      return render :new, status: :unprocessable_entity
+    end
+
     @suscripcion = Suscripcion.new(datos.merge(plan: Plan.personalizado, estado: "activa"))
     # Upsert por fecha (como el resto de flujos de medición, Fase 5.12/5.13):
     # reintentar el alta el mismo día corrige la medición en vez de chocar
@@ -79,6 +90,14 @@ class Admin::SuscripcionesController < ApplicationController
       plan = user.planes_personalizados.create!(estado: "generando", generado_por: "ia",
                                                 rutina: {}, plan_nutricional: {})
       GenerarPlanJob.perform_later(plan.id)
+    end
+
+    def miembros_del_tenant
+      User.where(tenant: Current.user.tenant, rol: "miembro")
+    end
+
+    def miembros_sin_suscripcion_activa
+      miembros_del_tenant.where.not(id: Suscripcion.activas.select(:user_id)).order(:nombre)
     end
 
     def medicion_params
