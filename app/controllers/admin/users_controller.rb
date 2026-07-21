@@ -16,6 +16,37 @@ class Admin::UsersController < ApplicationController
     @registro_reciente = @user.registros_entrenamiento.order(fecha: :desc).first
   end
 
+  ROLES_ASIGNABLES = %w[miembro entrenador admin].freeze
+
+  def new
+    authorize User, :create?
+    @user = User.new(rol: "miembro")
+  end
+
+  def create
+    authorize User, :create?
+    rol = params.dig(:user, :rol).to_s
+    rol = "miembro" unless ROLES_ASIGNABLES.include?(rol)
+
+    @user = User.new(
+      nombre:        params.dig(:user, :nombre),
+      email_address: params.dig(:user, :email_address),
+      tenant:        Current.user.tenant,
+      rol:           rol
+    )
+    # Contraseña temporal aleatoria; el usuario la fija vía el link de reset
+    @user.password = SecureRandom.hex(16)
+
+    if @user.save
+      token = @user.password_reset_token
+      UserMailer.with(user: @user, token: token).password_reset.deliver_later
+      redirect_to admin_users_path,
+                  notice: "#{@user.nombre.presence || @user.email_address} agregado. Se envió el enlace para fijar su contraseña."
+    else
+      render :new, status: :unprocessable_entity
+    end
+  end
+
   # Dashboard del miembro (Fase 6.13): datos básicos editables por staff.
   # El rol y el VIP NUNCA se mass-asignan (regla del proyecto) — se aplican
   # aparte y solo si quien edita es admin (un entrenador no puede ascender a

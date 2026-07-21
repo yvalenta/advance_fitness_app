@@ -16,6 +16,10 @@ class UserPolicy < ApplicationPolicy
     propio? || user.staff?
   end
 
+  def create?
+    user.admin?
+  end
+
   def destroy?
     false
   end

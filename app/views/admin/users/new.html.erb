@@ -1,0 +1,51 @@
+<% content_for :title, "Agregar miembro — #{Negocio.nombre}" %>
+
+<%= render "shared/encabezado",
+      titulo: "Agregar persona",
+      descripcion: "Crea una cuenta en este gimnasio. Le enviaremos un correo para que fije su contraseña." %>
+
+<div class="mx-auto -mt-8 w-full max-w-lg px-4 pb-12">
+  <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
+    <div class="card-body">
+      <% if @user.errors.any? %>
+        <div role="alert" class="alert alert-error text-sm">
+          <%= render "shared/icono", nombre: :alerta, clase: "size-5 shrink-0" %>
+          <span><%= @user.errors.full_messages.to_sentence %></span>
+        </div>
+      <% end %>
+
+      <%= form_with model: @user, url: admin_users_path, class: "flex flex-col gap-4" do |form| %>
+        <label class="form-control">
+          <span class="label-text mb-1 text-xs font-semibold">Nombre completo</span>
+          <%= form.text_field :nombre, required: true, autofocus: true,
+                autocomplete: "off", placeholder: "Nombre y apellido",
+                class: "input input-bordered w-full" %>
+        </label>
+
+        <label class="form-control">
+          <span class="label-text mb-1 text-xs font-semibold">Correo electrónico</span>
+          <%= form.email_field :email_address, required: true,
+                autocomplete: "off", placeholder: "correo@ejemplo.com",
+                class: "input input-bordered w-full" %>
+        </label>
+
+        <label class="form-control">
+          <span class="label-text mb-1 text-xs font-semibold">Rol</span>
+          <%= form.select :rol,
+                [["Miembro", "miembro"], ["Entrenador", "entrenador"], ["Administrador", "admin"]],
+                { selected: "miembro" }, class: "select select-bordered w-full" %>
+        </label>
+
+        <div class="rounded-xl bg-base-200 p-3 text-xs text-steel-5">
+          Se enviará un enlace por correo para que la persona fije su contraseña y pueda entrar en
+          <span class="font-mono font-semibold"><%= Current.tenant.slug %>.ynt.codes</span>.
+        </div>
+
+        <div class="flex gap-2">
+          <%= form.submit "Agregar y enviar invitación", class: "btn btn-primary font-bold" %>
+          <%= link_to "Cancelar", admin_users_path, class: "btn btn-ghost" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

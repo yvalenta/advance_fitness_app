@@ -2,7 +2,8 @@
 
 <%= render "shared/encabezado",
       titulo: "Miembros",
-      descripcion: "Todas las personas registradas en el gimnasio." %>
+      descripcion: "Todas las personas registradas en el gimnasio.",
+      accion: (policy(User).create? ? link_to("Agregar persona", new_admin_user_path, class: "btn btn-primary font-bold") : nil) %>
 
 <div class="mx-auto -mt-8 w-full max-w-6xl px-4 pb-12">
   <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
@@ -53,7 +54,7 @@
                   </td>
                   <td class="text-sm text-steel-5"><%= l usuario.fecha_ingreso %></td>
                   <td class="text-right">
-                    <%= link_to "Ver", admin_user_path(usuario), class: "btn btn-ghost btn-xs" %>
+                    <%= link_to "Ver", admin_user_path(usuario), class: "btn btn-ghost btn-xs", data: { turbo_frame: "_top" } %>
                   </td>
                 </tr>
               <% end %>
