@@ -1,26 +1,102 @@
 <% content_for :title, "Iniciar sesión — #{Negocio.nombre}" %>
 
-<div class="grid min-h-screen lg:grid-cols-2">
-  <%= render "shared/auth_brand" %>
+<%# ── Fondo: orbs de luz + trama de puntos ── %>
+<div class="relative min-h-screen overflow-hidden bg-base-200">
 
-  <div class="flex items-center justify-center bg-base-200 px-4 py-10">
-    <div class="w-full max-w-sm">
-      <div class="mb-6 flex flex-col items-center gap-3 text-center lg:hidden">
-        <span class="flex size-12 items-center justify-center rounded-2xl bg-steel">
-          <%= render "shared/logo" %>
+  <%# Orb verde-volt superior izquierda %>
+  <div class="pointer-events-none absolute -left-40 -top-40 size-[600px] rounded-full"
+       style="background: radial-gradient(circle, rgba(180,240,0,0.12) 0%, transparent 70%)"></div>
+  <%# Orb ocean inferior derecha %>
+  <div class="pointer-events-none absolute -bottom-40 -right-20 size-[500px] rounded-full"
+       style="background: radial-gradient(circle, rgba(14,165,233,0.10) 0%, transparent 70%)"></div>
+  <%# Trama de puntos sobre el fondo %>
+  <div class="trama-puntos pointer-events-none absolute inset-0 opacity-40"></div>
+
+  <%# ── Layout dos columnas en desktop ── %>
+  <div class="relative flex min-h-screen lg:grid lg:grid-cols-[1fr_480px]">
+
+    <%# ── Panel izquierdo de marca (solo desktop) ── %>
+    <div class="hidden lg:flex lg:flex-col lg:justify-between lg:p-14">
+      <%# Logo + wordmark %>
+      <div class="flex items-center gap-3">
+        <% if Current.tenant&.logo&.attached? %>
+          <%= image_tag Current.tenant.logo.variant(resize_to_limit: [40, 40]),
+                class: "size-10 rounded-xl object-contain ring-1 ring-white/10",
+                alt: Negocio.nombre %>
+        <% else %>
+          <span class="flex size-10 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15">
+            <%= render "shared/logo", clase: "h-5 w-5 text-white" %>
+          </span>
+        <% end %>
+        <span class="font-display text-sm font-bold tracking-[0.18em] text-white">
+          <%= Negocio.nombre.upcase %>
         </span>
-        <span class="font-display text-sm font-bold tracking-[0.18em]">ADVANCE<span class="text-volt-d">FITNESS</span></span>
+        <span class="size-1.5 rounded-full" style="background:#b4f000"></span>
       </div>
 
-      <div class="card border border-base-300 bg-base-100 shadow-xl">
-        <div class="card-body gap-4">
-          <div>
-            <h1 class="font-display text-2xl font-bold">Bienvenido de vuelta</h1>
-            <p class="mt-1 text-sm text-steel-5">Inicia sesión para ver tu progreso</p>
+      <%# Tagline central %>
+      <div class="max-w-md">
+        <div class="animate-fade-up inline-flex items-center gap-2 rounded-full border border-volt/30 bg-volt/5 px-4 py-1.5 backdrop-blur-sm">
+          <span class="inline-block size-2 rounded-full bg-volt pulse-volt"></span>
+          <span class="eyebrow text-volt">Entrena con datos</span>
+        </div>
+        <h2 class="animate-fade-up fade-delay-1 mt-6 font-display text-4xl font-bold leading-[1.15] text-white xl:text-5xl">
+          Tu progreso,<br><span class="text-volt">medido</span> de verdad.
+        </h2>
+        <ul class="animate-fade-up fade-delay-2 mt-8 space-y-3">
+          <% [
+            "Membresía y check-in sin filas",
+            "IMC, somatotipo y progreso mensual",
+            "Objetivo calórico según tu meta",
+            "Planes personalizados con IA, aprobados por tu coach"
+          ].each do |b| %>
+            <li class="flex items-center gap-3 text-sm text-white/75">
+              <span class="flex size-5 shrink-0 items-center justify-center rounded-full bg-volt/20 ring-1 ring-volt/40">
+                <%= render "shared/icono", nombre: :check, clase: "size-3 text-volt" %>
+              </span>
+              <%= b %>
+            </li>
+          <% end %>
+        </ul>
+      </div>
+
+      <p class="text-xs text-white/25">© <%= Date.current.year %> <%= Negocio.nombre %> · <%= Negocio.ciudad %></p>
+    </div>
+
+    <%# ── Panel derecho: formulario ── %>
+    <div class="flex min-h-screen items-center justify-center px-5 py-12 lg:bg-black/20 lg:backdrop-blur-xl lg:border-l lg:border-white/8">
+      <div class="w-full max-w-sm animate-fade-up">
+
+        <%# Logo mobile (solo < lg) %>
+        <div class="mb-8 flex flex-col items-center gap-3 lg:hidden">
+          <% if Current.tenant&.logo&.attached? %>
+            <%= image_tag Current.tenant.logo.variant(resize_to_limit: [64, 64]),
+                  class: "size-16 rounded-2xl object-contain ring-1 ring-white/15 shadow-lg",
+                  alt: Negocio.nombre %>
+          <% else %>
+            <span class="flex size-16 items-center justify-center rounded-2xl bg-white/8 ring-1 ring-white/15 shadow-lg">
+              <%= render "shared/logo", clase: "h-8 w-8 text-white" %>
+            </span>
+          <% end %>
+          <div class="flex items-center gap-2">
+            <span class="font-display text-sm font-bold tracking-[0.18em] text-white">
+              <%= Negocio.nombre.upcase %>
+            </span>
+            <span class="size-1.5 rounded-full" style="background:#b4f000"></span>
+          </div>
+        </div>
+
+        <%# Card glassmorphism %>
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-7 shadow-2xl backdrop-blur-xl">
+          <div class="mb-6">
+            <h1 class="font-display text-2xl font-bold text-white">Bienvenido de vuelta</h1>
+            <p class="mt-1 text-sm text-white/50">Inicia sesión para ver tu progreso</p>
           </div>
 
-          <%= button_to "/auth/google_oauth2", data: { turbo: false }, class: "btn btn-outline w-full" do %>
-            <svg viewBox="0 0 24 24" class="h-5 w-5" aria-hidden="true">
+          <%# Google OAuth %>
+          <%= button_to "/auth/google_oauth2", data: { turbo: false },
+                class: "flex w-full items-center justify-center gap-2.5 rounded-xl border border-white/15 bg-white/8 py-2.5 text-sm font-semibold text-white/90 transition hover:bg-white/12 active:scale-[0.98]" do %>
+            <svg viewBox="0 0 24 24" class="h-4.5 w-4.5 shrink-0" aria-hidden="true">
               <path fill="#4285F4" d="M23.5 12.27c0-.85-.08-1.66-.22-2.45H12v4.64h6.45a5.52 5.52 0 0 1-2.39 3.62v3h3.87c2.26-2.09 3.57-5.16 3.57-8.81Z"/>
               <path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.93-2.91l-3.87-3c-1.07.72-2.44 1.14-4.06 1.14-3.12 0-5.77-2.11-6.71-4.95H1.29v3.1A11.99 11.99 0 0 0 12 24Z"/>
               <path fill="#FBBC05" d="M5.29 14.28a7.22 7.22 0 0 1 0-4.56v-3.1H1.29a12.01 12.01 0 0 0 0 10.76l4-3.1Z"/>
@@ -29,28 +105,43 @@
             Continuar con Google
           <% end %>
 
-          <div class="divider my-0 text-xs text-steel-3">o con tu correo</div>
+          <div class="my-5 flex items-center gap-3">
+            <div class="h-px flex-1 bg-white/10"></div>
+            <span class="text-xs text-white/35">o con tu correo</span>
+            <div class="h-px flex-1 bg-white/10"></div>
+          </div>
 
-          <%= form_with url: session_url, class: "flex flex-col gap-3" do |form| %>
-            <label class="form-control w-full">
-              <span class="label-text mb-1 text-xs font-semibold">Correo electrónico</span>
-              <%= form.email_field :email_address, required: true, autofocus: true, autocomplete: "username",
-                    placeholder: "tu@correo.com", value: params[:email_address], class: "input input-bordered w-full" %>
-            </label>
-            <label class="form-control w-full">
-              <span class="label-text mb-1 text-xs font-semibold">Contraseña</span>
+          <%= form_with url: session_url, class: "flex flex-col gap-4" do |form| %>
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold text-white/70">Correo electrónico</label>
+              <%= form.email_field :email_address, required: true, autofocus: true,
+                    autocomplete: "username", placeholder: "tu@correo.com",
+                    value: params[:email_address],
+                    class: "w-full rounded-xl border border-white/15 bg-white/8 px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none ring-0 transition focus:border-volt/50 focus:bg-white/10 focus:ring-2 focus:ring-volt/20" %>
+            </div>
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold text-white/70">Contraseña</label>
               <%= form.password_field :password, required: true, autocomplete: "current-password",
-                    placeholder: "••••••••", maxlength: 72, class: "input input-bordered w-full" %>
-            </label>
-            <%= form.submit "Entrar", class: "btn btn-primary w-full font-bold" %>
+                    placeholder: "••••••••", maxlength: 72,
+                    class: "w-full rounded-xl border border-white/15 bg-white/8 px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none ring-0 transition focus:border-volt/50 focus:bg-white/10 focus:ring-2 focus:ring-volt/20" %>
+            </div>
+
+            <%= form.submit "Entrar",
+                  class: "mt-1 w-full cursor-pointer rounded-xl py-2.5 text-sm font-bold text-steel-9 shadow-[0_0_24px_rgba(180,240,0,0.2)] transition active:scale-[0.98]",
+                  style: "background: linear-gradient(135deg, #8fbf00 0%, #b4f000 60%, #d3ff4d 100%)" %>
           <% end %>
 
-          <div class="flex items-center justify-between text-sm">
-            <%= link_to "Crear cuenta", new_registro_path, class: "link link-hover font-semibold text-volt-d" %>
-            <%= link_to "¿Olvidaste tu contraseña?", new_password_path, class: "link link-hover text-steel-3" %>
+          <div class="mt-5 flex items-center justify-between text-xs">
+            <%= link_to "Crear cuenta", new_registro_path,
+                  class: "font-semibold transition hover:opacity-80",
+                  style: "color:#b4f000" %>
+            <%= link_to "¿Olvidaste tu contraseña?", new_password_path,
+                  class: "text-white/35 transition hover:text-white/60" %>
           </div>
         </div>
+
       </div>
     </div>
+
   </div>
 </div>
