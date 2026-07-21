@@ -19,6 +19,7 @@ module TenantScoping
 
   BACK_COMPAT_ADVANCE_FITNESS = %w[www advance-fitness-app].freeze
   SUBDOMINIOS_COMERCIALES = %w[comercial app].freeze
+  SUBDOMINIOS_LANDING = %w[join unete].freeze
 
   included do
     # `prepend_before_action` para correr ANTES de `require_authentication`
@@ -32,16 +33,21 @@ module TenantScoping
     def resolver_tenant
       sub = request.subdomain.to_s.downcase
 
-      Current.tenant =
-        if sub.blank? || BACK_COMPAT_ADVANCE_FITNESS.include?(sub)
-          Tenant.find_by(slug: "advance-fitness")
-        elsif SUBDOMINIOS_COMERCIALES.include?(sub)
-          nil
-        else
-          tenant = Tenant.activos.find_by(slug: sub)
-          return tenant_no_encontrado if tenant.nil?
-          tenant
-        end
+      if sub.blank? || BACK_COMPAT_ADVANCE_FITNESS.include?(sub)
+        Current.tenant = Tenant.find_by(slug: "advance-fitness")
+      elsif SUBDOMINIOS_COMERCIALES.include?(sub)
+        Current.tenant = nil
+      elsif SUBDOMINIOS_LANDING.include?(sub)
+        # Tenant resuelto desde el primer segmento del path: /promo-fitness-2026
+        slug = request.path.split("/").reject(&:blank?).first.to_s.downcase
+        Current.landing_slug = slug
+        Current.tenant = Tenant.activos.find_by(slug: slug) if slug.present?
+        # Sin 404 aquí: Landing::CampañasController maneja el not-found
+      else
+        tenant = Tenant.activos.find_by(slug: sub)
+        return tenant_no_encontrado if tenant.nil?
+        Current.tenant = tenant
+      end
     end
 
     def tenant_no_encontrado

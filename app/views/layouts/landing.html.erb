@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="advance">
+  <head>
+    <title><%= content_for(:title).presence || (@campana&.nombre || "Únete") %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#0b1220">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= turbo_refreshes_with method: :morph, scroll: :preserve %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <%= stylesheet_link_tag "application" %>
+    <%= javascript_importmap_tags %>
+
+    <%# Paleta del tenant si existe %>
+    <% if Current.tenant&.paleta_colores.is_a?(Hash) && Current.tenant.paleta_colores.any? %>
+      <style>
+        :root {
+          <% Current.tenant.paleta_colores.each do |token, valor| %>
+            <% if valor.to_s.match?(/\A#[0-9a-fA-F]{3,8}\z/) && %w[volt primary accent].include?(token.to_s) %>
+              --color-<%= token %>: <%= valor %>;
+            <% end %>
+          <% end %>
+        }
+      </style>
+    <% end %>
+  </head>
+  <body class="min-h-screen bg-base-100 font-sans antialiased">
+    <%= render "shared/toast" if defined?(flash) %>
+    <%= yield %>
+  </body>
+</html>
