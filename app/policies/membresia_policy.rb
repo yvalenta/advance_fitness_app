@@ -28,7 +28,7 @@ class MembresiaPolicy < ApplicationPolicy
 
   class Scope < ApplicationPolicy::Scope
     def resolve
-      user.staff? ? scope.all : scope.where(user_id: user.id)
+      user.staff? ? del_tenant(scope) : scope.where(user_id: user.id)
     end
   end
 

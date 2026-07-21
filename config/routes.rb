@@ -85,6 +85,12 @@ Rails.application.routes.draw do
     resources :novedades, only: %i[ index new create edit update destroy ]
   end
 
+  # Portal comercial (SDD §16.6): superadmin gestiona los tenants en
+  # comercial/app.ynt.codes (Current.tenant = nil).
+  namespace :superadmin do
+    resources :tenants
+  end
+
   # Comunidad (Fase 8): lectura pública para todo miembro autenticado (SDD §09).
   resources :novedades, only: :index
   get "blog", to: "blog#index"

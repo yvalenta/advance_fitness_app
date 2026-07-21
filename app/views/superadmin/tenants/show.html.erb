@@ -1,0 +1,21 @@
+<% content_for :title, "#{@tenant.nombre} — Portal comercial" %>
+
+<%= render "shared/encabezado",
+      titulo: @tenant.nombre,
+      descripcion: "#{@tenant.tipo_entidad.capitalize} · #{@tenant.slug}.ynt.codes",
+      accion: link_to("Editar", edit_superadmin_tenant_path(@tenant), class: "btn btn-primary") %>
+
+<div class="mx-auto -mt-8 w-full max-w-3xl px-4 pb-12">
+  <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
+    <div class="card-body">
+      <dl class="grid gap-3 text-sm sm:grid-cols-2">
+        <div><dt class="text-xs font-semibold uppercase text-steel-3">Correo</dt><dd><%= @tenant.email_contacto %></dd></div>
+        <div><dt class="text-xs font-semibold uppercase text-steel-3">Estado</dt><dd><%= @tenant.activo? ? "Activo" : "Inactivo" %></dd></div>
+        <div><dt class="text-xs font-semibold uppercase text-steel-3">Membresías</dt><dd><%= @tenant.membresias_habilitadas? ? "Habilitadas" : "Deshabilitadas" %></dd></div>
+        <div><dt class="text-xs font-semibold uppercase text-steel-3">Usuarios</dt><dd><%= @tenant.users.size %></dd></div>
+        <div><dt class="text-xs font-semibold uppercase text-steel-3">Mensualidad</dt><dd><%= @tenant.precio_mensualidad ? number_to_currency(@tenant.precio_mensualidad, unit: "$", precision: 0) : "usa default global" %></dd></div>
+        <div><dt class="text-xs font-semibold uppercase text-steel-3">Plan Personalizado</dt><dd><%= @tenant.precio_personalizado ? number_to_currency(@tenant.precio_personalizado, unit: "$", precision: 0) : "usa default global" %></dd></div>
+      </dl>
+    </div>
+  </div>
+</div>

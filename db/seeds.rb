@@ -35,6 +35,20 @@
 # arranque (p. ej. horarios default del gimnasio), agrégalas como una sección
 # numerada nueva con su estrategia de idempotencia documentada.
 
+# ── 0. Tenant Advance Fitness (SDD §16.6, row-level multi-tenancy) ────────
+# Cada base virgen arranca con el tenant "advance-fitness" — es el que
+# resuelve la lógica de back-compat en TenantScoping cuando el request llega
+# al apex o al host actual (`advance-fitness-app.ynt.codes`) sin subdominio.
+# Otros tenants se crean desde el panel de superadmin.
+tenant_af = Tenant.find_or_initialize_by(slug: "advance-fitness")
+tenant_af.update!(
+  nombre: tenant_af.nombre.presence || "Advance Fitness",
+  tipo_entidad: tenant_af.tipo_entidad.presence || "gimnasio",
+  email_contacto: tenant_af.email_contacto.presence || "hola@advancefitness.local",
+  features_habilitadas: tenant_af.features_habilitadas.presence || { "membresias" => true },
+  activo: true
+)
+
 # ── 1. Admin inicial ────────────────────────────────────────────────────────
 # Un tenant recién creado necesita al menos un admin para entrar al panel.
 # En producción: cambia la contraseña de inmediato, o crea el admin real y
@@ -43,9 +57,11 @@
 admin = User.find_or_create_by!(email_address: ENV.fetch("SEED_ADMIN_EMAIL", "admin@advancefitness.local")) do |user|
   user.nombre = "Administrador"
   user.rol = "admin"
+  user.tenant = tenant_af
   user.password = ENV.fetch("SEED_ADMIN_PASSWORD", "cambiame-ya-123")
 end
 admin.update!(rol: "admin") unless admin.admin?
+admin.update!(tenant: tenant_af) if admin.tenant_id.nil?
 
 # Promueve a admin un correo existente (útil para tu usuario de Google):
 #   ADMIN_EMAIL=tu@correo.com bin/rails db:seed

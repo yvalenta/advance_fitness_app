@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_20_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_21_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -159,8 +159,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_20_000000) do
     t.datetime "created_at", null: false
     t.date "fecha_evento"
     t.boolean "publicado", default: false, null: false
+    t.bigint "tenant_id"
     t.string "titulo", null: false
     t.datetime "updated_at", null: false
+    t.index ["tenant_id"], name: "index_novedades_on_tenant_id"
   end
 
   create_table "objetivos_nutricionales", force: :cascade do |t|
@@ -255,10 +257,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_20_000000) do
     t.boolean "publicado", default: false, null: false
     t.datetime "publicado_en"
     t.string "slug", null: false
+    t.bigint "tenant_id"
     t.string "titulo", null: false
     t.datetime "updated_at", null: false
     t.index ["autor_id"], name: "index_posts_on_autor_id"
     t.index ["slug"], name: "index_posts_on_slug", unique: true
+    t.index ["tenant_id"], name: "index_posts_on_tenant_id"
   end
 
   create_table "registros_calorias", force: :cascade do |t|
@@ -305,6 +309,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_20_000000) do
     t.index ["user_id"], name: "index_suscripciones_una_activa_por_user", unique: true, where: "((estado)::text = 'activa'::text)"
   end
 
+  create_table "tenants", force: :cascade do |t|
+    t.boolean "activo", default: true, null: false
+    t.datetime "created_at", null: false
+    t.integer "duracion_dias"
+    t.string "email_contacto", null: false
+    t.jsonb "features_habilitadas", default: {"membresias" => true}, null: false
+    t.string "nombre", null: false
+    t.jsonb "paleta_colores", default: {}, null: false
+    t.integer "precio_mensualidad"
+    t.integer "precio_personalizado"
+    t.string "slug", null: false
+    t.string "tipo_entidad", null: false
+    t.datetime "updated_at", null: false
+    t.index ["slug"], name: "index_tenants_on_slug", unique: true
+  end
+
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "email_address", null: false
@@ -317,10 +337,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_20_000000) do
     t.string "sexo"
     t.string "somatotipo"
     t.decimal "talla_cm", precision: 5, scale: 1
+    t.bigint "tenant_id"
     t.datetime "updated_at", null: false
     t.boolean "vip", default: false, null: false
     t.index ["email_address"], name: "index_users_on_email_address", unique: true
     t.index ["rol"], name: "index_users_on_rol"
+    t.index ["tenant_id"], name: "index_users_on_tenant_id"
   end
 
   add_foreign_key "accesos", "users"
@@ -332,6 +354,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_20_000000) do
   add_foreign_key "mediciones", "users"
   add_foreign_key "mediciones", "users", column: "tomada_por_id"
   add_foreign_key "membresias", "users"
+  add_foreign_key "novedades", "tenants"
   add_foreign_key "objetivos_nutricionales", "users"
   add_foreign_key "pagos", "membresias"
   add_foreign_key "pagos", "users", column: "anulado_por_id"
@@ -341,6 +364,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_20_000000) do
   add_foreign_key "plantillas_comida", "users", column: "creado_por_id"
   add_foreign_key "plantillas_ejercicio", "ejercicios"
   add_foreign_key "plantillas_ejercicio", "users", column: "creado_por_id"
+  add_foreign_key "posts", "tenants"
   add_foreign_key "posts", "users", column: "autor_id"
   add_foreign_key "registros_calorias", "users"
   add_foreign_key "registros_entrenamiento", "users"
@@ -348,4 +372,5 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_20_000000) do
   add_foreign_key "suscripciones", "membresias"
   add_foreign_key "suscripciones", "planes"
   add_foreign_key "suscripciones", "users"
+  add_foreign_key "users", "tenants"
 end

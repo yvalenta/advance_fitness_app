@@ -44,7 +44,7 @@ RSpec.describe "Admin::Users", type: :request do
 
   # Fase 6.15: listado paginado (25 por página) para no traer todo de un golpe
   it "pagina el listado y respeta la búsqueda al cambiar de página" do
-    26.times { |i| User.create!(nombre: "Extra #{i}", email_address: "extra#{i}@test.com", password: "clave1234", rol: "miembro") }
+    26.times { |i| User.create!(nombre: "Extra #{i}", email_address: "extra#{i}@test.com", password: "clave1234", rol: "miembro", tenant: tenants(:advance_fitness)) }
     sign_in_as users(:entrenador)
 
     get admin_users_path
