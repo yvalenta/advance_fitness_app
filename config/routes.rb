@@ -1,4 +1,10 @@
 Rails.application.routes.draw do
+  # Landing de campaña: join.ynt.codes/:slug → página pública de conversión
+  constraints(subdomain: /\A(join|unete)\z/) do
+    get "/:slug",         to: "landing/campanas#show",   as: :landing_campana
+    get "/:slug/unirse",  to: "landing/campanas#unirse", as: :landing_unirse
+  end
+
   resource :session
   resource :registro, controller: "registrations", only: %i[ new create ]
   resources :passwords, param: :token

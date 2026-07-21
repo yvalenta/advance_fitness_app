@@ -1,0 +1,116 @@
+<% content_for :title, @campana ? "#{@campana.nombre} — Únete" : "Campaña no encontrada" %>
+
+<% unless @campana %>
+  <%# Slug no encontrado: página amigable %>
+  <div class="flex min-h-screen flex-col items-center justify-center gap-6 p-8 text-center">
+    <p class="font-display text-4xl font-bold">😕</p>
+    <h1 class="font-display text-2xl font-bold">Campaña no encontrada</h1>
+    <p class="text-steel-5">El enlace puede haber expirado o estar mal escrito.</p>
+  </div>
+<% else %>
+
+<%# ── Datos de la campaña ────────────────────────────────────────────────── %>
+<% precio = Negocio.precio_mensualidad %>
+<% duracion = Negocio.duracion_dias %>
+
+<%# ── HERO ───────────────────────────────────────────────────────────────── %>
+<section class="gradient-hero relative overflow-hidden">
+  <div class="trama-puntos absolute inset-0 opacity-30"></div>
+  <div class="relative mx-auto flex max-w-4xl flex-col items-center gap-6 px-6 py-20 text-center">
+
+    <%# Logo o ícono de fuego %>
+    <% if @campana.logo.attached? %>
+      <%= image_tag @campana.logo, class: "h-16 w-auto object-contain", alt: @campana.nombre %>
+    <% else %>
+      <span class="flex size-16 items-center justify-center rounded-2xl bg-volt/20 text-volt">
+        <svg class="size-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+      </span>
+    <% end %>
+
+    <div>
+      <p class="eyebrow mb-2 text-volt">Campaña exclusiva</p>
+      <h1 class="font-display text-4xl font-bold text-white sm:text-5xl">
+        <%= @campana.nombre %>
+      </h1>
+      <p class="mt-4 text-lg text-white/70">
+        Transforma tu cuerpo con un plan de nutrición y entrenamiento personalizado.
+        Acceso completo por <%= duracion %> días.
+      </p>
+    </div>
+
+    <%# CTA principal %>
+    <%= link_to landing_unirse_path(slug: @slug),
+          class: "btn btn-primary btn-lg mt-2 gap-2 px-10 font-bold shadow-xl" do %>
+      Quiero mi membresía
+      <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+      </svg>
+    <% end %>
+
+    <p class="text-sm text-white/40">Sin contratos. Cancela cuando quieras.</p>
+  </div>
+</section>
+
+<%# ── PRECIO ─────────────────────────────────────────────────────────────── %>
+<section class="mx-auto max-w-lg px-6 py-16 text-center">
+  <p class="eyebrow text-volt">Precio de campaña</p>
+  <p class="font-display mt-2 text-6xl font-bold">
+    $<%= number_with_delimiter(precio, delimiter: ".") %>
+  </p>
+  <p class="mt-1 text-steel-5">COP · por <%= duracion %> días de acceso completo</p>
+
+  <%= link_to landing_unirse_path(slug: @slug),
+        class: "btn btn-primary btn-lg mt-8 w-full gap-2 font-bold" do %>
+    Comprar membresía
+    <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+    </svg>
+  <% end %>
+
+  <p class="mt-3 text-xs text-steel-3">
+    Al dar click serás redirigido al registro.
+    ¿Ya tienes cuenta?
+    <%= link_to "Inicia sesión", new_session_url(host: "#{@campana.slug}.ynt.codes"),
+          class: "link font-semibold", allow_other_host: true %>
+  </p>
+</section>
+
+<%# ── BENEFICIOS ─────────────────────────────────────────────────────────── %>
+<section class="bg-base-200 px-6 py-16">
+  <div class="mx-auto max-w-4xl">
+    <h2 class="font-display text-center text-2xl font-bold">¿Qué incluye?</h2>
+    <div class="mt-10 grid gap-6 sm:grid-cols-3">
+      <% [
+        ["🥗", "Plan nutricional", "Diseñado según tu somatotipo, objetivo y preferencias. Editable a tu gusto."],
+        ["💪", "Rutina de entrenamiento", "Progresiva, adaptada a tu nivel y equipamiento disponible."],
+        ["📊", "Seguimiento en tiempo real", "Registra tus comidas, pesos y series. Ve tu progreso día a día."]
+      ].each do |emoji, titulo, detalle| %>
+        <div class="card bg-base-100 shadow-sm">
+          <div class="card-body gap-3">
+            <span class="text-3xl"><%= emoji %></span>
+            <h3 class="font-semibold"><%= titulo %></h3>
+            <p class="text-sm text-steel-5"><%= detalle %></p>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</section>
+
+<%# ── CTA FINAL ──────────────────────────────────────────────────────────── %>
+<section class="px-6 py-16 text-center">
+  <h2 class="font-display text-2xl font-bold">Empieza hoy</h2>
+  <p class="mt-2 text-steel-5">Tu plan listo en minutos, desde cualquier dispositivo.</p>
+  <%= link_to landing_unirse_path(slug: @slug),
+        class: "btn btn-primary btn-lg mt-6 gap-2 px-10 font-bold" do %>
+    Unirme ahora — $<%= number_with_delimiter(precio, delimiter: ".") %> COP
+  <% end %>
+  <p class="mt-4 text-xs text-steel-3">
+    Campaña <strong><%= @slug %></strong> · <%= @campana.nombre %> · <%= @campana.email_contacto %>
+  </p>
+</section>
+
+<% end %>
