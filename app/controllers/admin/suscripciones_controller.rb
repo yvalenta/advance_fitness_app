@@ -93,7 +93,7 @@ class Admin::SuscripcionesController < ApplicationController
     end
 
     def miembros_del_tenant
-      User.where(tenant: Current.user.tenant, rol: "miembro")
+      User.where(tenant: Current.user.tenant, rol: %w[miembro entrenador])
     end
 
     def miembros_sin_suscripcion_activa

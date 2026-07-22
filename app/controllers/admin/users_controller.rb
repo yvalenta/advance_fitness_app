@@ -38,8 +38,7 @@ class Admin::UsersController < ApplicationController
     @user.password = SecureRandom.hex(16)
 
     if @user.save
-      token = @user.password_reset_token
-      UserMailer.with(user: @user, token: token).password_reset.deliver_later
+      PasswordsMailer.reset(@user).deliver_later
       redirect_to admin_users_path,
                   notice: "#{@user.nombre.presence || @user.email_address} agregado. Se envió el enlace para fijar su contraseña."
     else

@@ -24,7 +24,9 @@
           </legend>
           <label class="form-control">
             <span class="label-text mb-1 text-xs font-semibold">¿Para quién es la membresía?</span>
-            <%= form.collection_select :user_id, User.where.missing(:membresia).order(:nombre), :id, :nombre,
+            <%= form.collection_select :user_id,
+                  User.where(tenant: Current.user.tenant, rol: %w[miembro entrenador]).where.missing(:membresia).order(:nombre),
+                  :id, :nombre,
                   { prompt: "Selecciona un miembro" }, { class: "select select-bordered w-full", required: true } %>
           </label>
           <div class="grid gap-4 sm:grid-cols-2">

@@ -12,7 +12,7 @@
       Analista de Performance
     </h2>
 
-    <% if user.premium? %>
+    <% if user.premium? && user.suscripcion_activa %>
       <%= form_with url: admin_suscripcion_path(user.suscripcion_activa), method: :patch,
             class: "flex flex-wrap items-end gap-2 border-b border-base-200 pb-3" do |f| %>
         <label class="form-control">

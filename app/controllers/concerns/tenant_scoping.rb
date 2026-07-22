@@ -66,7 +66,7 @@ module TenantScoping
         redirect_to new_session_url, alert: "Inicia sesión desde el subdominio de tu gimnasio."
       elsif Current.user.tenant_id != Current.tenant.id
         terminate_session
-        redirect_to new_session_url, alert: "No tienes acceso a este espacio."
+        redirect_to new_session_url, alert: "Tu cuenta pertenece a otro gimnasio. Crea una cuenta aquí o inicia sesión en tu espacio."
       end
     end
 

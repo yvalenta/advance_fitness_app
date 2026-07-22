@@ -33,7 +33,7 @@ class User < ApplicationRecord
   # y entre 19:00 y 24:00 hora Colombia daría el día siguiente)
   before_validation(on: :create) { self.fecha_ingreso ||= Date.current }
 
-  validates :email_address, presence: true, uniqueness: true
+  validates :email_address, presence: true, uniqueness: { scope: :tenant_id, message: "ya está registrado en este gimnasio" }
   validates :rol, inclusion: { in: ROLES }
   # superadmin/comercializador no pertenecen a ningún tenant; los demás sí.
   validates :tenant, presence: true, unless: -> { rol.in?(ROLES_GLOBALES) }
