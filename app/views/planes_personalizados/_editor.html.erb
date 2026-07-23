@@ -24,15 +24,15 @@
 
     <div class="mt-1 flex h-2 w-full overflow-hidden rounded-full bg-base-200" aria-hidden="true">
       <div class="bg-volt transition-all duration-300" data-autosave-target="barra"></div>
-      <div class="bg-ocean transition-all duration-300" data-autosave-target="barra"></div>
-      <div class="bg-warning transition-all duration-300" data-autosave-target="barra"></div>
+      <div class="bg-accent transition-all duration-300" data-autosave-target="barra"></div>
+      <div class="bg-secondary transition-all duration-300" data-autosave-target="barra"></div>
     </div>
 
     <%= render "planes_personalizados/comidas_editables", plan: plan, plantillas: plantillas %>
 
     <div class="mt-4 flex flex-wrap items-center gap-3 border-t border-base-200 pt-4">
       <% if plan.aprobado? %>
-        <span class="badge badge-success gap-1 font-semibold">
+        <span class="badge badge-primary gap-1 font-semibold">
           <%= render "shared/icono", nombre: :check, clase: "size-3" %> Publicado
         </span>
         <p class="text-xs text-steel-5">Los cambios se guardan y el miembro los ve al instante.</p>

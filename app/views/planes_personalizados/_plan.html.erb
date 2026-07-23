@@ -50,15 +50,15 @@
         <div class="flex h-3 w-full overflow-hidden rounded-full bg-base-200">
           <div class="bg-volt transition-[width] duration-700 ease-out" style="width: 0%"
                data-plan-nutricional-target="segmento" data-pct="<%= pct.call(proteinas * 4) %>"></div>
-          <div class="bg-ocean transition-[width] duration-700 ease-out delay-150" style="width: 0%"
+          <div class="bg-accent transition-[width] duration-700 ease-out delay-150" style="width: 0%"
                data-plan-nutricional-target="segmento" data-pct="<%= pct.call(carbohidratos * 4) %>"></div>
-          <div class="bg-warning transition-[width] duration-700 ease-out delay-300" style="width: 0%"
+          <div class="bg-secondary transition-[width] duration-700 ease-out delay-300" style="width: 0%"
                data-plan-nutricional-target="segmento" data-pct="<%= pct.call(grasas * 9) %>"></div>
         </div>
         <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-steel-5">
           <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-volt"></span>Proteína <%= proteinas %>g · <%= pct.call(proteinas * 4) %>%</span>
-          <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-ocean"></span>Carbohidratos <%= carbohidratos %>g · <%= pct.call(carbohidratos * 4) %>%</span>
-          <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-warning"></span>Grasas <%= grasas %>g · <%= pct.call(grasas * 9) %>%</span>
+          <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-accent"></span>Carbohidratos <%= carbohidratos %>g · <%= pct.call(carbohidratos * 4) %>%</span>
+          <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-full bg-secondary"></span>Grasas <%= grasas %>g · <%= pct.call(grasas * 9) %>%</span>
         </div>
       </div>
 
@@ -114,13 +114,13 @@
             <div class="pt-3">
               <div class="flex h-1.5 w-full overflow-hidden rounded-full bg-base-200">
                 <div class="bg-volt" style="width: <%= cpct.call(cp) %>%"></div>
-                <div class="bg-ocean" style="width: <%= cpct.call(cc) %>%"></div>
-                <div class="bg-warning" style="width: <%= cpct.call(cg) %>%"></div>
+                <div class="bg-accent" style="width: <%= cpct.call(cc) %>%"></div>
+                <div class="bg-secondary" style="width: <%= cpct.call(cg) %>%"></div>
               </div>
               <div class="mt-1.5 flex gap-2 text-xs text-steel-5">
                 <span class="inline-flex items-center gap-1"><span class="size-2 rounded-full bg-volt"></span>P <%= comida["proteinas_g"] %>g</span>
-                <span class="inline-flex items-center gap-1"><span class="size-2 rounded-full bg-ocean"></span>C <%= comida["carbohidratos_g"] %>g</span>
-                <span class="inline-flex items-center gap-1"><span class="size-2 rounded-full bg-warning"></span>G <%= comida["grasas_g"] %>g</span>
+                <span class="inline-flex items-center gap-1"><span class="size-2 rounded-full bg-accent"></span>C <%= comida["carbohidratos_g"] %>g</span>
+                <span class="inline-flex items-center gap-1"><span class="size-2 rounded-full bg-secondary"></span>G <%= comida["grasas_g"] %>g</span>
               </div>
             </div>
 

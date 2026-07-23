@@ -32,11 +32,11 @@
       P <span class="font-display" data-macro-tracker-target="proteinas">0</span>g
     </span>
     <span class="flex items-center gap-1.5 font-semibold">
-      <span class="size-2.5 rounded-full bg-ocean"></span>
+      <span class="size-2.5 rounded-full bg-accent"></span>
       C <span class="font-display" data-macro-tracker-target="carbos">0</span>g
     </span>
     <span class="flex items-center gap-1.5 font-semibold">
-      <span class="size-2.5 rounded-full bg-warning"></span>
+      <span class="size-2.5 rounded-full bg-secondary"></span>
       G <span class="font-display" data-macro-tracker-target="grasas">0</span>g
     </span>
     <span class="ml-auto font-semibold text-steel-5">
@@ -86,14 +86,14 @@
             <span class="text-xs text-steel-3">g</span>
           </label>
           <label class="input input-sm input-bordered flex items-center gap-1">
-            <span class="text-xs font-bold text-ocean">C</span>
+            <span class="text-xs font-bold text-accent">C</span>
             <input type="number" name="comida[carbohidratos_g]" value="<%= comida["carbohidratos_g"] %>" min="0" step="0.5"
                    class="w-full text-right" aria-label="Carbohidratos"
                    data-action="input->autosave#programar input->macro-tracker#recalcular">
             <span class="text-xs text-steel-3">g</span>
           </label>
           <label class="input input-sm input-bordered flex items-center gap-1">
-            <span class="text-xs font-bold text-warning">G</span>
+            <span class="text-xs font-bold text-secondary">G</span>
             <input type="number" name="comida[grasas_g]" value="<%= comida["grasas_g"] %>" min="0" step="0.5"
                    class="w-full text-right" aria-label="Grasas"
                    data-action="input->autosave#programar input->macro-tracker#recalcular">
@@ -104,8 +104,8 @@
         <%# Mini-barra de macros de esta comida %>
         <div class="flex h-1.5 w-full overflow-hidden rounded-full bg-base-200">
           <div class="bg-volt transition-[width] duration-300" style="width: <%= cpct.call(cp) %>%"></div>
-          <div class="bg-ocean transition-[width] duration-300" style="width: <%= cpct.call(cc) %>%"></div>
-          <div class="bg-warning transition-[width] duration-300" style="width: <%= cpct.call(cg) %>%"></div>
+          <div class="bg-accent transition-[width] duration-300" style="width: <%= cpct.call(cc) %>%"></div>
+          <div class="bg-secondary transition-[width] duration-300" style="width: <%= cpct.call(cg) %>%"></div>
         </div>
 
         <%# Acciones %>

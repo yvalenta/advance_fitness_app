@@ -41,6 +41,10 @@
           <% Current.tenant.paleta_colores.each do |token, valor| %>
             <% if valor.to_s.match?(/\A#[0-9a-fA-F]{3,8}\z/) && %w[volt primary accent].include?(token.to_s) %>
               --color-<%= token %>: <%= valor %>;
+              <% if token.to_s == "volt" %>
+              --color-volt-d: color-mix(in srgb, <%= valor %> 70%, #000000);
+              --color-volt-l: color-mix(in srgb, <%= valor %> 60%, #ffffff);
+              <% end %>
             <% end %>
           <% end %>
         }

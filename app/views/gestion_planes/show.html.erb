@@ -29,7 +29,7 @@
       <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
         <div class="card-body items-center gap-3 py-12 text-center">
           <% if @plan.generando? %>
-            <span class="loading loading-spinner loading-lg text-ocean"></span>
+            <span class="loading loading-spinner loading-lg text-accent"></span>
             <h2 class="font-display text-lg font-bold">Analizando tu información para armar el plan…</h2>
             <p class="text-sm text-steel-5">En la <%= link_to "cola de borradores", entrenador_borradores_path, class: "link" %> verás en vivo cuando esté listo.</p>
           <% else %>
@@ -63,7 +63,7 @@
     <div class="card border border-base-300 bg-base-100 shadow-md lg:sticky lg:top-24">
       <div class="card-body">
         <h2 class="card-title text-base">
-          <span class="flex size-7 items-center justify-center rounded-lg bg-ocean/15 text-ocean">
+          <span class="flex size-7 items-center justify-center rounded-lg bg-accent/15 text-accent">
             <%= render "shared/icono", nombre: :reloj, clase: "size-4" %>
           </span>
           Historial del miembro
