@@ -10,6 +10,17 @@ class DetalleEntrenamientoPolicy < ApplicationPolicy
   # necesariamente del propio staff que lo analiza.
   def analizar? = user.staff?
 
+  class Scope < ApplicationPolicy::Scope
+    # Aislado vía registro_entrenamiento → user → tenant.
+    def resolve
+      if user.staff?
+        scope.joins(registro_entrenamiento: :user).where(users: { tenant_id: user.tenant_id })
+      else
+        scope.joins(:registro_entrenamiento).where(registro_entrenamientos: { user_id: user.id })
+      end
+    end
+  end
+
   private
     def registro_del_usuario?
       registro = record.is_a?(RegistroEntrenamiento) ? record : record.registro_entrenamiento

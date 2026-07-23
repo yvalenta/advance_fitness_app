@@ -33,4 +33,10 @@ class PlanPersonalizadoPolicy < ApplicationPolicy
   def editar_json? = user.staff?
 
   def publicar? = revisar?
+
+  class Scope < ApplicationPolicy::Scope
+    def resolve
+      user.staff? ? del_tenant(scope) : scope.where(user_id: user.id, aprobado: true)
+    end
+  end
 end

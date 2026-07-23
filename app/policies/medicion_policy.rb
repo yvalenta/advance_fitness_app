@@ -10,4 +10,10 @@ class MedicionPolicy < ApplicationPolicy
   def create?
     user.staff? || (record.respond_to?(:user_id) && record.user_id == user.id)
   end
+
+  class Scope < ApplicationPolicy::Scope
+    def resolve
+      user.staff? ? del_tenant(scope) : scope.where(user_id: user.id)
+    end
+  end
 end

@@ -6,4 +6,9 @@ class PostPolicy < ApplicationPolicy
   def update? = user.staff?
   def destroy? = user.staff?
   def publicar? = user.staff?
+
+  # `posts` tiene tenant_id directo (SDD §16.6). Aislado por columna, no por join.
+  class Scope < ApplicationPolicy::Scope
+    def resolve = scope.where(tenant_id: user.tenant_id)
+  end
 end
