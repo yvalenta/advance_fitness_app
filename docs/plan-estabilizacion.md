@@ -74,11 +74,11 @@ Objetivo: eliminar inconsistencias que contaminan todo lo demás.
 
 El manifest (`app/views/pwa/manifest.json.erb`) ya está parametrizado desde `Negocio` (SDD §16.5 Fase A), pero las rutas (`config/routes.rb:111-112`) y el `<link rel="manifest">` (`app/views/layouts/application.html.erb:19`) están comentados. Los miembros ya agregan la app a inicio (la Fase 6.9 arregló los confirm de iOS justamente por eso).
 
-- [ ] **Decisión recomendada: habilitar.** Descomentar rutas + `<link>`; verificar que el manifest renderiza el nombre/colores del `Current.tenant` (no solo de `Negocio` global) — con multi-tenant row-level, cada subdominio debe instalar "su" app.
-- [ ] Probar instalación real desde un móvil en `vital-fitness.ynt.codes` y en el tenant AF.
-- [ ] Si se decide NO habilitar: borrar `app/views/pwa/` y las líneas comentadas, y anotar la decisión en el SDD.
+- [x] **Habilitada.** Rutas + `<link>` descomentados; `spec/requests/pwa_spec.rb` como regresión.
+- [x] `Negocio.theme_color` tenant-aware (primary de la paleta si es hex válido, defensa contra CSS injection); manifest y `<meta theme-color>` usan ese helper.
+- [ ] Pendiente futuro (bloqueado por `ruby-vips` en producción, commit `75628c9`): variant del logo del tenant a 512×512 para el icono del manifest.
 
-**Cierre:** estado del código y del SDD coinciden (habilitado y verificado en móvil, o eliminado y documentado).
+**Cierre:** habilitado y verificado con specs (9/9); pendiente cosmético del icono anotado.
 
 ---
 

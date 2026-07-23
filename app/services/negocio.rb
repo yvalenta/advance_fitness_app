@@ -17,4 +17,16 @@ module Negocio
   def self.precio_mensualidad = Current.tenant&.precio_mensualidad || (ENV["PRECIO_MENSUALIDAD"].presence || DATOS[:precio_mensualidad]).to_i
   def self.precio_personalizado = Current.tenant&.precio_personalizado || (ENV["PRECIO_PERSONALIZADO"].presence || DATOS[:precio_personalizado]).to_i
   def self.duracion_dias = Current.tenant&.duracion_dias || (ENV["MEMBRESIA_DURACION_DIAS"].presence || DATOS[:duracion_dias]).to_i
+
+  # Color de instalación PWA + <meta theme-color>. Usa el `primary` de la paleta
+  # del tenant si es hex válido (SDD §16.6: solo se aceptan hex para evitar CSS
+  # injection); si no, el midnight de marca. El icono del manifest sigue global
+  # — un `variant` para cuadrar el logo del tenant a 512×512 requiere ruby-vips
+  # (no disponible en producción, ver commit 75628c9).
+  DEFAULT_THEME_COLOR = "#0b1220".freeze
+  def self.theme_color
+    paleta = Current.tenant&.paleta_colores
+    valor = paleta.is_a?(Hash) ? paleta["primary"].to_s : ""
+    valor.match?(/\A#[0-9a-fA-F]{3,8}\z/) ? valor : DEFAULT_THEME_COLOR
+  end
 end

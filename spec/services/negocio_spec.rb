@@ -38,5 +38,27 @@ RSpec.describe Negocio, type: :model do
       expect(Negocio.precio_personalizado).to eq(350_000)
       expect(Negocio.duracion_dias).to eq(30)
     end
+
+    describe ".theme_color" do
+      it "default cuando no hay tenant" do
+        expect(Negocio.theme_color).to eq(Negocio::DEFAULT_THEME_COLOR)
+      end
+
+      it "usa el primary del tenant cuando es hex válido" do
+        tenant = tenants(:megaplex)
+        tenant.update!(paleta_colores: { "primary" => "#ff8800" })
+        Current.tenant = tenant
+
+        expect(Negocio.theme_color).to eq("#ff8800")
+      end
+
+      it "ignora valores no-hex (defensa contra CSS injection)" do
+        tenant = tenants(:megaplex)
+        tenant.update!(paleta_colores: { "primary" => "red; }body{display:none}" })
+        Current.tenant = tenant
+
+        expect(Negocio.theme_color).to eq(Negocio::DEFAULT_THEME_COLOR)
+      end
+    end
   end
 end
