@@ -99,6 +99,13 @@ module GeneradorPlanIa
     return "" if resumen.blank?
 
     lineas = [ "Adherencia real del miembro (últimas #{resumen[:semanas]} semanas): #{resumen[:pct_global]}% global." ]
+    # Posición en el mesociclo del plan vigente (Fase 14.10): el nuevo plan
+    # sabe de dónde viene el miembro dentro de su ciclo.
+    lineas << resumen[:contexto_ciclo] if resumen[:contexto_ciclo].present?
+    if resumen[:por_semana].present?
+      detalle = resumen[:por_semana].map { |s| "semana #{s[:numero]} (#{s[:etiqueta]}): #{s[:porcentaje]}%" }.join(" · ")
+      lineas << "Adherencia por semana del ciclo: #{detalle}."
+    end
     flojos = resumen[:por_ejercicio].select { |e| e[:total] >= 2 && e[:hechos] * 2 < e[:total] }
     if flojos.any?
       lineas << "Baja adherencia en: #{flojos.map { |e| "#{e[:nombre]} (#{e[:hechos]}/#{e[:total]})" }.join(", ")}."

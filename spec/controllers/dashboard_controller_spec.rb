@@ -75,7 +75,10 @@ RSpec.describe "Dashboard", type: :request do
     expect(response.body).to include("Pecho y tríceps")
     expect(response.body).to include("3 ejercicios")
     expect(response.body).to include("0 de 3 hechos")
-    assert_select "a[href=?]", mi_plan_path, text: "Entrenar ahora"
+    # Cableado 14.3: el CTA principal lleva al modo sesión; Mi plan queda
+    # como acción secundaria.
+    assert_select "a[href=?]", sesion_path, text: /Empezar entrenamiento/
+    assert_select "a[href=?]", mi_plan_path, text: "Ver mi plan"
   end
 
   it "el avance del día lee un registro v1 (claves numéricas)" do

@@ -59,6 +59,11 @@
           <span class="text-xs text-steel-3" data-modo-edicion-target="lectura" <%= "hidden" if siempre_editando %>>
             Marca lo que ejecutes · <span data-seguimiento-target="estado"></span>
           </span>
+          <%# Modo sesión (Fase 14.3): la sesión de hoy, ejercicio a ejercicio %>
+          <%= link_to sesion_path, class: "btn btn-primary btn-xs gap-1 font-bold",
+                data: { modo_edicion_target: "lectura" } do %>
+            <%= render "shared/icono", nombre: :rayo, clase: "size-3.5" %> Entrenar
+          <% end %>
         <% end %>
         <% if editable %>
           <span class="text-xs text-steel-3" data-autosave-target="global" data-modo-edicion-target="edicion"

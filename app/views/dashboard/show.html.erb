@@ -43,7 +43,11 @@
           <div class="h-full rounded-full bg-volt transition-all" style="width: <%= progreso %>%"></div>
         </div>
         <div class="card-actions mt-2">
-          <%= link_to "Entrenar ahora", mi_plan_path, class: "btn btn-primary btn-sm" %>
+          <%# Modo sesión (Fase 14.3): ejercicio a ejercicio con cronómetro %>
+          <%= link_to sesion_path, class: "btn btn-primary btn-sm gap-1.5 font-bold" do %>
+            <%= render "shared/icono", nombre: :rayo, clase: "size-4" %> Empezar entrenamiento
+          <% end %>
+          <%= link_to "Ver mi plan", mi_plan_path, class: "btn btn-ghost btn-sm" %>
         </div>
       <% elsif @plan %>
         <span class="font-display text-3xl font-bold tracking-tight">Descanso</span>
