@@ -22,7 +22,8 @@ RSpec.describe "GestionDias", type: :request do
 
     expect(response).to have_http_status(:success)
     expect(response.body).to match("turbo-stream")
-    expect(response.body).to match("dia_editor_0")
+    # Fase 14.9: el panel del día es por semana del mesociclo (v1 → semana 1)
+    expect(response.body).to match("dia_editor_1_0")
 
     dia = @plan.reload.dias[0]
     expect(dia["enfoque"]).to eq("Pierna")

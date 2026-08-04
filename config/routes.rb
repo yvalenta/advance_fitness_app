@@ -80,6 +80,12 @@ Rails.application.routes.draw do
     end
   end
 
+  # Mesociclo (Fase 14.9): cada semana de la rutina vive en su propio
+  # turbo-frame perezoso — lectura autorizada con la policy del plan (show?).
+  resources :planes_personalizados, only: [] do
+    resources :semanas, only: :show, controller: "gestion_semanas", param: :numero
+  end
+
   namespace :entrenador do
     resources :borradores, only: %i[ index ], controller: "borradores"
     resources :plantillas_comida, only: %i[ create destroy ], controller: "plantillas_comida"

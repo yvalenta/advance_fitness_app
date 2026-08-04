@@ -1,0 +1,48 @@
+<%# Una semana del mesociclo (Fase 14.9): selector de día + paneles. Es el %>
+<%# contenido de cada turbo-frame de semana (GestionSemanasController#show) y %>
+<%# también la única semana inline de un plan v1. Los tabs de día viven AQUÍ, %>
+<%# dentro del subárbol de la semana — nunca anidados bajo otro "tabs": el eje %>
+<%# de semanas usa su propio mesociclo_controller. Con `chips:` el selector es %>
+<%# la fila de chips Gymnax; sin él conserva las tabs clásicas del plan v1. %>
+<%# El seguimiento (registro, fecha) se resuelve por semana vía %>
+<%# Rutina::Calendario — una sola query de registros por semana. %>
+<%# locals: (plan:, usuario:, numero:, chips: false, editando_por_defecto: false, registros: nil, dias: nil, anteriores: {}) %>
+<% usuario = local_assigns[:usuario] %>
+<% anteriores = local_assigns[:anteriores] || {} %>
+<% numero = local_assigns.fetch(:numero, 1) %>
+<% chips = local_assigns.fetch(:chips, false) %>
+<% editando_por_defecto = local_assigns.fetch(:editando_por_defecto, false) %>
+<% dias = local_assigns[:dias] || plan.dias(semana: numero) %>
+<% con_seguimiento = plan && usuario && plan.user_id == usuario.id %>
+<% editable = editando_por_defecto || (plan && usuario && PlanPersonalizadoPolicy.new(usuario, plan).editar_rutina?) %>
+<% if con_seguimiento %>
+  <% fechas = dias.each_index.map { |i| Rutina::Calendario.fecha_de(plan, semana: numero, dia_indice: i) } %>
+  <% registros = local_assigns[:registros] || usuario.registros_entrenamiento.where(fecha: fechas).index_by(&:fecha) %>
+<% end %>
+
+<div class="flex flex-col gap-2" data-controller="tabs">
+  <% if chips %>
+    <% estados = dias.each_index.map do |i|
+         ejercicios = Array(dias[i]["ejercicios"])
+         con_seguimiento && ejercicios.any? &&
+           ejercicios.each_with_index.all? { |ej, ei| registros[fechas[i]]&.estado_de(uid: ej["uid"], indice: ei)&.dig("hecho") }
+       end %>
+    <%= render "planes_personalizados/chips_dias", dias: dias, estados: estados, interactivo: true %>
+  <% else %>
+    <div role="tablist" class="tabs tabs-box w-fit max-w-full flex-nowrap overflow-x-auto">
+      <% dias.each do |dia| %>
+        <button type="button" role="tab" class="tab whitespace-nowrap font-semibold capitalize"
+                data-tabs-target="tab" data-action="tabs#seleccionar"><%= dia["dia"] %></button>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% dias.each_with_index do |dia, indice| %>
+    <div data-tabs-target="panel" hidden>
+      <%= render "planes_personalizados/dia_editor", plan: plan, dia: dia, indice: indice, semana: numero,
+            con_seguimiento: con_seguimiento, editable: editable, editando_por_defecto: editando_por_defecto,
+            registro: (registros[fechas[indice]] if con_seguimiento),
+            fecha: (fechas[indice] if con_seguimiento), anteriores: anteriores %>
+    </div>
+  <% end %>
+</div>

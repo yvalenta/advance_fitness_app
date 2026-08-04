@@ -1,0 +1,10 @@
+<%# Contenido perezoso de una semana del mesociclo (Fase 14.9): el frame de la %>
+<%# rutina lo pide al seleccionar la semana en el eje. Sin layout: el card y %>
+<%# sus controllers Stimulus (modo-edicion, seguimiento, autosave…) ya están %>
+<%# en la página que lo embebe. %>
+<%= turbo_frame_tag "plan_#{@plan.id}_semana_#{@numero}" do %>
+  <%= render "planes_personalizados/semana",
+        plan: @plan, usuario: Current.user, numero: @numero,
+        chips: @plan.semanas.size > 1, editando_por_defecto: @editando_por_defecto,
+        anteriores: @anteriores %>
+<% end %>
