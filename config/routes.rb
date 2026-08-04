@@ -23,6 +23,10 @@ Rails.application.routes.draw do
 
   # Progreso (SDD §09 — mitad adelantada de la Fase 3, ver nota §11)
   resource :progreso, only: :show, controller: "progresos"
+  # Gráficas perezosas por scroll (Fase 16.6): cada turbo-frame trae SOLO su
+  # serie — la página del miembro carga el resumen y nada más.
+  get "progreso/grafica/:tipo", to: "progreso_graficas#show", as: :progreso_grafica,
+      constraints: { tipo: /peso|calorias|asistencia/ }
 
   # Auto-registro de peso del miembro (Fase 5.9): crea una medición propia.
   resources :mediciones, only: :create
