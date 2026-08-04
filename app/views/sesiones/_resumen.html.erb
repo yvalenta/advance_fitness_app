@@ -1,0 +1,35 @@
+<%# Resumen final de la sesión: duración total, series hechas y volumen (kg).
+    "Marcar día como hecho" registra cada ejercicio ejecutado contra el
+    endpoint existente de registros de entrenamiento (sesion_controller.js). %>
+<%# locals: (fecha:) %>
+<section class="card border border-base-300 bg-base-100 shadow-md" hidden data-sesion-target="resumen">
+  <div class="card-body gap-4 text-center">
+    <span class="mx-auto flex size-14 items-center justify-center rounded-full bg-volt/15 text-volt-d">
+      <%= render "shared/icono", nombre: :check, clase: "size-7" %>
+    </span>
+    <div>
+      <h2 class="font-display text-2xl font-bold">Sesión completada</h2>
+      <p class="mt-1 text-sm text-steel-3"><%= l fecha, format: "%A %d de %B" %></p>
+    </div>
+    <div class="grid grid-cols-3 gap-2">
+      <div class="rounded-xl bg-base-200 px-2 py-3">
+        <p class="font-display text-xl font-bold tabular-nums" data-sesion-target="duracion">0:00</p>
+        <p class="text-xs text-steel-3">Duración</p>
+      </div>
+      <div class="rounded-xl bg-base-200 px-2 py-3">
+        <p class="font-display text-xl font-bold tabular-nums" data-sesion-target="seriesHechas">0</p>
+        <p class="text-xs text-steel-3">Series hechas</p>
+      </div>
+      <div class="rounded-xl bg-base-200 px-2 py-3">
+        <p class="font-display text-xl font-bold tabular-nums" data-sesion-target="volumen">0</p>
+        <p class="text-xs text-steel-3">Volumen (kg)</p>
+      </div>
+    </div>
+    <button type="button" class="btn btn-primary w-full font-bold"
+            data-sesion-target="botonHecho" data-action="sesion#marcarDia">
+      Marcar día como hecho
+    </button>
+    <p class="text-xs text-error" hidden data-sesion-target="errorGuardado">No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.</p>
+    <%= link_to "Volver a mi plan", mi_plan_path, class: "link text-sm text-steel-3" %>
+  </div>
+</section>

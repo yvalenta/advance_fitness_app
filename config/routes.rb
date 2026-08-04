@@ -52,6 +52,12 @@ Rails.application.routes.draw do
   get "mi_plan", to: "planes_personalizados#show", as: :mi_plan
   get "upgrade", to: "planes#index", as: :upgrade
 
+  # Modo sesión (Fase 14.3): pantalla inmersiva del entrenamiento del día,
+  # ejercicio por ejercicio y con cronómetro de descanso. La fecha opcional
+  # (ISO) permite entrenar un día distinto a hoy.
+  get "sesion(/:fecha)", to: "sesiones#show", as: :sesion,
+      constraints: { fecha: /\d{4}-\d{2}-\d{2}/ }
+
   # Editor de plan compartido por entrenador y admin (SDD Fase 5.6) —
   # autorizado por Pundit (editar?/publicar?), no por el namespace.
   resources :planes_personalizados, only: %i[ show update ], controller: "gestion_planes" do

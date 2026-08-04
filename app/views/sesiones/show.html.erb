@@ -1,0 +1,47 @@
+<%# Modo sesión (Fase 14.3): pantalla inmersiva de UN ejercicio a la vez con
+    cronómetro de descanso y resumen final. Autocontenida: los datos van en el
+    <script> JSON y toda la máquina de estados vive en sesion_controller.js. %>
+<% content_for :title, "Sesión de entrenamiento" %>
+
+<% if @plan.nil? %>
+  <%= render "sesiones/vacio", titulo: "Aún no tienes un plan",
+        mensaje: "Cuando tu plan de entrenamiento esté publicado podrás entrenar aquí, guiado ejercicio por ejercicio." %>
+<% elsif @ejercicios_dia.empty? %>
+  <%= render "sesiones/vacio", titulo: "Hoy toca descanso",
+        mensaje: "El #{l @fecha, format: "%A %d de %B"} no tiene ejercicios programados. Recuperarse también es entrenar." %>
+<% else %>
+  <section class="mx-auto flex w-full max-w-lg flex-col gap-4 px-4 py-4"
+           data-controller="sesion"
+           data-sesion-registro-url-value="<%= registros_entrenamiento_path %>"
+           data-sesion-salida-url-value="<%= mi_plan_path %>">
+    <script type="application/json" data-sesion-target="datos"><%= raw json_escape(@datos.to_json) %></script>
+
+    <%# ── Barra de avance (volt sobre steel) + salida ── %>
+    <header class="flex items-center gap-3">
+      <div class="min-w-0 flex-1">
+        <p class="text-xs font-bold uppercase tracking-widest text-steel-3">
+          <span data-sesion-target="progresoTexto">Ejercicio 1 de <%= @ejercicios_dia.size %></span>
+        </p>
+        <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-steel">
+          <div class="h-full rounded-full bg-volt transition-all duration-300"
+               data-sesion-target="progresoBarra" style="width: <%= (100.0 / @ejercicios_dia.size).round(1) %>%"></div>
+        </div>
+        <% if @dia["enfoque"].present? %>
+          <p class="mt-1 truncate text-xs text-steel-3"><%= @dia["enfoque"] %></p>
+        <% end %>
+      </div>
+      <%= link_to mi_plan_path, class: "btn btn-ghost btn-sm btn-circle shrink-0",
+            aria: { label: "Salir de la sesión" } do %>
+        <%= render "shared/icono", nombre: :salir, clase: "size-5" %>
+      <% end %>
+    </header>
+
+    <% @ejercicios_dia.each_with_index do |ejercicio, indice| %>
+      <%= render "sesiones/ejercicio", ejercicio: ejercicio, indice: indice,
+            total: @ejercicios_dia.size, catalogo: @catalogo %>
+    <% end %>
+
+    <%= render "sesiones/descanso" %>
+    <%= render "sesiones/resumen", fecha: @fecha %>
+  </section>
+<% end %>
