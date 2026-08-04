@@ -2,9 +2,10 @@
 <%# alterna, por ejercicio, entre modo lectura (checks de seguimiento, %>
 <%# cápsulas, tap para ver ejecución) y modo edición (inputs inline) — sin %>
 <%# duplicar el componente entre la vista del miembro y la del editor. %>
-<%# locals: (rutina:, plan: nil, usuario: nil, plantillas: nil, siempre_editando: false) %>
+<%# locals: (rutina:, plan: nil, usuario: nil, plantillas: nil, siempre_editando: false, anteriores: {}) %>
 <% plan = local_assigns[:plan] %>
 <% usuario = local_assigns[:usuario] %>
+<% anteriores = local_assigns[:anteriores] || {} %>
 <% siempre_editando = local_assigns.fetch(:siempre_editando, false) %>
 <% dias = Array(rutina["dias"]) %>
 <% con_seguimiento = plan && usuario && plan.user_id == usuario.id %>
@@ -72,7 +73,7 @@
       <div data-tabs-target="panel" hidden>
         <%= render "planes_personalizados/dia_editor", plan: plan, dia: dia, indice: indice,
               con_seguimiento: con_seguimiento, editable: editable, editando_por_defecto: siempre_editando,
-              registro: registro, fecha: fecha %>
+              registro: registro, fecha: fecha, anteriores: anteriores %>
       </div>
     <% end %>
   </div>

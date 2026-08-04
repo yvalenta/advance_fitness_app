@@ -19,7 +19,9 @@
 <% plantillas = local_assigns[:plantillas] || (PlantillaComida.ordenadas if propio) %>
 
 <div id="<%= dom_id(plan, :mi_plan) %>" class="flex flex-col gap-6">
-  <%= render "planes_personalizados/rutina", rutina: plan.rutina, plan: plan, usuario: usuario %>
+  <%# anteriores: {ejercicio_id => última serie} (Fase 14.2); {} en el broadcast %>
+  <%= render "planes_personalizados/rutina", rutina: plan.rutina, plan: plan, usuario: usuario,
+        anteriores: local_assigns[:anteriores] || {} %>
 
   <%# El plan sugerido por reglas es solo entrenamiento: sin comidas no hay card %>
   <% if comidas.any? %>
