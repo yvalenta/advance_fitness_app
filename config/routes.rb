@@ -107,6 +107,13 @@ Rails.application.routes.draw do
   resources :novedades, only: :index
   get "blog", to: "blog#index"
   get "blog/:id", to: "blog#show", as: :blog_post
+
+  # Tabla de posiciones del gimnasio (Fase 14.14): leaderboard opt-in sobre la
+  # proyección del motor de juego. participacion = consentimiento auditable
+  # (14.11) + visible_en_tabla del perfil PROPIO, en una transacción.
+  get "ranking", to: "tabla_posiciones#index", as: :ranking
+  post "ranking/participacion", to: "tabla_posiciones#participar", as: :ranking_participacion
+  delete "ranking/participacion", to: "tabla_posiciones#retirarse"
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

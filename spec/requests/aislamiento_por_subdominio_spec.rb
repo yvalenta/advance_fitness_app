@@ -94,6 +94,29 @@ RSpec.describe "Aislamiento por subdominio", type: :request do
     end
   end
 
+  # Fase 14.14: la tabla de posiciones lista datos ENTRE miembros — el caso
+  # más sensible del white-label. Ni el opt-in más entusiasta del tenant B
+  # (visible_en_tabla + puntos récord) puede asomarse al /ranking del tenant A.
+  describe "la tabla de posiciones en el subdominio del tenant A" do
+    it "jamás lista a un miembro del tenant B, aunque esté visible y puntee más" do
+      PerfilJuego.create!(user: miembro_mp, visible_en_tabla: true,
+                          puntos_total: 999_999, apodo: "CampeonMegaplex")
+      miembro_af = users(:one)
+      PerfilJuego.create!(user: miembro_af, visible_en_tabla: true,
+                          puntos_total: 10, apodo: "LocalAF")
+
+      host! "advance-fitness.example.com"
+      sign_in_as miembro_af
+
+      get ranking_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("LocalAF") # la tabla sí se renderiza
+      expect(response.body).not_to include("CampeonMegaplex")
+      expect(response.body).not_to include("Zulema")
+    end
+  end
+
   # Regresión del fix 9f48ffc: el índice único de email pasó a ser compuesto
   # (email_address, tenant_id). Dos gimnasios pueden tener al mismo correo como
   # socio sin pisarse.
