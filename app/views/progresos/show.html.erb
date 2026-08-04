@@ -95,6 +95,13 @@
     </div>
   <% end %>
 
+  <%# ── Mi ciclo (Fase 14.15) — SOLO la propia usuaria: el parcial vive en
+      ciclos_menstruales/ (no en shared/, que admin/users/show reutiliza con
+      progreso ajeno) y además se auto-protege con Current.user == usuario. %>
+  <div class="animate-fade-up fade-delay-2">
+    <%= render "ciclos_menstruales/card", usuario: Current.user %>
+  </div>
+
   <div class="mt-6 grid items-start gap-6 lg:grid-cols-2">
     <div class="animate-fade-up"><%= render "shared/grafica_peso", progreso: @progreso, editable: true %></div>
     <div class="animate-fade-up fade-delay-1"><%= render "shared/grafica_calorias", progreso: @progreso, editable: true %></div>

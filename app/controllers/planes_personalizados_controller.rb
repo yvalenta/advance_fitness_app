@@ -12,8 +12,19 @@ class PlanesPersonalizadosController < ApplicationController
 
     if @plan
       authorize @plan, :show?
+      @anteriores = anteriores_por_ejercicio
     else
       skip_authorization # vista free: solo contenido estático del propio usuario
     end
   end
+
+  private
+    # "La vez pasada" (Fase 14.2): hash {ejercicio_id => última serie} en UNA
+    # query para toda la rutina — el partial tiene prohibido consultar (N+1).
+    def anteriores_por_ejercicio
+      return {} unless @plan.user_id == Current.user.id
+
+      ids = @plan.dias.flat_map { |dia| Array(dia["ejercicios"]).map { |ejercicio| ejercicio["ejercicio_id"] } }.compact
+      DetalleEntrenamiento.ultimos_por_ejercicio(Current.user, ids)
+    end
 end

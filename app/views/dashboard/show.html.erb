@@ -1,69 +1,74 @@
-<% content_for :title, "Dashboard — #{Negocio.nombre}" %>
+<% content_for :title, "Hoy — #{Negocio.nombre}" %>
 
+<%# Hero compacto (Fase 14.5): saludo breve — el protagonismo es de las cards. %>
 <div class="gradient-hero relative overflow-hidden">
   <div class="trama-puntos absolute inset-0"></div>
-  <div class="relative mx-auto w-full max-w-6xl px-4 pb-24 pt-12">
-    <div class="animate-fade-up mb-5 flex size-20 items-center justify-center rounded-2xl bg-volt/10 ring-1 ring-volt/30">
-      <%= render "shared/logo", clase: "h-14 w-14 text-volt" %>
-    </div>
-    <div class="animate-fade-up fade-delay-1 inline-flex items-center gap-2 rounded-full border border-volt/40 px-4 py-1.5">
+  <div class="relative mx-auto w-full max-w-6xl px-4 pb-20 pt-8">
+    <div class="animate-fade-up inline-flex items-center gap-2 rounded-full border border-volt/40 px-4 py-1.5">
       <span class="inline-block size-2 rounded-full bg-volt pulse-volt"></span>
-      <span class="eyebrow text-volt">Panel del miembro</span>
+      <span class="eyebrow text-volt">Hoy</span>
     </div>
-    <h1 class="animate-fade-up fade-delay-1 mt-5 font-display text-4xl font-bold leading-tight text-white sm:text-5xl">
+    <h1 class="animate-fade-up fade-delay-1 mt-4 font-display text-3xl font-bold leading-tight text-white sm:text-4xl">
       Hola, <span class="text-volt"><%= nombre_visible(Current.user).split.first %></span> 💪
     </h1>
-    <p class="animate-fade-up fade-delay-2 mt-2 text-sm text-white/60">
-      Miembro desde <%= l Current.user.fecha_ingreso, format: :long %> · tu progreso, medido de verdad.
+    <p class="animate-fade-up fade-delay-2 mt-1 text-sm text-white/60">
+      <%= l Date.current, format: :long %> · tu progreso, medido de verdad.
     </p>
   </div>
 </div>
 
-<div class="mx-auto -mt-14 w-full max-w-6xl px-4 pb-12">
-  <div class="grid gap-4 sm:grid-cols-3">
-    <div class="animate-fade-up card card-hover border border-base-300 bg-base-100 shadow-sm">
-      <div class="card-body gap-1.5">
-        <div class="flex items-start justify-between">
-          <h2 class="eyebrow text-steel-3">Membresía</h2>
-          <span class="flex size-9 items-center justify-center rounded-xl bg-volt/15 text-volt-d">
-            <%= render "shared/icono", nombre: :escudo, clase: "size-4.5" %>
-          </span>
-        </div>
-        <% if @membresia %>
-          <div class="flex items-center gap-4">
-            <% dias = @membresia.dias_restantes %>
-            <% progreso = ((dias / 31.0) * 100).clamp(0, 100).round %>
-            <div class="radial-progress <%= dias > 7 ? "text-volt-d" : dias >= 0 ? "text-warning" : "text-error" %>"
-                 style="--value:<%= progreso %>; --size:4.5rem; --thickness:5px;"
-                 aria-valuenow="<%= progreso %>" role="progressbar">
-              <span class="font-display text-lg font-bold text-base-content"><%= dias %></span>
-            </div>
-            <div>
-              <p class="font-display text-2xl font-bold tracking-tight">días</p>
-              <p class="text-sm text-steel-5">Vence el <%= l @membresia.fecha_vencimiento, format: :long %></p>
-              <div class="mt-1"><%= badge_estado(@membresia.estado) %></div>
-            </div>
-          </div>
-        <% else %>
-          <span class="font-display text-4xl font-bold tracking-tight">—</span>
-          <p class="text-sm text-steel-5">Acércate a recepción para activar tu membresía</p>
-          <div class="card-actions mt-1">
-            <span class="badge badge-ghost badge-sm">sin membresía</span>
-          </div>
-        <% end %>
+<div class="mx-auto -mt-14 w-full max-w-6xl space-y-4 px-4 pb-12">
+  <%# Card principal: qué toca entrenar hoy según la rutina aprobada. El
+      avance sale del RegistroEntrenamiento de hoy (bi-formato v1/v2) — todo
+      calculado en el controller, aquí cero queries. %>
+  <div class="animate-fade-up card border border-base-300 bg-base-100 shadow-sm">
+    <div class="card-body gap-2">
+      <div class="flex items-start justify-between">
+        <h2 class="eyebrow text-steel-3">Hoy te toca</h2>
+        <span class="flex size-9 items-center justify-center rounded-xl bg-volt/15 text-volt-d">
+          <%= render "shared/icono", nombre: :rayo, clase: "size-4.5" %>
+        </span>
       </div>
+      <% if @dia_hoy %>
+        <% total = Array(@dia_hoy["ejercicios"]).size %>
+        <span class="font-display text-3xl font-bold tracking-tight">
+          <%= @dia_hoy["enfoque"].presence || @dia_hoy["dia"].to_s.capitalize %>
+        </span>
+        <p class="text-sm text-steel-5">
+          <%= total %> <%= "ejercicio".pluralize(total) %> · <%= @hechos_hoy %> de <%= total %> hechos
+        </p>
+        <% progreso = total.zero? ? 0 : ((@hechos_hoy / total.to_f) * 100).clamp(0, 100).round %>
+        <div class="h-2 w-full overflow-hidden rounded-full bg-base-300" role="progressbar"
+             aria-valuenow="<%= progreso %>" aria-valuemin="0" aria-valuemax="100">
+          <div class="h-full rounded-full bg-volt transition-all" style="width: <%= progreso %>%"></div>
+        </div>
+        <div class="card-actions mt-2">
+          <%# Modo sesión (Fase 14.3): ejercicio a ejercicio con cronómetro %>
+          <%= link_to sesion_path, class: "btn btn-primary btn-sm gap-1.5 font-bold" do %>
+            <%= render "shared/icono", nombre: :rayo, clase: "size-4" %> Empezar entrenamiento
+          <% end %>
+          <%= link_to "Ver mi plan", mi_plan_path, class: "btn btn-ghost btn-sm" %>
+        </div>
+      <% elsif @plan %>
+        <span class="font-display text-3xl font-bold tracking-tight">Descanso</span>
+        <p class="text-sm text-steel-5">Hoy no hay sesión en tu rutina: recupera, hidrátate y vuelve mañana.</p>
+        <div class="card-actions mt-2">
+          <%= link_to "Ver mi plan", mi_plan_path, class: "btn btn-ghost btn-sm" %>
+        </div>
+      <% else %>
+        <span class="font-display text-3xl font-bold tracking-tight">Aún sin plan</span>
+        <p class="text-sm text-steel-5">Arma tu rutina y empieza a entrenar con guía desde el primer día.</p>
+        <div class="card-actions mt-2">
+          <%= link_to "Armar mi plan", mi_plan_path, class: "btn btn-primary btn-sm" %>
+        </div>
+      <% end %>
     </div>
+  </div>
 
-    <%= link_to progreso_path, class: "animate-fade-up fade-delay-1" do %>
-      <%= render "shared/metric_card",
-            titulo: "Progreso",
-            valor: @objetivo ? "#{@objetivo.peso_kg.to_f} kg" : "—",
-            descripcion: "Peso, calorías y asistencia por semana",
-            badge: "Ver gráficas",
-            icono: :actividad,
-            acento: "bg-ocean/15 text-ocean" %>
-    <% end %>
-    <%= link_to objetivo_path, class: "animate-fade-up fade-delay-2" do %>
+  <%# Racha + calorías: 2 columnas también en móvil (cards compactas). %>
+  <div class="animate-fade-up fade-delay-1 grid grid-cols-2 gap-4">
+    <%= render "shared/racha", perfil: @perfil_juego %>
+    <%= link_to objetivo_path do %>
       <% if @objetivo %>
         <% restantes = @objetivo.kcal_restantes(@registro_hoy&.kcal_consumidas.to_i) %>
         <%= render "shared/metric_card",
@@ -85,27 +90,59 @@
     <% end %>
   </div>
 
-  <div class="animate-fade-up fade-delay-3 mt-8 grid gap-4 sm:grid-cols-3">
-    <div class="rounded-2xl border border-base-300 bg-base-100 p-5 shadow-sm">
-      <div class="mb-2 flex size-9 items-center justify-center rounded-xl bg-volt/15 text-volt-d">
-        <%= render "shared/icono", nombre: :rayo, clase: "size-4.5" %>
+  <%# Membresía: card grande a lo ancho (se conserva de la versión anterior). %>
+  <div class="animate-fade-up fade-delay-2 card card-hover border border-base-300 bg-base-100 shadow-sm">
+    <div class="card-body gap-1.5">
+      <div class="flex items-start justify-between">
+        <h2 class="eyebrow text-steel-3">Membresía</h2>
+        <span class="flex size-9 items-center justify-center rounded-xl bg-volt/15 text-volt-d">
+          <%= render "shared/icono", nombre: :escudo, clase: "size-4.5" %>
+        </span>
       </div>
-      <h3 class="font-semibold">Entrena con datos</h3>
-      <p class="mt-1 text-sm text-steel-5">Registra tus mediciones y mira tu progreso mes a mes con gráficas claras.</p>
+      <% if @membresia %>
+        <div class="flex items-center gap-4">
+          <% dias = @membresia.dias_restantes %>
+          <% progreso = ((dias / 31.0) * 100).clamp(0, 100).round %>
+          <div class="radial-progress <%= dias > 7 ? "text-volt-d" : dias >= 0 ? "text-warning" : "text-error" %>"
+               style="--value:<%= progreso %>; --size:4.5rem; --thickness:5px;"
+               aria-valuenow="<%= progreso %>" role="progressbar">
+            <span class="font-display text-lg font-bold text-base-content"><%= dias %></span>
+          </div>
+          <div>
+            <p class="font-display text-2xl font-bold tracking-tight">días</p>
+            <p class="text-sm text-steel-5">Vence el <%= l @membresia.fecha_vencimiento, format: :long %></p>
+            <div class="mt-1"><%= badge_estado(@membresia.estado) %></div>
+          </div>
+        </div>
+      <% else %>
+        <span class="font-display text-4xl font-bold tracking-tight">—</span>
+        <p class="text-sm text-steel-5">Acércate a recepción para activar tu membresía</p>
+        <div class="card-actions mt-1">
+          <span class="badge badge-ghost badge-sm">sin membresía</span>
+        </div>
+      <% end %>
     </div>
-    <div class="rounded-2xl border border-base-300 bg-base-100 p-5 shadow-sm">
-      <div class="mb-2 flex size-9 items-center justify-center rounded-xl bg-ocean/15 text-ocean">
-        <%= render "shared/icono", nombre: :fuego, clase: "size-4.5" %>
-      </div>
-      <h3 class="font-semibold">Nutrición a tu medida</h3>
-      <p class="mt-1 text-sm text-steel-5">Objetivo calórico según tu meta: déficit para bajar, superávit para crecer.</p>
-    </div>
-    <div class="rounded-2xl border border-base-300 bg-base-100 p-5 shadow-sm">
-      <div class="mb-2 flex size-9 items-center justify-center rounded-xl bg-pulse/15 text-pulse">
-        <%= render "shared/icono", nombre: :check, clase: "size-4.5" %>
-      </div>
-      <h3 class="font-semibold">Planes personalizados</h3>
-      <p class="mt-1 text-sm text-steel-5">Rutinas analizadas y diseñadas según tu información, aprobadas por tu entrenador.</p>
-    </div>
+  </div>
+
+  <%# Accesos: progreso semanal y el explorador del catálogo (Fase 14.5). %>
+  <div class="animate-fade-up fade-delay-3 grid gap-4 sm:grid-cols-2">
+    <%= link_to progreso_path do %>
+      <%= render "shared/metric_card",
+            titulo: "Progreso",
+            valor: @objetivo ? "#{@objetivo.peso_kg.to_f} kg" : "—",
+            descripcion: "Peso, calorías y asistencia por semana",
+            badge: "Ver gráficas",
+            icono: :actividad,
+            acento: "bg-ocean/15 text-ocean" %>
+    <% end %>
+    <%= link_to ejercicios_path do %>
+      <%= render "shared/metric_card",
+            titulo: "Ejercicios",
+            valor: "Explorar",
+            descripcion: "Biblioteca completa con guía visual, organizada por músculo",
+            badge: "Ver catálogo",
+            icono: :busqueda,
+            acento: "bg-volt/15 text-volt-d" %>
+    <% end %>
   </div>
 </div>

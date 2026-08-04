@@ -20,4 +20,16 @@ ActiveSupport::Inflector.inflections(:en) do |inflect|
   inflect.irregular "aprobacion", "aprobaciones"
   inflect.irregular "plantilla_comida", "plantillas_comida"
   inflect.irregular "plantilla_ejercicio", "plantillas_ejercicio"
+  inflect.irregular "consentimiento", "consentimientos"
+  # Motor de juego (Fase 14.12). Sin estos, Zeitwerk no resuelve los modelos:
+  # el inflector inglés pluraliza solo la última palabra ("registro_puntos").
+  # "logro"/"logros" y "racha"/"rachas" sí funcionan con la regla default.
+  inflect.irregular "registro_punto", "registros_puntos"
+  inflect.irregular "perfil_juego", "perfiles_juego"
+  inflect.irregular "logro_obtenido", "logros_obtenidos"
+  # Récords personales (Fase 14.13): mismo motivo — el inflector inglés
+  # daría "record_personals" y Zeitwerk no resolvería el modelo.
+  inflect.irregular "record_personal", "records_personales"
+  # Ciclo menstrual (Fase 14.15): ídem — el inflector daría "ciclo_menstruals".
+  inflect.irregular "ciclo_menstrual", "ciclos_menstruales"
 end

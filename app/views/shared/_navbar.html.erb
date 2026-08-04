@@ -106,24 +106,16 @@
         </div>
       </div>
 
-      <%# ── Móvil: menú seccionado con íconos ── %>
-      <div class="dropdown dropdown-end md:hidden">
-        <div tabindex="0" role="button" class="btn btn-square btn-ghost text-white">
-          <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
-        </div>
-        <ul tabindex="0" class="menu dropdown-content menu-md z-50 mt-3 w-72 gap-0.5 rounded-2xl border border-base-300 bg-base-100 p-3 shadow-xl">
-          <li class="menu-title text-steel-3">Tu cuenta</li>
-          <% cuenta.each do |texto, ruta, icono| %>
-            <li>
-              <%= link_to ruta, class: "gap-3 py-2.5 #{"menu-active" if current_page?(ruta)}" do %>
-                <%= render "shared/icono", nombre: icono, clase: "size-5 text-steel-3" %>
-                <span class="text-sm font-medium"><%= texto %></span>
-              <% end %>
-            </li>
-          <% end %>
-
-          <% if gestion.any? %>
-            <li class="menu-title mt-1 text-steel-3">Administración</li>
+      <%# ── Móvil: solo administración para staff (Fase 14.1) — la navegación
+          de miembro vive en la tab bar inferior; sin items de gestión no hay
+          hamburguesa. ── %>
+      <% if gestion.any? %>
+        <div class="dropdown dropdown-end md:hidden">
+          <div tabindex="0" role="button" class="btn btn-square btn-ghost text-white">
+            <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+          </div>
+          <ul tabindex="0" class="menu dropdown-content menu-md z-50 mt-3 w-72 gap-0.5 rounded-2xl border border-base-300 bg-base-100 p-3 shadow-xl">
+            <li class="menu-title text-steel-3">Administración</li>
             <% gestion.each do |texto, ruta, icono| %>
               <li>
                 <%= link_to ruta, class: "gap-3 py-2.5 #{"menu-active" if current_page?(ruta)}" do %>
@@ -133,9 +125,9 @@
                 <% end %>
               </li>
             <% end %>
-          <% end %>
-        </ul>
-      </div>
+          </ul>
+        </div>
+      <% end %>
     </div>
   </div>
 </header>

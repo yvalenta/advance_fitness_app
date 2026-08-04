@@ -76,6 +76,12 @@
 }
 
 @layer components {
+  /* Tab bar inferior (Fase 14.1): respeta el home-indicator/notch en PWA
+     instalada (viewport-fit=cover en el meta viewport del layout). */
+  .tab-bar-inferior {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
   /* Fondo hero oscuro de marca (navbar, cabeceras, panel de auth) */
   .gradient-hero {
     background: linear-gradient(160deg, #0b1220 0%, #1e293b 55%, #26364c 100%);
@@ -128,6 +134,18 @@
     }
     50% {
       box-shadow: 0 0 0 10px rgb(180 240 0 / 0);
+    }
+  }
+
+  /* Celebración de récords (Fase 14.13, pulido 14.17): pop con rebote */
+  .pop-celebracion {
+    animation: pop-celebracion 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  @keyframes pop-celebracion {
+    from {
+      opacity: 0;
+      transform: scale(0.6) translateY(10px);
     }
   }
 

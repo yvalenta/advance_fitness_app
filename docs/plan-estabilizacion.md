@@ -90,40 +90,45 @@ Objetivo: que una fuga cross-tenant sea **estructuralmente improbable**, no solo
 
 Hoy `spec/policies/aislamiento_cross_tenant_spec.rb` cubre 2 modelos. Ampliarla a **todo el dominio**:
 
-- [ ] Sembrar en el spec dos tenants completos (helper compartido, p. ej. `spec/support/dos_tenants.rb`): cada uno con admin, entrenador, miembro, membresía, pago, suscripción, medición, plan personalizado, registros (calorías/entrenamiento), objetivo, acceso, post y novedad.
-- [ ] Para cada modelo con datos por-usuario, un ejemplo que verifique que `policy_scope` (o la query del controller) del staff del tenant A **no devuelve ninguna fila** del tenant B: `Membresia`, `Pago`, `Acceso`, `Suscripcion`, `Medicion`, `PlanPersonalizado`, `RegistroCaloria`, `RegistroEntrenamiento`, `DetalleEntrenamiento`, `ObjetivoNutricional`, `FeedbackIa`, `Post`, `Novedad`.
-- [ ] Casos negativos de acción directa (no solo scope): el admin del tenant A intenta `show`/`update` sobre un registro del tenant B por ID → `Pundit::NotAuthorizedError` o 404.
-- [ ] Documentar en el spec qué modelos son **catálogo global a propósito** (`Plan`, `Ejercicio`, `PlantillaComida`, `PlantillaEjercicio` — SDD §16.6) para que nadie los "arregle" por error.
+- [x] Sembrar en el spec dos tenants completos (helper compartido, p. ej. `spec/support/dos_tenants.rb`): cada uno con admin, entrenador, miembro, membresía, pago, suscripción, medición, plan personalizado, registros (calorías/entrenamiento), objetivo, acceso, post y novedad.
+- [x] Para cada modelo con datos por-usuario, un ejemplo que verifique que `policy_scope` (o la query del controller) del staff del tenant A **no devuelve ninguna fila** del tenant B: `Membresia`, `Pago`, `Acceso`, `Suscripcion`, `Medicion`, `PlanPersonalizado`, `RegistroCaloria`, `RegistroEntrenamiento`, `DetalleEntrenamiento`, `ObjetivoNutricional`, `FeedbackIa`, `Post`, `Novedad`.
+- [x] Casos negativos de acción directa (no solo scope): el admin del tenant A intenta `show`/`update` sobre un registro del tenant B por ID → `Pundit::NotAuthorizedError` o 404.
+- [x] Documentar en el spec qué modelos son **catálogo global a propósito** (`Plan`, `Ejercicio`, `PlantillaComida`, `PlantillaEjercicio` — SDD §16.6) para que nadie los "arregle" por error.
 
 **Cierre:** un solo comando (`dip test spec/policies/aislamiento_cross_tenant_spec.rb`) prueba el aislamiento de todo el dominio; romper cualquier scope lo pone en rojo.
+**Evidencia (commit `874f336`, agosto 2026):** `spec/policies/aislamiento_cross_tenant_spec.rb`, 13 ejemplos en verde con el helper `expect_aislado`; catálogos globales documentados en la cabecera del spec.
 
 ### 1.2 Specs de las 14 policies sin cobertura
 
-- [ ] Crear specs para: `AccesoPolicy`, `EjercicioPolicy`, `MedicionPolicy`, `ObjetivoNutricionalPolicy`, `PagoPolicy`, `PlanPolicy`, `PlanPersonalizadoPolicy`, `PlantillaComidaPolicy`, `PlantillaEjercicioPolicy`, `ProgresoPolicy`, `RegistroCaloriaPolicy`, `RegistroEntrenamientoPolicy`, `SuscripcionPolicy`, `ApplicationPolicy`.
-- [ ] Plantilla mínima por policy: miembro sobre lo propio ✓, miembro sobre lo ajeno ✗, staff del mismo tenant ✓, **staff de otro tenant ✗** (el caso negativo cross-tenant siempre presente).
+- [x] Crear specs para: `AccesoPolicy`, `EjercicioPolicy`, `MedicionPolicy`, `ObjetivoNutricionalPolicy`, `PagoPolicy`, `PlanPolicy`, `PlanPersonalizadoPolicy`, `PlantillaComidaPolicy`, `PlantillaEjercicioPolicy`, `ProgresoPolicy`, `RegistroCaloriaPolicy`, `RegistroEntrenamientoPolicy`, `SuscripcionPolicy`, `ApplicationPolicy`.
+- [x] Plantilla mínima por policy: miembro sobre lo propio ✓, miembro sobre lo ajeno ✗, staff del mismo tenant ✓, **staff de otro tenant ✗** (el caso negativo cross-tenant siempre presente).
 
 **Cierre:** `dip test spec/policies` en verde; 21/21 policies con spec.
+**Evidencia (commit `d6eba80`, agosto 2026):** 21 archivos en `spec/policies/` cubriendo las 20 policies de `app/policies/` + la suite de aislamiento; ninguna policy sin spec.
 
 ### 1.3 ADR: `tenant_id` desnormalizado en tablas de dinero
 
 Hoy el aislamiento de `membresias`/`pagos`/`suscripciones` se deriva por join a `users`. Un `where` mal armado en un controller nuevo filtra dinero de otro gimnasio.
 
-- [ ] Escribir el ADR en el SDD (nueva nota en §16): **recomendación — agregar `tenant_id` a `membresias`, `pagos` y `suscripciones`**, backfilleado desde `user.tenant_id`, con FK + índice compuesto `(tenant_id, ...)` en las columnas líder de los listados admin. Las demás tablas siguen por join (su volumen y sensibilidad no lo justifican aún).
-- [ ] Migración + backfill idempotente (patrón `multi_tenant:migrar`).
-- [ ] Callback/validación que garantice coherencia `registro.tenant_id == registro.user.tenant_id`.
-- [ ] Actualizar los Pundit Scopes de esos 3 modelos para filtrar directo por `tenant_id` (sin join).
-- [ ] Si se decide NO desnormalizar: dejarlo escrito en el ADR con el porqué, y la suite 1.1 queda como única defensa declarada.
+- [x] Escribir el ADR en el SDD (nueva nota en §16): **recomendación — agregar `tenant_id` a `membresias`, `pagos` y `suscripciones`**, backfilleado desde `user.tenant_id`, con FK + índice compuesto `(tenant_id, ...)` en las columnas líder de los listados admin. Las demás tablas siguen por join (su volumen y sensibilidad no lo justifican aún).
+- [x] Migración + backfill idempotente (patrón `multi_tenant:migrar`).
+- [x] Callback/validación que garantice coherencia `registro.tenant_id == registro.user.tenant_id`.
+- [x] Actualizar los Pundit Scopes de esos 3 modelos para filtrar directo por `tenant_id` (sin join).
+- [x] Si se decide NO desnormalizar: dejarlo escrito en el ADR con el porqué, y la suite 1.1 queda como única defensa declarada. → **se decidió SÍ desnormalizar** (SDD §16.7).
 
 **Cierre:** ADR en el SDD; migración aplicada en test y producción; suite 1.1 sigue en verde.
+**Evidencia (agosto 2026):** ADR en **SDD §16.7** con el criterio de cuándo desnormalizar. Migración `20260803000000_add_tenant_a_tablas_de_dinero` con backfill `UPDATE … WHERE tenant_id IS NULL` (idempotente) y `down` verificado con `db:rollback STEP=1` + re-migrate. Coherencia en el concern `TenantDesnormalizado` (`hereda_tenant_de`), con `spec/models/tenant_desnormalizado_spec.rb` (8 ejemplos: herencia, rechazo de `tenant_id` inyectado, fail-closed del scope). Scopes vía el nuevo `ApplicationPolicy::Scope#del_tenant_directo`; `Admin::SuscripcionesController#index` deja de armar el join a mano y pasa a `policy_scope`. **Pendiente:** aplicar la migración en producción en el próximo deploy.
 
 ### 1.4 Request specs por subdominio
 
 Hoy solo existe `spec/requests/tenant_scoping_spec.rb`.
 
-- [ ] Request specs que peguen a rutas reales con `host:` de distintos subdominios: admin del tenant A logueado en el subdominio del tenant B → expulsado (`terminate_session` + redirect con el mensaje de `tenant_scoping.rb`); superadmin en subdominio comercial ✓; slug inexistente → 404.
-- [ ] Un request spec del flujo de registro: mismo email en dos tenants → ambos se crean (regresión del fix `9f48ffc`).
+- [x] Request specs que peguen a rutas reales con `host:` de distintos subdominios: admin del tenant A logueado en el subdominio del tenant B → expulsado (`terminate_session` + redirect con el mensaje de `tenant_scoping.rb`); superadmin en subdominio comercial ✓; slug inexistente → 404.
+- [x] Un request spec del flujo de registro: mismo email en dos tenants → ambos se crean (regresión del fix `9f48ffc`).
 
 **Cierre:** `dip test spec/requests` en verde con ≥4 escenarios de subdominio.
+**Evidencia (agosto 2026):** `spec/requests/aislamiento_por_subdominio_spec.rb`, 6 ejemplos — expulsión con sesión terminada de verdad (`Session` vacío, no solo el redirect), ruta admin inalcanzable, los 3 listados de dinero sin filas del tenant vecino, y el mismo correo registrado en dos tenants.
+**Bug encontrado y corregido de paso:** los escenarios de "otro tenant" firmaban sesión **antes** de cambiar de `host!`. Como la cookie es host-only (§16.6), el request llegaba sin sesión y el redirect lo producía `request_authentication`, **no** `verificar_pertenencia_al_tenant`: el test pasaba aunque el guard no existiera. Se invirtió el orden (`host!` primero, que es además el escenario real que el guard ataja — la cookie robada o replicada) y se afirma el `flash[:alert]`, que es lo único que distingue las dos rutas. Corregido también en `spec/requests/tenant_scoping_spec.rb`.
 
 ---
 

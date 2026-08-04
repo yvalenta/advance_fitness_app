@@ -26,8 +26,8 @@ class PagoPolicy < ApplicationPolicy
   class Scope < ApplicationPolicy::Scope
     def resolve
       if user.staff?
-        # Aislado por tenant vía la membresía → user (SDD §16.6).
-        scope.joins(membresia: :user).where(users: { tenant_id: user.tenant_id })
+        # `tenant_id` propio (SDD §16.7): antes eran dos joins hasta `users`.
+        del_tenant_directo(scope)
       else
         scope.joins(:membresia).where(membresias: { user_id: user.id })
       end

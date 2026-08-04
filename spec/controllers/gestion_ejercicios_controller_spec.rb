@@ -38,7 +38,8 @@ RSpec.describe "GestionEjercicios", type: :request do
     }.to change { @plan.reload.ejercicios_de(0).size }.by(1)
     expect(response).to have_http_status(:success)
     expect(response.media_type).to match("turbo-stream")
-    assert_select "turbo-stream[action=replace][target=dia_editor_0]"
+    # Fase 14.9: el panel del día es por semana del mesociclo (v1 → semana 1)
+    assert_select "turbo-stream[action=replace][target=dia_editor_1_0]"
 
     expect {
       delete plan_personalizado_dia_ejercicio_path(@plan, 0, 0), headers: { "Accept" => "text/vnd.turbo-stream.html" }

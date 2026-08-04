@@ -10,7 +10,7 @@
   <% if @plan %>
     <%= turbo_stream_from @plan %>
     <div class="animate-fade-up">
-      <%= render "planes_personalizados/plan", plan: @plan, usuario: Current.user %>
+      <%= render "planes_personalizados/plan", plan: @plan, usuario: Current.user, anteriores: @anteriores %>
     </div>
   <% else %>
     <% if @falta_meta %>

@@ -34,7 +34,8 @@ RSpec.describe GeneradorPlanBasico, type: :model do
 
     expect(rutina["dias"].size).to eq(6)
     ejercicio = rutina["dias"].first["ejercicios"].first
-    expect(ejercicio.keys.sort).to eq(%w[descanso_seg nombre repeticiones series])
+    # Fase 14.6: + uid — la identidad estable por entrada para el seguimiento
+    expect(ejercicio.keys.sort).to eq(%w[descanso_seg nombre repeticiones series uid])
     expect(ejercicio["nombre"].present?).to be_truthy
   end
 
@@ -51,6 +52,33 @@ RSpec.describe GeneradorPlanBasico, type: :model do
     expect(con_id.first["ejercicio_id"]).to eq(ejercicio.id)
   end
 
+  # Fase 14.6: identidad estable por ENTRADA — única aunque la misma plantilla
+  # se repita en la semana.
+  it "cada ejercicio del plan por reglas nace con uid único" do
+    rutina = GeneradorPlanBasico.para(users(:one), objetivo: objetivo("superavit"))
+    uids = rutina["dias"].flat_map { |d| d["ejercicios"] }.map { |e| e["uid"] }
+
+    expect(uids.any?).to be_truthy
+    expect(uids).to all(match(/\A[a-zA-Z0-9]{10}\z/))
+    expect(uids.uniq.size).to eq(uids.size)
+  end
+
+  # Fase 14.8: el plan por reglas nace como mesociclo v2 con la progresión
+  # lineal determinista (la misma progresión por defecto del validador).
+  it "el plan por reglas es un mesociclo v2 de 4 semanas con descarga final" do
+    rutina = GeneradorPlanBasico.para(users(:one), objetivo: objetivo("superavit"))
+
+    expect(rutina["version"]).to eq(2)
+    expect(rutina["mesociclo"]).to include("semanas_total" => 4, "progresion" => "lineal")
+    expect(rutina["semanas"].map { |s| s["numero"] }).to eq([ 1, 2, 3, 4 ])
+    expect(rutina["semanas"].map { |s| s["ajuste"]["peso_factor"] }).to eq([ 1.0, 1.05, 1.1, 0.85 ])
+    ultima = rutina["semanas"].last
+    expect(ultima["descarga"]).to be(true)
+    expect(ultima["ajuste"]["peso_factor"]).to be <= 0.9
+    # Semanas SIN materializar: los días viven una sola vez en la base
+    expect(rutina["semanas"].map { |s| s["dias"] }).to all(be_nil)
+  end
+
   it "la semana rota ejercicios entre repeticiones del mismo enfoque" do
     2.times { |i| PlantillaEjercicio.find_or_create_by!(musculo: "pecho", nombre: "Press extra #{i}") { |p| p.repeticiones = "8" } }
     rutina = GeneradorPlanBasico.para(users(:one), objetivo: objetivo("superavit"))
@@ -58,5 +86,31 @@ RSpec.describe GeneradorPlanBasico, type: :model do
     lunes = rutina["dias"][0]["ejercicios"].map { |e| e["nombre"] }
     jueves = rutina["dias"][3]["ejercicios"].map { |e| e["nombre"] }
     expect(lunes).not_to eq(jueves)
+  end
+
+  # Énfasis del perfil femenino (Fase 14.16): el día de pierna prioriza
+  # glúteo. Default editable, no candado; el volumen del día no cambia.
+  describe "énfasis femenino" do
+    it "para sexo F el día de pierna del PPL pasa a Glúteo y pierna" do
+      miembra = users(:one).tap { |u| u.update!(sexo: "F") }
+      objetivo = ObjetivoNutricional.create!(user: miembra, tipo: "superavit",
+                                             peso_kg: 60, activo: true)
+
+      rutina = described_class.para(miembra, objetivo: objetivo)
+
+      enfoques = rutina["dias"].map { |d| d["enfoque"] }
+      expect(enfoques).to include("Glúteo y pierna")
+      expect(enfoques).not_to include("Pierna y glúteo")
+    end
+
+    it "para sexo M el split queda exactamente como siempre" do
+      miembro = users(:one).tap { |u| u.update!(sexo: "M") }
+      objetivo = ObjetivoNutricional.create!(user: miembro, tipo: "superavit",
+                                             peso_kg: 70, activo: true)
+
+      rutina = described_class.para(miembro, objetivo: objetivo)
+
+      expect(rutina["dias"].map { |d| d["enfoque"] }).to include("Pierna y glúteo")
+    end
   end
 end

@@ -38,4 +38,43 @@ RSpec.describe RegistroCaloria, type: :model do
 
     expect(registro.reload.detalle).to eq({})
   end
+
+  # Fase 14.4: el consumo real guarda también los macros (gramos) cuando llegan.
+  it "registrar guarda los macros del consumo" do
+    registro = RegistroCaloria.registrar(users(:one), kcal: 1800,
+                                         proteinas_g: 90, carbohidratos_g: 180, grasas_g: 55)
+
+    registro.reload
+    expect([ registro.proteinas_g, registro.carbohidratos_g, registro.grasas_g ]).to eq([ 90, 180, 55 ])
+  end
+
+  it "reenviar solo kcal no borra los macros ya anotados del día" do
+    RegistroCaloria.registrar(users(:one), kcal: 1800, proteinas_g: 90, carbohidratos_g: 180, grasas_g: 55)
+
+    registro = RegistroCaloria.registrar(users(:one), kcal: 2000)
+
+    expect(registro.reload.proteinas_g).to eq(90)
+    expect(registro.kcal_consumidas).to eq(2000)
+  end
+
+  it "macros negativos no se guardan" do
+    registro = RegistroCaloria.registrar(users(:one), kcal: 1500, proteinas_g: -5)
+
+    expect(registro.persisted?).to be_falsey
+  end
+
+  # Fase 14.4: la migración de macros es add_column puro — reversible.
+  it "la migración de macros es reversible" do
+    require Rails.root.glob("db/migrate/*_add_macros_a_registros_calorias.rb").first
+
+    ActiveRecord::Migration.suppress_messages do
+      AddMacrosARegistrosCalorias.new.migrate(:down)
+      RegistroCaloria.reset_column_information
+      expect(RegistroCaloria.column_names).not_to include("proteinas_g", "carbohidratos_g", "grasas_g")
+
+      AddMacrosARegistrosCalorias.new.migrate(:up)
+      RegistroCaloria.reset_column_information
+      expect(RegistroCaloria.column_names).to include("proteinas_g", "carbohidratos_g", "grasas_g")
+    end
+  end
 end

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Sin conexión</title>
+  <style>
+    /* Página offline del service worker (Fase 14.1). Autocontenida: sin
+       assets del pipeline — debe renderizar sin red. Colores del tema
+       "advance" (steel-9 / volt). */
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0c1322;
+      color: #e2e8f0;
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+      text-align: center;
+      padding: 24px;
+    }
+    main { max-width: 320px; }
+    .icono {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 20px;
+      background: rgba(180, 240, 0, 0.12);
+    }
+    h1 { font-size: 1.25rem; margin: 0 0 8px; }
+    p { font-size: 0.875rem; color: #94a3b8; margin: 0 0 20px; line-height: 1.5; }
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-size: 0.875rem;
+      font-weight: 700;
+      background: #b4f000;
+      color: #0b1220;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="icono">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#b4f000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10"/>
+      </svg>
+    </div>
+    <h1>Sin conexión</h1>
+    <p>No pudimos cargar la página. Revisa tu conexión a internet e inténtalo de nuevo.</p>
+    <button onclick="location.reload()">Reintentar</button>
+  </main>
+</body>
+</html>

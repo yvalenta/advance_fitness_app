@@ -1,22 +1,47 @@
-<%# Rutina semanal unificada (Fase 6.8): una sola tarjeta con tabs por día que %>
-<%# alterna, por ejercicio, entre modo lectura (checks de seguimiento, %>
-<%# cápsulas, tap para ver ejecución) y modo edición (inputs inline) — sin %>
-<%# duplicar el componente entre la vista del miembro y la del editor. %>
-<%# locals: (rutina:, plan: nil, usuario: nil, plantillas: nil, siempre_editando: false) %>
+<%# Rutina semanal unificada (Fase 6.8) + eje de semanas del mesociclo (Fase %>
+<%# 14.9): una sola tarjeta que alterna, por ejercicio, entre modo lectura %>
+<%# (checks de seguimiento, cápsulas) y modo edición (inputs inline). Con un %>
+<%# plan multisemana la tarjeta apila una sección por semana (etiqueta + barra %>
+<%# de progreso volt/steel + chips de día); SOLO la semana activa vive en el %>
+<%# DOM inicial — las demás son turbo-frames perezosos (GestionSemanas) que el %>
+<%# mesociclo_controller destapa al seleccionarlas. Los tabs de día viven %>
+<%# DENTRO de cada semana (_semana), nunca anidados bajo otro "tabs". Un plan %>
+<%# v1 (una sola semana) se ve igual que siempre: sin eje. %>
+<%# locals: (rutina:, plan: nil, usuario: nil, plantillas: nil, siempre_editando: false, anteriores: {}) %>
 <% plan = local_assigns[:plan] %>
 <% usuario = local_assigns[:usuario] %>
+<% anteriores = local_assigns[:anteriores] || {} %>
 <% siempre_editando = local_assigns.fetch(:siempre_editando, false) %>
-<% dias = Array(rutina["dias"]) %>
+<% semanas = plan ? plan.semanas : [] %>
+<% multisemana = semanas.size > 1 %>
+<% activa = plan ? plan.semana_actual : 1 %>
 <% con_seguimiento = plan && usuario && plan.user_id == usuario.id %>
 <% editable = siempre_editando || (plan && usuario && PlanPersonalizadoPolicy.new(usuario, plan).editar_rutina?) %>
 <% plantillas = local_assigns[:plantillas] || (PlantillaEjercicio.ordenadas if editable) %>
-<% if con_seguimiento %>
-  <% semana = Date.current.beginning_of_week %>
-  <% registros = usuario.registros_entrenamiento.where(fecha: semana..(semana + 6)).index_by(&:fecha) %>
+<% if multisemana %>
+  <%# Progreso por semana: UNA query de registros para todo el mesociclo. %>
+  <% dias_por_semana = semanas.to_h { |s| [ s["numero"], plan.dias(semana: s["numero"]) ] } %>
+  <% fechas_por_semana = dias_por_semana.to_h do |n, dias_semana|
+       [ n, dias_semana.each_index.map { |i| Rutina::Calendario.fecha_de(plan, semana: n, dia_indice: i) } ]
+     end %>
+  <% registros_mesociclo = con_seguimiento ? usuario.registros_entrenamiento.where(fecha: fechas_por_semana.values.flatten).index_by(&:fecha) : {} %>
+  <% progreso = dias_por_semana.to_h do |n, dias_semana|
+       total = hechos = 0
+       estados = dias_semana.each_index.map do |i|
+         ejercicios = Array(dias_semana[i]["ejercicios"])
+         total += ejercicios.size
+         registro = registros_mesociclo[fechas_por_semana[n][i]]
+         hechos_dia = ejercicios.each_with_index.count { |ej, ei| registro&.estado_de(uid: ej["uid"], indice: ei)&.dig("hecho") }
+         hechos += hechos_dia
+         ejercicios.any? && hechos_dia == ejercicios.size
+       end
+       [ n, { total: total, hechos: hechos, estados: estados } ]
+     end %>
 <% end %>
 
 <div class="card border border-base-300 bg-base-100 shadow-md"
-     data-controller="tabs modo-edicion seguimiento ayuda-ejercicio registro-series autosave modal-ejercicios"
+     data-controller="<%= "mesociclo " if multisemana %>modo-edicion seguimiento ayuda-ejercicio registro-series autosave modal-ejercicios"
+     <% if multisemana %>data-mesociclo-activa-value="<%= activa %>"<% end %>
      data-seguimiento-url-value="<%= registros_entrenamiento_path %>"
      data-autosave-clave="ejercicio"
      data-modal-ejercicios-crear-url="<%= entrenador_plantillas_ejercicio_path %>"
@@ -34,6 +59,11 @@
           <span class="text-xs text-steel-3" data-modo-edicion-target="lectura" <%= "hidden" if siempre_editando %>>
             Marca lo que ejecutes · <span data-seguimiento-target="estado"></span>
           </span>
+          <%# Modo sesión (Fase 14.3): la sesión de hoy, ejercicio a ejercicio %>
+          <%= link_to sesion_path, class: "btn btn-primary btn-xs gap-1 font-bold",
+                data: { modo_edicion_target: "lectura" } do %>
+            <%= render "shared/icono", nombre: :rayo, clase: "size-3.5" %> Entrenar
+          <% end %>
         <% end %>
         <% if editable %>
           <span class="text-xs text-steel-3" data-autosave-target="global" data-modo-edicion-target="edicion"
@@ -57,23 +87,57 @@
       </div>
     <% end %>
 
-    <div role="tablist" class="tabs tabs-box w-fit max-w-full flex-nowrap overflow-x-auto">
-      <% dias.each do |dia| %>
-        <button type="button" role="tab" class="tab whitespace-nowrap font-semibold capitalize"
-                data-tabs-target="tab" data-action="tabs#seleccionar"><%= dia["dia"] %></button>
-      <% end %>
-    </div>
-
-    <% dias.each_with_index do |dia, indice| %>
-      <% if con_seguimiento %>
-        <% fecha = semana + PlanPersonalizado::DIAS_OFFSET.fetch(dia["dia"].to_s.downcase, 0) %>
-        <% registro = registros[fecha] %>
-      <% end %>
-      <div data-tabs-target="panel" hidden>
-        <%= render "planes_personalizados/dia_editor", plan: plan, dia: dia, indice: indice,
-              con_seguimiento: con_seguimiento, editable: editable, editando_por_defecto: siempre_editando,
-              registro: registro, fecha: fecha %>
+    <% if multisemana %>
+      <div class="mt-1 flex flex-wrap items-center justify-between gap-2">
+        <p class="eyebrow text-steel-3">Programa · <%= semanas.size %> semanas</p>
+        <% if plan.mesociclo_completado? %>
+          <span class="badge badge-success badge-sm gap-1 font-semibold">
+            <%= render "shared/icono", nombre: :check, clase: "size-3" %> Mesociclo completado
+          </span>
+        <% end %>
       </div>
+
+      <% semanas.each do |s| %>
+        <% n = s["numero"] %>
+        <% es_activa = n == activa %>
+        <section class="rounded-2xl border p-3 transition-colors <%= es_activa ? "border-volt-d/60" : "border-base-300" %>"
+                 data-mesociclo-target="semana" data-numero="<%= n %>"
+                 data-hechos="<%= progreso[n][:hechos] %>" data-total="<%= progreso[n][:total] %>">
+          <button type="button" class="flex w-full flex-wrap items-center gap-2 text-left"
+                  data-action="mesociclo#seleccionar">
+            <span class="font-display text-sm font-bold uppercase tracking-wide"><%= s["etiqueta"] %></span>
+            <% if s["descarga"] %>
+              <span class="badge badge-warning badge-xs font-semibold">Descarga</span>
+            <% end %>
+            <% if plan.semana_materializada?(n) %>
+              <span class="badge badge-outline badge-xs font-semibold text-volt-d">Personalizada</span>
+            <% end %>
+            <span class="ml-auto text-xs font-semibold text-steel-3"><%= progreso[n][:hechos] %>/<%= progreso[n][:total] %></span>
+          </button>
+          <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-base-300">
+            <div class="h-full rounded-full bg-volt transition-[width] duration-500 ease-out" style="width: 0%"
+                 data-mesociclo-target="barra"></div>
+          </div>
+          <div class="mt-2" data-mesociclo-target="chips" <%= "hidden" if es_activa %>>
+            <%= render "planes_personalizados/chips_dias", dias: dias_por_semana[n],
+                  estados: progreso[n][:estados], interactivo: false, atenuada: n > activa %>
+          </div>
+          <% if es_activa %>
+            <%= turbo_frame_tag "plan_#{plan.id}_semana_#{n}", class: "mt-2 block" do %>
+              <%= render "planes_personalizados/semana", plan: plan, usuario: usuario, numero: n, chips: true,
+                    editando_por_defecto: siempre_editando, anteriores: anteriores,
+                    registros: (registros_mesociclo.slice(*fechas_por_semana[n]) if con_seguimiento) %>
+            <% end %>
+          <% else %>
+            <%= turbo_frame_tag "plan_#{plan.id}_semana_#{n}", class: "mt-2 block", hidden: true, loading: :lazy,
+                  src: plan_personalizado_semana_path(plan, n, siempre_editando ? { editor: 1 } : {}) %>
+          <% end %>
+        </section>
+      <% end %>
+    <% else %>
+      <%= render "planes_personalizados/semana", plan: plan, usuario: usuario, numero: 1, chips: false,
+            editando_por_defecto: siempre_editando, anteriores: anteriores,
+            dias: (Array(rutina["dias"]) unless plan) %>
     <% end %>
   </div>
 

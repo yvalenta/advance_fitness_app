@@ -1,0 +1,29 @@
+<%# Fila de chips de día del mesociclo (Fase 14.9, referencia Gymnax): número %>
+<%# grande + etiqueta corta del enfoque + estado. Día completado: chip volt con %>
+<%# check blanco; pendiente: chip gris delineado; semana futura: atenuados. %>
+<%# En modo interactivo los chips SON los tabs del día (tabs_controller vive en %>
+<%# el subárbol de la semana); en modo estático (semana no cargada) el tap %>
+<%# selecciona la semana + el día vía mesociclo_controller. %>
+<%# locals: (dias:, estados:, interactivo:, atenuada: false) %>
+<% atenuada = local_assigns.fetch(:atenuada, false) %>
+<div class="flex flex-wrap gap-1.5 <%= "opacity-40" if atenuada %>" <% if interactivo %>role="tablist"<% end %>>
+  <% dias.each_with_index do |dia, indice| %>
+    <% hecho = estados[indice] %>
+    <% ejercicios = Array(dia["ejercicios"]) %>
+    <% etiqueta = dia["enfoque"].presence&.split(/[\s·\/+]/)&.first || (ejercicios.empty? ? "Descanso" : "Día") %>
+    <button type="button"
+            <% if interactivo %>
+              role="tab" data-tabs-target="tab" data-action="tabs#seleccionar"
+            <% else %>
+              data-action="mesociclo#seleccionar" data-dia-indice="<%= indice %>"
+            <% end %>
+            aria-label="Día <%= indice + 1 %>: <%= dia["enfoque"].presence || "descanso" %>"
+            class="flex min-w-13 flex-col items-center gap-0.5 rounded-xl border px-2 py-1.5 transition-colors [&.tab-active]:ring-2 [&.tab-active]:ring-volt-d <%= hecho ? "border-volt bg-volt text-white" : "border-base-300 bg-base-100 text-steel-3 hover:border-volt-d/40" %>">
+      <span class="font-display text-base font-bold leading-none <%= "text-steel-7" unless hecho %>"><%= indice + 1 %></span>
+      <span class="max-w-14 truncate text-[10px] font-semibold uppercase tracking-wide"><%= etiqueta %></span>
+      <% if hecho %>
+        <%= render "shared/icono", nombre: :check, clase: "size-3 text-white" %>
+      <% end %>
+    </button>
+  <% end %>
+</div>

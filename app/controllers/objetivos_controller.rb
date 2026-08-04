@@ -6,6 +6,10 @@ class ObjetivosController < ApplicationController
     authorize @objetivo || Current.user.objetivos_nutricionales.new, :show?
     @registro_hoy = Current.user.registros_calorias.find_by(fecha: Date.current)
     @registros = Current.user.registros_calorias.order(fecha: :desc).limit(7)
+    # Ajuste del día por fase del ciclo (14.16): kcal_delta ≥ 0 (la lútea sube
+    # el presupuesto, jamás lo baja). Sin consentimiento la fase es
+    # :desconocida → delta 0 y mensaje nil — invisible.
+    @ajuste_ciclo = Ciclo::Ajuste.para(Ciclo::Fase.para(Current.user))
   end
 
   def new

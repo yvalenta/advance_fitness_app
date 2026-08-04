@@ -30,6 +30,14 @@ Rails.application.routes.draw do
   # Seguimiento de entrenamiento del miembro (Fase 5.10): upsert por fecha+ejercicio.
   resources :registros_entrenamiento, only: :create
 
+  # Ciclo menstrual (Fase 14.15) — dato de salud sensible, siempre en primera
+  # persona: no hay rutas de staff/admin para estos recursos y la card vive
+  # solo en /progreso. El consentimiento es un recurso singular: POST otorga
+  # (con opt-in separado de IA), DELETE revoca — y borra los ciclos salvo
+  # "conservar mis datos" (ver ConsentimientosCicloController).
+  resources :ciclos_menstruales, only: %i[ create destroy ]
+  resource :consentimiento_ciclo, only: %i[ create destroy ], controller: "consentimientos_ciclo"
+
   # Registro cuantitativo de series (SDD §18, feature premium): index carga
   # el dialog por fecha+ejercicio (query string, mismo patrón de :ayuda);
   # create/destroy responden turbo_stream. Rutas nombradas a mano (en vez de
@@ -52,6 +60,12 @@ Rails.application.routes.draw do
   get "mi_plan", to: "planes_personalizados#show", as: :mi_plan
   get "upgrade", to: "planes#index", as: :upgrade
 
+  # Modo sesión (Fase 14.3): pantalla inmersiva del entrenamiento del día,
+  # ejercicio por ejercicio y con cronómetro de descanso. La fecha opcional
+  # (ISO) permite entrenar un día distinto a hoy.
+  get "sesion(/:fecha)", to: "sesiones#show", as: :sesion,
+      constraints: { fecha: /\d{4}-\d{2}-\d{2}/ }
+
   # Editor de plan compartido por entrenador y admin (SDD Fase 5.6) —
   # autorizado por Pundit (editar?/publicar?), no por el namespace.
   resources :planes_personalizados, only: %i[ show update ], controller: "gestion_planes" do
@@ -64,6 +78,12 @@ Rails.application.routes.draw do
     resources :dias, only: %i[ update ], controller: "gestion_dias" do
       resources :ejercicios, only: %i[ create update destroy ], controller: "gestion_ejercicios"
     end
+  end
+
+  # Mesociclo (Fase 14.9): cada semana de la rutina vive en su propio
+  # turbo-frame perezoso — lectura autorizada con la policy del plan (show?).
+  resources :planes_personalizados, only: [] do
+    resources :semanas, only: :show, controller: "gestion_semanas", param: :numero
   end
 
   namespace :entrenador do
@@ -101,6 +121,13 @@ Rails.application.routes.draw do
   resources :novedades, only: :index
   get "blog", to: "blog#index"
   get "blog/:id", to: "blog#show", as: :blog_post
+
+  # Tabla de posiciones del gimnasio (Fase 14.14): leaderboard opt-in sobre la
+  # proyección del motor de juego. participacion = consentimiento auditable
+  # (14.11) + visible_en_tabla del perfil PROPIO, en una transacción.
+  get "ranking", to: "tabla_posiciones#index", as: :ranking
+  post "ranking/participacion", to: "tabla_posiciones#participar", as: :ranking_participacion
+  delete "ranking/participacion", to: "tabla_posiciones#retirarse"
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.

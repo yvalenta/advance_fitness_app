@@ -33,6 +33,27 @@ RSpec.describe "RegistrosCalorias", type: :request do
     expect(users(:one).registros_calorias.find_by(fecha: Date.yesterday).kcal_consumidas).to eq(1800)
   end
 
+  # Fase 14.4: los macros del checklist viajan como hidden fields del plan
+  it "persiste los macros del consumo cuando llegan" do
+    sign_in_as users(:one)
+
+    post registros_calorias_path, params: { registro_caloria: {
+      kcal_consumidas: 1400, proteinas_g: 88, carbohidratos_g: 140, grasas_g: 45 } }
+
+    registro = users(:one).registros_calorias.find_by(fecha: Date.current)
+    expect([ registro.proteinas_g, registro.carbohidratos_g, registro.grasas_g ]).to eq([ 88, 140, 45 ])
+  end
+
+  it "macros vacíos quedan nil (sin dato), no cero" do
+    sign_in_as users(:one)
+
+    post registros_calorias_path, params: { registro_caloria: { kcal_consumidas: 900, proteinas_g: "" } }
+
+    registro = users(:one).registros_calorias.find_by(fecha: Date.current)
+    expect(registro.kcal_consumidas).to eq(900)
+    expect(registro.proteinas_g).to be_nil
+  end
+
   it "no permite registrar un día futuro" do
     sign_in_as users(:one)
 

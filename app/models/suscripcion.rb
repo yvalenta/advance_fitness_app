@@ -1,4 +1,7 @@
 class Suscripcion < ApplicationRecord
+  # `tenant_id` propio en vez de join a `users` (SDD §16.7)
+  include TenantDesnormalizado
+
   # "programada": esperando a que termine la suscripción activa vigente del
   # usuario para tomar su lugar (Fase 6.9) — no cuenta para el índice único
   # de "una activa por usuario", solo una lógica a nivel de aplicación.
@@ -22,6 +25,7 @@ class Suscripcion < ApplicationRecord
   # membresía "combo" — enlaza a esa membresía y distingue de una compra
   # aparte en recepción (admin/suscripciones).
   belongs_to :membresia, optional: true
+  hereda_tenant_de :user
 
   validates :estado, inclusion: { in: ESTADOS }
   validates :analisis_tier, inclusion: { in: ANALISIS_TIERS }

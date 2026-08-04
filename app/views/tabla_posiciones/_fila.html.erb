@@ -1,0 +1,22 @@
+<%# Fila del ranking (posiciones 4-50 y la fila propia fija): posición +
+    avatar + apodo/nombre de pila + nivel + racha + puntos. %>
+<%# locals: (perfil:, posicion:, propia: false) %>
+<div class="flex items-center gap-3 rounded-xl border px-3 py-2.5 shadow-sm <%= propia ? "border-volt bg-volt/10" : "border-base-300 bg-base-100" %>">
+  <span class="w-8 shrink-0 text-center font-display text-sm font-bold text-steel-3">#<%= posicion %></span>
+  <%= render "shared/avatar", user: perfil.user, clase: "size-9 text-xs" %>
+  <div class="min-w-0 flex-1">
+    <p class="truncate text-sm font-semibold"><%= nombre_en_ranking(perfil) %><%= " (tú)" if propia %></p>
+    <div class="mt-0.5 flex items-center gap-2">
+      <span class="badge badge-ghost badge-xs whitespace-nowrap">Nv. <%= perfil.nivel %></span>
+      <% if perfil.racha_actual.positive? %>
+        <span class="flex items-center gap-0.5 whitespace-nowrap text-xs text-orange-400">
+          <%= render "shared/icono", nombre: :fuego, clase: "size-3.5" %><%= perfil.racha_actual %> días
+        </span>
+      <% end %>
+    </div>
+  </div>
+  <span class="font-display text-base font-bold <%= "text-volt" if propia %>">
+    <%= number_with_delimiter(perfil.puntos_total, delimiter: ".") %>
+    <span class="text-[10px] font-medium text-steel-3">pts</span>
+  </span>
+</div>

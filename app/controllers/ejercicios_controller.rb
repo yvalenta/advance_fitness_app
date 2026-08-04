@@ -2,7 +2,10 @@
 # de ayuda con GIF + instrucciones, y media servida por proxy con caché en el
 # volumen (la ruta del archivo sale SIEMPRE del registro, jamás de params).
 class EjerciciosController < ApplicationController
-  # Búsqueda del catálogo para el modal del editor (turbo-frame, máx. 30)
+  # Catálogo unificado (Fase 6.4 + 14.5): sin filtros muestra el explorador
+  # por músculo (cards con portada y conteo); con q/musculo, el listado
+  # buscable de siempre. La misma vista sirve la página completa del miembro
+  # y el turbo-frame perezoso del modal del editor (máx. 30 resultados).
   def index
     authorize Ejercicio
     @ejercicios = Ejercicio.fuerza.ordenados.limit(30)
@@ -11,6 +14,17 @@ class EjerciciosController < ApplicationController
                                       q: "%#{Ejercicio.sanitize_sql_like(Ejercicio.normalizar(params[:q]))}%")
     end
     @ejercicios = @ejercicios.where(musculo: params[:musculo]) if params[:musculo].present?
+
+    @explorar = params[:q].blank? && params[:musculo].blank?
+    return unless @explorar
+
+    # Dos queries para TODO el explorador: conteo por músculo + una portada
+    # representativa por músculo (DISTINCT ON, primera alfabética con imagen).
+    @conteos_musculo = Ejercicio.fuerza.group(:musculo).count
+    @portadas_musculo = Ejercicio.fuerza.where.not(imagen_ruta: [ nil, "" ])
+                                 .select("DISTINCT ON (musculo) id, musculo, imagen_ruta")
+                                 .order(:musculo, :nombre)
+                                 .index_by(&:musculo)
   end
 
   # Popup de ayuda: por id (rutinas nuevas), por nombre contra el catálogo, o

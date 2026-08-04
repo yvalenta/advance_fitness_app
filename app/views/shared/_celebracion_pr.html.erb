@@ -1,0 +1,21 @@
+<%# locals: (records:) %>
+<%# Celebración de récords personales (Fase 14.13): toast festivo que el %>
+<%# create de series appendea dentro del contenedor de la lista (el dialog %>
+<%# de registro está en el top layer de showModal — colgado de <body> %>
+<%# quedaría bajo el backdrop). El toast de DaisyUI es fixed, así que flota %>
+<%# sobre el modal igual; lo cierra solo el controller Stimulus `toast` %>
+<%# existente, o el usuario con la ✕. %>
+<div class="toast toast-top toast-center z-50 w-full max-w-lg px-4 pt-16 pointer-events-none"
+     data-controller="toast" data-toast-duracion-value="7000">
+  <% records.each do |record| %>
+    <div role="status" data-toast-target="item"
+         class="alert pointer-events-auto items-center gap-3 border border-volt/40 bg-steel-9 text-left shadow-lg pop-celebracion pulse-volt">
+      <span class="text-2xl" aria-hidden="true">🏆</span>
+      <div>
+        <p class="eyebrow font-display text-volt">¡Nuevo récord personal!</p>
+        <p class="text-sm font-semibold text-steel-1"><%= record.ejercicio.nombre %>: <%= record.marca %></p>
+      </div>
+      <button type="button" class="btn btn-ghost btn-xs btn-circle text-steel-3" data-action="toast#cerrar" aria-label="Cerrar">✕</button>
+    </div>
+  <% end %>
+</div>

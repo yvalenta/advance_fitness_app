@@ -1,5 +1,9 @@
+# `tenant` explícito: las fixtures se insertan por SQL, sin callbacks, así que
+# el `hereda_tenant_de` del modelo no corre y los Pundit Scopes —fail-closed
+# por diseño (SDD §16.7)— no verían estas filas.
 activa_one:
   user: one
+  tenant: advance_fitness
   fecha_inicio: <%= Date.current - 10 %>
   fecha_vencimiento: <%= Date.current + 20 %>
   estado: activa
@@ -14,6 +18,7 @@ activa_one:
 
 vencida_two:
   user: two
+  tenant: advance_fitness
   fecha_inicio: <%= Date.current - 40 %>
   fecha_vencimiento: <%= Date.current - 10 %>
   estado: vencida

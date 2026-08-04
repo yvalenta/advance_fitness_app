@@ -36,6 +36,34 @@ RSpec.describe GeneradorPlanIa, type: :model do
     expect(prompt).not_to match(/Medidas antropométricas/)
   end
 
+  # Fase 14.16: bloque del ciclo — llega ya filtrado por el job (consentimiento
+  # de segundo nivel); el PORO solo lo redacta, con la regla de nunca subir.
+  it "con fase del ciclo el prompt la nombra y prohíbe subir carga por ella" do
+    prompt = GeneradorPlanIa.construir_prompt(
+      edad: 30, sexo: "F", talla_cm: 165.0, peso_kg: 60.0, somatotipo: nil,
+      nivel_actividad: 1.6, meta: "x", objetivo_kcal: 2000, tdee_kcal: 1800,
+      ciclo: "lutea"
+    )
+
+    expect(prompt).to include("fase lútea")
+    expect(prompt).to include("nunca subirla")
+  end
+
+  it "sin fase (o desconocida) el prompt no menciona el ciclo" do
+    sin = GeneradorPlanIa.construir_prompt(
+      edad: 30, sexo: "F", talla_cm: 165.0, peso_kg: 60.0, somatotipo: nil,
+      nivel_actividad: 1.6, meta: "x", objetivo_kcal: 2000, tdee_kcal: 1800
+    )
+    desconocida = GeneradorPlanIa.construir_prompt(
+      edad: 30, sexo: "F", talla_cm: 165.0, peso_kg: 60.0, somatotipo: nil,
+      nivel_actividad: 1.6, meta: "x", objetivo_kcal: 2000, tdee_kcal: 1800,
+      ciclo: "desconocida"
+    )
+
+    expect(sin).not_to match(/[Cc]iclo menstrual/)
+    expect(desconocida).not_to match(/[Cc]iclo menstrual/)
+  end
+
   # Fase 6.5: catálogo cerrado de ejercicios en el prompt
   it "el prompt incluye el catálogo permitido y el system exige ids exactos" do
     prompt = GeneradorPlanIa.construir_prompt(
@@ -91,6 +119,61 @@ RSpec.describe GeneradorPlanIa, type: :model do
   it "parsear rechaza respuestas sin el contrato completo" do
     expect { GeneradorPlanIa.parsear('{"rutina": {"dias": []}}') }.to raise_error(ArgumentError)
     expect { GeneradorPlanIa.parsear("no soy json") }.to raise_error(JSON::ParserError)
+  end
+
+  # ── Fase 14.8: mesociclo v2 ──────────────────────────────────────────────
+
+  it "el system prompt pide el mesociclo v2 con semanas de SOLO metadatos" do
+    prompt = GeneradorPlanIa::SYSTEM_PROMPT
+
+    expect(prompt).to include('"mesociclo"')
+    expect(prompt).to include('"semanas"')
+    expect(prompt).to include("EXACTAMENTE 4 entradas")
+    expect(prompt).to include("JAMÁS materialices")
+    expect(prompt).to include("SIEMPRE es de descarga")
+    expect(prompt).to include('"peso_factor" máximo 0.9')
+    # El uid es identidad interna (Fase 14.6): la IA no debe conocerlo
+    expect(prompt).not_to match(/\buid\b/)
+  end
+
+  it "parsear acepta la respuesta v2 completa sin tocarla" do
+    rutina = {
+      "version" => 2,
+      "mesociclo" => { "nombre" => "Fuerza base", "semanas_total" => 4, "inicio" => nil, "progresion" => "lineal" },
+      "dias" => [ { "dia" => "lunes", "enfoque" => "Empuje", "ejercicios" => [ { "nombre" => "Press" } ] } ],
+      "semanas" => [
+        { "numero" => 1, "etiqueta" => "Arranque", "descarga" => false,
+          "ajuste" => { "series_delta" => 0, "peso_factor" => 1.0, "reps_delta" => 0 } },
+        { "numero" => 2, "etiqueta" => "Carga", "descarga" => false,
+          "ajuste" => { "series_delta" => 1, "peso_factor" => 1.08, "reps_delta" => 0 } },
+        { "numero" => 3, "etiqueta" => "Pico", "descarga" => false,
+          "ajuste" => { "series_delta" => 1, "peso_factor" => 1.12, "reps_delta" => -1 } },
+        { "numero" => 4, "etiqueta" => "Descarga", "descarga" => true,
+          "ajuste" => { "series_delta" => -1, "peso_factor" => 0.8, "reps_delta" => 0 } }
+      ]
+    }
+    texto = JSON.generate({ "rutina" => rutina, "plan_nutricional" => { "comidas" => [] } })
+
+    resultado = GeneradorPlanIa.parsear(texto)
+
+    expect(resultado[:rutina]).to eq(rutina)
+  end
+
+  it "parsear sintetiza la progresión por defecto si la IA respondió solo la base v1" do
+    texto = JSON.generate({
+      "rutina" => { "dias" => [ { "dia" => "lunes", "ejercicios" => [ { "nombre" => "Press" } ] } ] },
+      "plan_nutricional" => { "comidas" => [] }
+    })
+
+    rutina = GeneradorPlanIa.parsear(texto)[:rutina]
+
+    expect(rutina["version"]).to eq(2)
+    expect(rutina["mesociclo"]).to include("semanas_total" => 4, "progresion" => "lineal")
+    expect(rutina["semanas"].map { |s| s["etiqueta"] }).to eq(%w[Adaptación Acumulación Intensificación Descarga])
+    expect(rutina["semanas"].map { |s| s["ajuste"]["peso_factor"] }).to eq([ 1.0, 1.05, 1.1, 0.85 ])
+    expect(rutina["semanas"].last["descarga"]).to be(true)
+    # La base queda intacta: la síntesis solo agrega metadatos
+    expect(rutina["dias"][0]["ejercicios"][0]["nombre"]).to eq("Press")
   end
 
   it "el proveedor se elige por IA_PROVEEDOR con gemini por defecto" do

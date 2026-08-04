@@ -232,6 +232,42 @@ end
   plantilla.update!(ejercicio: ejercicio) if ejercicio
 end
 
+# ── 6. Logros globales del motor de juego (Fase 14.12) ─────────────────────
+# Catálogo base con tenant nil (= GLOBAL, visible para todos los tenants —
+# patrón del catálogo Ejercicio). Idempotente por codigo: si el logro ya
+# existe no se pisa (un gimnasio pudo ajustar nombre o puntos). El seed NO
+# otorga puntos: eso es del ledger `registros_puntos` en runtime.
+[
+  { codigo: "primera-sesion", nombre: "Primera sesión",
+    descripcion: "Completaste tu primer entrenamiento registrado.",
+    icono: "🏁", puntos: 20, categoria: "constancia" },
+  { codigo: "racha-7", nombre: "Racha de 7 días",
+    descripcion: "Siete días seguidos de actividad, sin soltar.",
+    icono: "🔥", puntos: 50, categoria: "constancia" },
+  { codigo: "racha-30", nombre: "Racha de 30 días",
+    descripcion: "Un mes entero de constancia diaria.",
+    icono: "🚀", puntos: 200, categoria: "constancia" },
+  { codigo: "primer-pr", nombre: "Primer PR",
+    descripcion: "Registraste tu primer récord personal.",
+    icono: "🏋️", puntos: 40, categoria: "fuerza" },
+  { codigo: "10-checkins-mes", nombre: "10 check-ins en un mes",
+    descripcion: "Diez visitas al gimnasio dentro del mismo mes.",
+    icono: "📅", puntos: 60, categoria: "constancia" },
+  { codigo: "primera-medicion", nombre: "Primera medición",
+    descripcion: "Registraste tu primera medición corporal.",
+    icono: "📏", puntos: 15, categoria: "nutricion" },
+  { codigo: "plan-completado-semana", nombre: "Semana de plan completa",
+    descripcion: "Completaste todos los días de tu plan en una misma semana.",
+    icono: "✅", puntos: 80, categoria: "constancia" },
+  { codigo: "madrugador", nombre: "Madrugador",
+    descripcion: "Check-in antes de las 7 de la mañana.",
+    icono: "🌅", puntos: 25, categoria: "constancia" }
+].each do |atributos|
+  Logro.find_or_create_by!(codigo: atributos[:codigo]) do |logro|
+    logro.assign_attributes(atributos.except(:codigo))
+  end
+end
+
 # ── Aviso final: catálogo visual pendiente ─────────────────────────────────
 # El seed no importa el catálogo de ejercicios (necesita red y API key de IA),
 # pero tampoco deja el hueco en silencio: sin catálogo no hay GIFs de ayuda

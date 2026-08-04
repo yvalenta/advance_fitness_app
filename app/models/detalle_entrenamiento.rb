@@ -16,6 +16,21 @@ class DetalleEntrenamiento < ApplicationRecord
     repeticiones * (peso_kg || 0)
   end
 
+  # "La vez pasada" (Fase 14.2): la última serie registrada de cada ejercicio
+  # en fechas anteriores a `antes_de`, en UNA sola query (DISTINCT ON toma la
+  # serie más alta de la sesión más reciente). Devuelve {ejercicio_id => detalle}
+  # para que la rutina lo muestre sin N+1.
+  def self.ultimos_por_ejercicio(user, ejercicio_ids, antes_de: Date.current)
+    return {} if ejercicio_ids.blank?
+
+    joins(:registro_entrenamiento)
+      .where(registros_entrenamiento: { user_id: user.id, fecha: ...antes_de })
+      .where(ejercicio_id: ejercicio_ids.uniq)
+      .select("DISTINCT ON (ejercicio_id) detalle_entrenamientos.*")
+      .order("ejercicio_id, registros_entrenamiento.fecha DESC, serie DESC")
+      .index_by(&:ejercicio_id)
+  end
+
   # Resuelve el Ejercicio real para registrar una serie: por id (rutinas
   # nuevas) o por nombre contra el catálogo (fallback para rutinas viejas
   # sin ejercicio_id en su JSON, mismo criterio de Ejercicio.buscar_por_nombre

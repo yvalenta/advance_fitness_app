@@ -1,3 +1,21 @@
-<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="256" cy="256" r="256" fill="red"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Ícono PWA de marca (Fase 14.1): fisicoculturista volt sobre steel-9,
+       mismo trazo que shared/_logo (SDD §06). -->
+  <rect width="512" height="512" rx="96" fill="#0b1220"/>
+  <g transform="translate(96 86) scale(5)">
+    <g fill="#b4f000">
+      <circle cx="32" cy="8" r="5.5"/>
+      <path d="M22 18 L42 18 L39 31 L36 45 L28 45 L25 31 Z"/>
+    </g>
+    <g fill="none" stroke="#b4f000" stroke-linecap="round" stroke-linejoin="round">
+      <g stroke-width="7">
+        <path d="M24 21 L11 15 L17 6"/>
+        <path d="M40 21 L53 15 L47 6"/>
+      </g>
+      <g stroke-width="8">
+        <path d="M29 44 L16 64"/>
+        <path d="M35 44 L48 64"/>
+      </g>
+    </g>
+  </g>
 </svg>

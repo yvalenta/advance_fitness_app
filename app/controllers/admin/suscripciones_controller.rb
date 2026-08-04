@@ -2,12 +2,11 @@ class Admin::SuscripcionesController < ApplicationController
   def index
     authorize Suscripcion, :index?
     @q = params[:q].to_s.strip
-    # Aislado por tenant vía user (SDD §16.6): sin este join, un admin de un
-    # tenant vería suscripciones de otros.
-    @suscripciones = Suscripcion.joins(:user).where(users: { tenant_id: Current.user.tenant_id })
-                                .includes(:user, :plan).order(created_at: :desc)
+    # Aislado por `tenant_id` propio (SDD §16.7) vía policy_scope: antes este
+    # listado armaba el join a mano — justo el patrón que el ADR elimina.
+    @suscripciones = policy_scope(Suscripcion).includes(:user, :plan).order(created_at: :desc)
     if @q.present?
-      @suscripciones = @suscripciones
+      @suscripciones = @suscripciones.joins(:user)
         .where("users.nombre ILIKE :q OR users.email_address ILIKE :q", q: "%#{User.sanitize_sql_like(@q)}%")
     end
     @suscripciones = @suscripciones.page(params[:page]).per(25)
