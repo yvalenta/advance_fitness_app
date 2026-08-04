@@ -42,10 +42,10 @@
 
   <% if ejercicios.any? %>
     <% ejercicios.each_with_index do |ejercicio, ei| %>
-      <% hecho = con_seguimiento && registro&.estado_de(ei)&.dig("hecho") %>
+      <% hecho = con_seguimiento && registro&.estado_de(uid: ejercicio["uid"], indice: ei)&.dig("hecho") %>
       <div class="flex flex-col gap-2 rounded-xl border p-3 transition-colors <%= hecho ? "border-success/50 bg-success/5" : "border-base-300 bg-base-100 hover:border-volt-d/40 hover:bg-base-200/50" %>"
            <% if editable %>data-autosave-target="card" data-url="<%= plan_personalizado_dia_ejercicio_path(plan, indice, ei) %>"<% end %>
-           data-indice="<%= ei %>" data-nombre="<%= ejercicio["nombre"] %>">
+           data-indice="<%= ei %>" data-nombre="<%= ejercicio["nombre"] %>" data-uid="<%= ejercicio["uid"] %>">
 
         <%# ── Lectura: check/número, nombre tappable, cápsula principal y línea secundaria ── %>
         <div class="flex items-center gap-3" data-modo-edicion-target="lectura" <%= "hidden" if editando_por_defecto %>>

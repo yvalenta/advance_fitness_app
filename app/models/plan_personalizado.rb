@@ -9,7 +9,10 @@ class PlanPersonalizado < ApplicationRecord
   CAMPOS_COMIDA = %w[nombre descripcion kcal proteinas_g carbohidratos_g grasas_g].freeze
   # ejercicio_id enlaza al catálogo visual (Fase 6); peso_sugerido_kg y
   # nota_tecnica los personaliza la IA con catálogo cerrado (Fase 6.5).
-  CAMPOS_EJERCICIO = %w[nombre series repeticiones descanso_seg ejercicio_id peso_sugerido_kg nota_tecnica].freeze
+  # uid (Fase 14.6): identidad estable POR ENTRADA del array (dos "Press banca"
+  # el mismo día llevan uids distintos) — el seguimiento se ancla a él y ya no
+  # se re-atribuye si el plan cambia de orden.
+  CAMPOS_EJERCICIO = %w[nombre series repeticiones descanso_seg ejercicio_id peso_sugerido_kg nota_tecnica uid].freeze
   # Día de la semana (nombre en rutina["dias"]) → offset desde el lunes, para
   # ubicar el RegistroEntrenamiento de la semana actual (Fase 5.10/6.9).
   DIAS_OFFSET = { "lunes" => 0, "martes" => 1, "miercoles" => 2, "jueves" => 3,
@@ -149,7 +152,8 @@ class PlanPersonalizado < ApplicationRecord
       dia["ejercicios"] = plantillas.map do |plantilla|
         { "nombre" => plantilla.nombre, "series" => plantilla.series || 3,
           "repeticiones" => plantilla.repeticiones, "descanso_seg" => plantilla.descanso_seg || 60,
-          "ejercicio_id" => plantilla.ejercicio_id }.compact
+          "ejercicio_id" => plantilla.ejercicio_id,
+          "uid" => SecureRandom.alphanumeric(10) }.compact
       end
     end
   end
@@ -232,8 +236,18 @@ class PlanPersonalizado < ApplicationRecord
     # series/descanso enteros, repeticiones y nombre como texto.
     def ejercicio_saneado(campos, defaults: false)
       base = defaults ? { "nombre" => "Nuevo ejercicio", "series" => 3,
-                          "repeticiones" => "10-12", "descanso_seg" => 60 } : {}
+                          "repeticiones" => "10-12", "descanso_seg" => 60,
+                          "uid" => SecureRandom.alphanumeric(10) } : {}
       campos.to_h.slice(*CAMPOS_EJERCICIO).each_with_object(base) do |(clave, valor), saneado|
+        # uid (Fase 14.6): se preserva tal cual si viene con valor (el autosave
+        # reenvía todo); si viene en blanco NO entra al merge, así el hash
+        # original conserva el suyo — la identidad jamás se borra por accidente.
+        if clave.to_s == "uid"
+          limpio = valor.to_s.strip
+          saneado["uid"] = limpio if limpio.present?
+          next
+        end
+
         saneado[clave.to_s] =
           case clave.to_s
           when "nombre", "repeticiones", "nota_tecnica" then valor.to_s.strip

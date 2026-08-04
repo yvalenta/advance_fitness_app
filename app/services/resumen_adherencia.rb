@@ -17,10 +17,14 @@ module ResumenAdherencia
       registro.ejercicios.each do |clave, estado|
         if clave == "novedad"
           novedades << estado if estado.present?
+        elsif clave == "items" && estado.is_a?(Hash)
+          # v2 (Fase 14.6): checks anclados por uid; misma agregación por
+          # NOMBRE que v1 — cambiarla rompería el histórico y la
+          # retroalimentación del prompt de IA. Lo archivado bajo "legacy"
+          # no se recorre: quedaría doble conteo con el re-marcado v2.
+          estado.each_value { |item| contar(conteos, item, posicion: item["indice"]) if item.is_a?(Hash) }
         elsif clave.match?(/\A\d+\z/) && estado.is_a?(Hash)
-          nombre = estado["nombre"].presence || "Ejercicio #{clave.to_i + 1}"
-          conteos[nombre][:total] += 1
-          conteos[nombre][:hechos] += 1 if estado["hecho"]
+          contar(conteos, estado, posicion: clave)
         end
       end
     end
@@ -35,4 +39,11 @@ module ResumenAdherencia
       novedades: novedades.last(NOVEDADES_MAX)
     }
   end
+
+  def self.contar(conteos, estado, posicion:)
+    nombre = estado["nombre"].presence || "Ejercicio #{posicion.to_i + 1}"
+    conteos[nombre][:total] += 1
+    conteos[nombre][:hechos] += 1 if estado["hecho"]
+  end
+  private_class_method :contar
 end

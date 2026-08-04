@@ -11,6 +11,10 @@ module Ejercicios
 
       dias.each do |dia|
         Array(dia["ejercicios"]).each do |ejercicio|
+          # uid (Fase 14.6): la IA no lo conoce (no va en su prompt), así que
+          # aquí se estrena la identidad estable de cada entrada. No cuenta
+          # como corrección: no es un arreglo del catálogo.
+          ejercicio["uid"] = SecureRandom.alphanumeric(10) if ejercicio["uid"].to_s.strip.empty?
           correcciones += 1 unless corregir_ejercicio(ejercicio)
         end
       end
