@@ -345,10 +345,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_030000) do
   end
 
   create_table "registros_calorias", force: :cascade do |t|
+    t.integer "carbohidratos_g"
     t.datetime "created_at", null: false
     t.jsonb "detalle", default: {}, null: false
     t.date "fecha", null: false
+    t.integer "grasas_g"
     t.integer "kcal_consumidas", null: false
+    t.integer "proteinas_g"
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["user_id", "fecha"], name: "index_registros_calorias_on_user_id_and_fecha", unique: true

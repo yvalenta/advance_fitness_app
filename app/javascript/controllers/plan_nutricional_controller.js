@@ -5,15 +5,22 @@ import { Controller } from "@hotwired/stimulus"
 // como el consumo del día (upsert de la Fase 4). Desde la Fase 5.8 el miembro
 // puede ajustar las kcal que realmente comió por comida y anotar un cambio; el
 // total y el detalle ({ comidas: [{nombre, kcal, nota}] }) viajan al registro.
+// Desde la Fase 14.4 cada card del grid por tipo (desayuno/almuerzo/cena/
+// snack/otros) muestra su consumo en vivo, y los gramos de macros de las
+// comidas marcadas viajan en hidden fields junto al total.
 export default class extends Controller {
   static targets = [
     "comida", "consumidas", "barra", "estado", "boton", "kcalInput",
-    "segmento", "tarjeta", "kcal", "nota", "detalle", "alerta", "hint"
+    "segmento", "tarjeta", "kcal", "nota", "detalle", "alerta", "hint",
+    "tipoKcal", "proteinasInput", "carbohidratosInput", "grasasInput"
   ]
   static values = { objetivo: Number }
 
   // Tolerancia antes de alertar desviación contra el objetivo (Fase 5.11)
   static TOLERANCIA = 0.05
+
+  // Macros que viajan al registro (mismo orden que sus hidden fields)
+  static MACROS = ["proteinas", "carbohidratos", "grasas"]
 
   connect() {
     // Despliega la barra de macros (los anchos finales vienen en data-pct)
@@ -42,8 +49,41 @@ export default class extends Controller {
     if (this.hasDetalleTarget) {
       this.detalleTarget.value = JSON.stringify({ comidas: marcadas.map((comida) => this.detalleDe(comida)) })
     }
+    this.actualizarTipos(marcadas)
+    this.actualizarMacros(marcadas)
     this.alertar(total, completas)
     this.actualizarHints()
+  }
+
+  // Consumo por tipo de comida (Fase 14.4): cada card del grid 2×2 muestra
+  // las kcal marcadas de su tipo (desayuno/almuerzo/cena/snack/otros).
+  actualizarTipos(marcadas) {
+    if (!this.hasTipoKcalTarget) return
+
+    const porTipo = {}
+    marcadas.forEach((comida) => {
+      const tipo = comida.dataset.tipo || "otros"
+      porTipo[tipo] = (porTipo[tipo] || 0) + this.kcalDe(comida)
+    })
+    this.tipoKcalTargets.forEach((contador) => this.animarNumero(contador, porTipo[contador.dataset.tipo] || 0))
+  }
+
+  // Macros del consumo real (Fase 14.4): suma los gramos del plan de las
+  // comidas marcadas y los deja en los hidden fields del registro. Si el plan
+  // no trae macros (todo en 0) viajan vacíos y el backend guarda nil, no 0.
+  actualizarMacros(marcadas) {
+    const sumas = this.constructor.MACROS.map((macro) =>
+      marcadas.reduce((suma, comida) => suma + (Number(comida.dataset[macro]) || 0), 0))
+    const hayDatos = sumas.some((gramos) => gramos > 0)
+
+    const inputs = [
+      this.hasProteinasInputTarget && this.proteinasInputTarget,
+      this.hasCarbohidratosInputTarget && this.carbohidratosInputTarget,
+      this.hasGrasasInputTarget && this.grasasInputTarget
+    ]
+    inputs.forEach((input, indice) => {
+      if (input) input.value = hayDatos ? sumas[indice] : ""
+    })
   }
 
   // Alerta viva (Fase 5.11): editar por encima de lo sugerido alerta en rojo;

@@ -15,7 +15,9 @@ RSpec.describe "Objetivos", type: :request do
 
     post registros_calorias_path, params: { registro_caloria: { kcal_consumidas: 1200 } }
     follow_redirect!
-    assert_select "#kcal-restantes", text: /938/
+    # Fase 14.4: la cabecera numérica ahora es la dona; el restante vive en
+    # el centro del SVG (#dona-restantes). 2138 − 1200 = 938.
+    assert_select "#dona-restantes", text: /938/
   end
 
   it "sin perfil completo redirige a completar perfil" do
