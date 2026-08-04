@@ -1,3 +1,10 @@
+<%# Trix bajo demanda (Fase 16.5): solo esta vista carga el editor y su CSS
+    — el resto de la app dejó de pagar ~200KB de JS + una hoja de estilos. %>
+<% content_for :head do %>
+  <%= stylesheet_link_tag "actiontext", "data-turbo-track": "reload" %>
+  <%= javascript_import_module_tag "rich_text" %>
+<% end %>
+
 <% if post.errors.any? %>
   <div role="alert" class="alert alert-error text-sm">
     <%= render "shared/icono", nombre: :alerta, clase: "size-5 shrink-0" %>

@@ -1,4 +1,9 @@
 <% content_for :title, "#{@post.titulo} — #{Negocio.nombre}" %>
+<%# El contenido rich-text renderizado necesita los estilos de ActionText
+    (Fase 16.5: la hoja salió del layout global, se pide por vista). %>
+<% content_for :head do %>
+  <%= stylesheet_link_tag "actiontext", "data-turbo-track": "reload" %>
+<% end %>
 
 <%= render "shared/encabezado", titulo: @post.titulo, descripcion: "Por #{@post.autor.nombre} · #{l(@post.publicado_en&.to_date || @post.created_at.to_date, format: :long)}" %>
 

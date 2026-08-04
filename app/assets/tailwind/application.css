@@ -1,5 +1,24 @@
 @import "tailwindcss";
 
+/* ── Tipografía self-hosted (Fase 16.5, SDD §06): fuentes VARIABLES — un
+      woff2 por familia cubre todos los pesos (51KB total) y elimina el
+      render-blocking de Google Fonts. Licencia SIL OFL 1.1 (ver
+      app/assets/fonts/LICENCIAS.md); propshaft reescribe las url(). ── */
+@font-face {
+  font-family: "Geist";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("geist-variable.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("space-grotesk-variable.woff2") format("woff2");
+}
+
 @source not "./daisyui{,*}.mjs";
 
 @plugin "./daisyui.mjs";
@@ -324,5 +343,36 @@
     to {
       opacity: 1;
     }
+  }
+}
+
+/* ── Movimiento reducido (Fase 16.5): apagar las animaciones FIJANDO los
+      estados finales — fade-up, grafica-area y grafica-punto parten de
+      opacity 0 y apagarlas a secas dejaría contenido invisible. ── */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .pop-celebracion,
+  .grafica-barra,
+  .grafica-linea,
+  .grafica-area,
+  .grafica-punto {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    stroke-dashoffset: 0;
+  }
+
+  .pulse-volt {
+    animation: none;
+  }
+
+  .card-hover,
+  .grafica-punto,
+  .grafica-barra {
+    transition: none;
+  }
+
+  .card-hover:hover {
+    transform: none;
   }
 }
