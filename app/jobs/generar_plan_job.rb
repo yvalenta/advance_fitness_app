@@ -28,9 +28,12 @@ class GenerarPlanJob < ApplicationJob
       objetivo_kcal: objetivo&.objetivo_kcal,
       tdee_kcal: objetivo&.tdee_kcal,
       medicion: medicion,
-      # Fase 6.5/6.6: catálogo cerrado de ejercicios + adherencia real
+      # Fase 6.5/6.6: catálogo cerrado de ejercicios + adherencia real.
+      # Etapa 14.10: al regenerar viaja también la posición en el mesociclo
+      # del plan vigente ("Va en la semana 3 de 4…") y la adherencia por
+      # semana del ciclo (contexto_ciclo / por_semana dentro del resumen).
       catalogo: Ejercicios::CatalogoParaPrompt.para,
-      adherencia: ResumenAdherencia.para(plan.user)
+      adherencia: ResumenAdherencia.para(plan.user, plan: plan.user.plan_aprobado)
     )
 
     # Anti-alucinación (Fase 6.5): ids inexistentes se rescatan o se limpian
