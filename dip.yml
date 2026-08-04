@@ -30,12 +30,19 @@ interaction:
         compose:
           run_options: [service-ports]
 
+  # RAILS_ENV va inline en el comando además de en `environment`: el
+  # `environment` de nivel de comando no siempre gana sobre el global
+  # (RAILS_ENV: development) de este archivo, y con RAILS_ENV=development la
+  # config de base es `url: ENV["DATABASE_URL"]` — es decir, Supabase cuando
+  # .env define DEV_DATABASE_URL. `db:test:prepare` abortaba entonces con
+  # ProtectedEnvironmentError contra 'production'. Con RAILS_ENV=test explícito
+  # la config resuelve a TEST_DATABASE_URL (Postgres local del compose).
   test:
     description: Suite de tests (RSpec)
     service: web
     environment:
       RAILS_ENV: test
-    command: bash -c "bin/rails db:test:prepare && bundle exec rspec"
+    command: bash -c "RAILS_ENV=test bin/rails db:test:prepare && RAILS_ENV=test bundle exec rspec"
 
   rubocop:
     description: Lint (rubocop-rails-omakase)

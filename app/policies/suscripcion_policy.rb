@@ -8,7 +8,7 @@ class SuscripcionPolicy < ApplicationPolicy
   # de estabilización): el staff jamás debe listar suscripciones de otro tenant.
   class Scope < ApplicationPolicy::Scope
     def resolve
-      user.staff? ? del_tenant(scope) : scope.where(user_id: user.id)
+      user.staff? ? del_tenant_directo(scope) : scope.where(user_id: user.id)
     end
   end
 end

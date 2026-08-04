@@ -23,12 +23,18 @@ RSpec.describe "Resolución de tenant por subdominio (SDD §16.6)", type: :reque
     expect(response).to have_http_status(:not_found)
   end
 
+  # `host!` antes de `sign_in_as`: con la cookie host-only (SDD §16.6) el
+  # navegador nunca la mandaría al otro subdominio, así que firmar primero y
+  # cambiar de host después redirige por FALTA de sesión y el test pasaría
+  # aunque `verificar_pertenencia_al_tenant` no existiera. El flash es lo que
+  # distingue las dos rutas: `request_authentication` no pone ninguno.
   it "un miembro del tenant A que pega el subdominio de otro tenant es rechazado" do
     tenants(:megaplex)  # existe
-    sign_in_as users(:one)  # AF
     host! "megaplex.example.com"
+    sign_in_as users(:one)  # AF
     get root_path
     expect(response).to redirect_to(new_session_url)
+    expect(flash[:alert]).to match(/pertenece a otro gimnasio/i)
   end
 
   it "en modo comercial, solo superadmin/comercializador pueden entrar" do

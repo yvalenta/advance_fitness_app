@@ -1,4 +1,7 @@
 class Membresia < ApplicationRecord
+  # `tenant_id` propio en vez de join a `users` (SDD §16.7)
+  include TenantDesnormalizado
+
   ESTADOS = %w[activa vencida suspendida].freeze
 
   # Duración fija parametrizable (SDD §07): 30 días exactos por defecto, no
@@ -7,6 +10,7 @@ class Membresia < ApplicationRecord
 
   belongs_to :user
   has_many :pagos, dependent: :restrict_with_error
+  hereda_tenant_de :user
 
   validates :estado, inclusion: { in: ESTADOS }
   validates :fecha_inicio, :fecha_vencimiento, presence: true
