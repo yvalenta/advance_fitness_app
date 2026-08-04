@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_04_000002) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_05_030000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -325,6 +325,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_04_000002) do
     t.index ["tenant_id"], name: "index_posts_on_tenant_id"
   end
 
+  create_table "records_personales", force: :cascade do |t|
+    t.boolean "baseline", default: false, null: false
+    t.datetime "created_at", null: false
+    t.bigint "detalle_entrenamiento_id"
+    t.bigint "ejercicio_id", null: false
+    t.date "fecha", null: false
+    t.decimal "peso_kg", precision: 6, scale: 2
+    t.integer "repeticiones"
+    t.datetime "superado_en"
+    t.string "tipo", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.decimal "valor", precision: 8, scale: 2, null: false
+    t.index ["detalle_entrenamiento_id"], name: "index_records_personales_on_detalle_entrenamiento_id"
+    t.index ["ejercicio_id"], name: "index_records_personales_on_ejercicio_id"
+    t.index ["user_id", "ejercicio_id", "tipo"], name: "index_records_personales_vigente", unique: true, where: "(superado_en IS NULL)"
+    t.index ["user_id", "fecha"], name: "index_records_personales_on_user_id_and_fecha"
+  end
+
   create_table "registros_calorias", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.jsonb "detalle", default: {}, null: false
@@ -452,6 +471,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_04_000002) do
   add_foreign_key "plantillas_ejercicio", "users", column: "creado_por_id"
   add_foreign_key "posts", "tenants"
   add_foreign_key "posts", "users", column: "autor_id"
+  add_foreign_key "records_personales", "detalle_entrenamientos", on_delete: :nullify
+  add_foreign_key "records_personales", "ejercicios"
+  add_foreign_key "records_personales", "users"
   add_foreign_key "registros_calorias", "users"
   add_foreign_key "registros_entrenamiento", "users"
   add_foreign_key "registros_puntos", "users"

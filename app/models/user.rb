@@ -34,6 +34,8 @@ class User < ApplicationRecord
   has_many :registros_puntos, dependent: :delete_all
   has_one :perfil_juego, dependent: :destroy
   has_many :logros_obtenidos, dependent: :destroy
+  # Récords personales (Fase 14.13): histórico que solo escribe el detector.
+  has_many :records_personales, dependent: :delete_all
 
   normalizes :email_address, with: ->(e) { e.strip.downcase }
 

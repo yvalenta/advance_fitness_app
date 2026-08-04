@@ -112,6 +112,60 @@ RSpec.describe "DetallesEntrenamiento", type: :request do
     expect(response.body).to include(ejercicio.nombre)
   end
 
+  describe "récords personales en el create (Fase 14.13)" do
+    before do
+      sign_in_as users(:one)
+      premium!(users(:one))
+    end
+
+    # Vara previa: una serie de ayer ya evaluada (deja los baselines listos).
+    def vara_de_ayer!(reps:, peso:)
+      registro = users(:one).registros_entrenamiento.create!(fecha: Date.yesterday)
+      detalle = registro.detalles.create!(ejercicio: ejercicio, serie: 1, repeticiones: reps, peso_kg: peso)
+      Juego::DetectorPr.evaluar!(detalle)
+    end
+
+    it "al batir la marca agrega la celebración SIN romper la lista (replace + append al mismo target)" do
+      vara_de_ayer!(reps: 10, peso: 40)
+
+      post detalles_entrenamiento_path, params: {
+        fecha: Date.current.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre,
+        repeticiones: 10, peso_kg: 50
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(%(action="replace" target="detalles_ejercicio_#{ejercicio.id}"))
+      expect(response.body).to include(%(action="append" target="detalles_ejercicio_#{ejercicio.id}"))
+      expect(response.body).to include("Nuevo récord personal")
+      expect(response.body).to include("50 kg")
+    end
+
+    it "el primer registro (baseline) responde la lista de siempre, sin celebración" do
+      post detalles_entrenamiento_path, params: {
+        fecha: Date.current.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre,
+        repeticiones: 10, peso_kg: 40
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(%(action="replace" target="detalles_ejercicio_#{ejercicio.id}"))
+      expect(response.body).not_to include("Nuevo récord personal")
+      expect(users(:one).records_personales.where(baseline: true).count).to eq 2
+    end
+
+    it "el 'cumplido tal cual' también dispara la detección (peso real levantado)" do
+      vara_de_ayer!(reps: 8, peso: 40)
+
+      post detalles_entrenamiento_path, params: {
+        fecha: Date.current.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre,
+        cumplido: "1", series_plan: 3, repeticiones_plan: "8", peso_kg: 45
+      }
+
+      expect(response.body).to include("Nuevo récord personal")
+      expect(users(:one).records_personales.vigentes.where(baseline: false).pluck(:tipo))
+        .to contain_exactly("peso_max", "volumen_max")
+    end
+  end
+
   describe "POST /detalles_entrenamiento/analizar" do
     def registrar_series_de_semanas(user, semanas:)
       semanas.times do |i|

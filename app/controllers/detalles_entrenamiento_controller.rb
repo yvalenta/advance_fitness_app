@@ -20,17 +20,27 @@ class DetallesEntrenamientoController < ApplicationController
     return head :unprocessable_entity unless @ejercicio
 
     if ActiveModel::Type::Boolean.new.cast(params[:cumplido])
-      DetalleEntrenamiento.registrar_cumplido!(registro: @registro, ejercicio: @ejercicio,
-        series: params[:series_plan], repeticiones: params[:repeticiones_plan], peso_kg: params[:peso_kg])
+      # Series idénticas entre sí: para el detector de PRs basta evaluar una
+      # (misma marca de peso/volumen/reps en todas).
+      detalle = DetalleEntrenamiento.registrar_cumplido!(registro: @registro, ejercicio: @ejercicio,
+        series: params[:series_plan], repeticiones: params[:repeticiones_plan], peso_kg: params[:peso_kg]).first
     else
       siguiente_serie = @registro.detalles.where(ejercicio: @ejercicio).maximum(:serie).to_i + 1
-      @registro.detalles.create!(ejercicio: @ejercicio, serie: siguiente_serie,
-                                 repeticiones: params[:repeticiones], peso_kg: params[:peso_kg].presence,
-                                 rpe: params[:rpe].presence)
+      detalle = @registro.detalles.create!(ejercicio: @ejercicio, serie: siguiente_serie,
+                                           repeticiones: params[:repeticiones], peso_kg: params[:peso_kg].presence,
+                                           rpe: params[:rpe].presence)
     end
 
+    # Récords personales (Fase 14.13): inline y no en un job porque el
+    # resultado decide la respuesta (¿hay celebración?) y cuesta una query
+    # por tipo. Devuelve solo PRs reales — el baseline del primer registro
+    # no celebra.
+    records = detalle ? Juego::DetectorPr.evaluar!(detalle) : []
+
     @detalles = @registro.detalles.where(ejercicio: @ejercicio).order(:serie)
-    render turbo_stream: reemplazar_lista
+    streams = [ reemplazar_lista ]
+    streams << celebrar_records(records) if records.any?
+    render turbo_stream: streams
   end
 
   # Disparador del Analista de Performance (SDD §18.4, Fase 12): solo staff
@@ -85,5 +95,16 @@ class DetallesEntrenamientoController < ApplicationController
                            partial: "detalles_entrenamiento/lista",
                            locals: { registro: @registro, ejercicio: @ejercicio, detalles: @detalles,
                                      series_plan: params[:series_plan], repeticiones_plan: params[:repeticiones_plan] })
+    end
+
+    # La celebración va como SEGUNDO stream, appendeado DENTRO del mismo
+    # contenedor que `reemplazar_lista` acaba de renovar — así el flujo
+    # actual (replace de la lista) no cambia en nada. No se cuelga de <body>
+    # porque el dialog de registro vive en el top layer de showModal() y el
+    # backdrop lo taparía; dentro del dialog, el toast (fixed) sí flota
+    # sobre el modal.
+    def celebrar_records(records)
+      turbo_stream.append("detalles_ejercicio_#{@ejercicio.id}",
+                          partial: "shared/celebracion_pr", locals: { records: records })
     end
 end
