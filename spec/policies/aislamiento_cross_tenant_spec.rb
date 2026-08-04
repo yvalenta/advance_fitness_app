@@ -187,4 +187,15 @@ RSpec.describe "Aislamiento cross-tenant en policies", type: :model do
     obt_mp = LogroObtenido.create!(user: miembro_mp, logro: logro, obtenido_en: Time.current)
     expect_aislado(LogroObtenidoPolicy, record_af: obt_af, record_mp: obt_mp)
   end
+
+  it "RecordPersonalPolicy — vía user (el ejercicio del catálogo es global; el récord no)" do
+    ejercicio = Ejercicio.create!(dataset_id: "test-aisl-pr-01", nombre: "Remo con barra",
+                                  nombre_en: "Barbell row", nombre_normalizado: "remo con barra",
+                                  categoria: "fuerza", musculo: "espalda")
+    pr_af = RecordPersonal.create!(user: miembro_af, ejercicio: ejercicio, tipo: "peso_max",
+                                   valor: 60, fecha: Date.current)
+    pr_mp = RecordPersonal.create!(user: miembro_mp, ejercicio: ejercicio, tipo: "peso_max",
+                                   valor: 60, fecha: Date.current)
+    expect_aislado(RecordPersonalPolicy, record_af: pr_af, record_mp: pr_mp)
+  end
 end

@@ -27,4 +27,7 @@ ActiveSupport::Inflector.inflections(:en) do |inflect|
   inflect.irregular "registro_punto", "registros_puntos"
   inflect.irregular "perfil_juego", "perfiles_juego"
   inflect.irregular "logro_obtenido", "logros_obtenidos"
+  # Récords personales (Fase 14.13): mismo motivo — el inflector inglés
+  # daría "record_personals" y Zeitwerk no resolvería el modelo.
+  inflect.irregular "record_personal", "records_personales"
 end
