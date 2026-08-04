@@ -20,6 +20,13 @@ class RegistroEntrenamiento < ApplicationRecord
     update!(ejercicios: ejercicios_hash.merge(indice.to_s => entrada))
   end
 
+  # ¿Ya hay algún ejercicio del día marcado como hecho? (Fase 14.12: el
+  # primer "hecho" del día dispara los puntos del motor de juego). La clave
+  # "novedad" guarda un String y se descarta sola con el is_a?(Hash).
+  def algun_ejercicio_hecho?
+    ejercicios_hash.any? { |_indice, estado| estado.is_a?(Hash) && estado["hecho"] }
+  end
+
   # Novedad del día para TODA la rutina (Fase 5.11): lesión, cambio de sede…
   def novedad = ejercicios_hash["novedad"].to_s
 

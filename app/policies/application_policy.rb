@@ -59,5 +59,14 @@ class ApplicationPolicy
       return relation.none if user.tenant_id.blank?
       relation.where(por => user.tenant.users)
     end
+
+    # Variante para las tablas que llevan `tenant_id` propio (SDD §16.7:
+    # `membresias`, `pagos`, `suscripciones`): filtra por la columna, sin join
+    # ni subconsulta. Mismo contrato fail-closed que `del_tenant` — sin tenant
+    # no se ve nada, en vez de verse todo.
+    def del_tenant_directo(relation)
+      return relation.none if user.tenant_id.blank?
+      relation.where(tenant_id: user.tenant_id)
+    end
   end
 end

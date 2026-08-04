@@ -29,6 +29,11 @@ production:
     queue: default
     schedule: at 4:05am every day
 
+  recalcular_perfiles_juego:
+    class: RecalcularPerfilesJuegoJob
+    queue: background
+    schedule: at 4:10am every day
+
   liberar_planes_estancados:
     class: LiberarPlanesEstancadosJob
     queue: default

@@ -7,7 +7,10 @@ require "rails_helper"
 # atrapa el bug cuando la lógica falla.
 #
 # Modelos catálogo global (SDD §16.6) deliberadamente excluidos: Plan,
-# Ejercicio, PlantillaComida, PlantillaEjercicio.
+# Ejercicio, PlantillaComida, PlantillaEjercicio — y `Logro` con tenant nil,
+# que es catálogo global A PROPÓSITO (Fase 14.12): LogroPolicy::Scope mezcla
+# `tenant_id: [nil, user.tenant_id]`, así que el catálogo base se comparte
+# pero los logros propios de un tenant jamás cruzan al otro.
 RSpec.describe "Aislamiento cross-tenant en policies", type: :model do
   let(:tenant_af) { tenants(:advance_fitness) }
   let(:tenant_mp) { tenants(:megaplex) }
@@ -151,5 +154,37 @@ RSpec.describe "Aislamiento cross-tenant en policies", type: :model do
     cons_mp = Consentimiento.create!(user: admin_mp, tipo: "tabla_posiciones",
                                      accion: "otorgado", version_texto: "v1")
     expect_aislado(ConsentimientoPolicy, record_af: cons_af, record_mp: cons_mp)
+  end
+
+  it "PerfilJuegoPolicy — vía tenant_id directo (desnormalizado del user)" do
+    perfil_af = PerfilJuego.create!(user: miembro_af)
+    perfil_mp = PerfilJuego.create!(user: miembro_mp)
+    expect_aislado(PerfilJuegoPolicy, record_af: perfil_af, record_mp: perfil_mp)
+  end
+
+  it "PerfilJuegoPolicy — visible_en_tabla NO cruza tenants: el leaderboard de B jamás lista a un miembro de A" do
+    perfil_af = PerfilJuego.create!(user: miembro_af, visible_en_tabla: true,
+                                    puntos_total: 9_999)
+    scope_miembro_mp = PerfilJuegoPolicy::Scope.new(miembro_mp, PerfilJuego).resolve
+    scope_admin_mp = PerfilJuegoPolicy::Scope.new(admin_mp, PerfilJuego).resolve
+
+    expect(scope_miembro_mp).not_to include(perfil_af)
+    expect(scope_admin_mp).not_to include(perfil_af)
+  end
+
+  it "RegistroPuntoPolicy — vía user" do
+    reg_af = RegistroPunto.create!(user: miembro_af, tipo: "checkin",
+                                   puntos: 10, fecha: Date.current)
+    reg_mp = RegistroPunto.create!(user: miembro_mp, tipo: "checkin",
+                                   puntos: 10, fecha: Date.current)
+    expect_aislado(RegistroPuntoPolicy, record_af: reg_af, record_mp: reg_mp)
+  end
+
+  it "LogroObtenidoPolicy — vía user (el logro global es compartido; el obtenido no)" do
+    logro = Logro.create!(codigo: "primera-sesion", nombre: "Primera sesión",
+                          puntos: 20, categoria: "constancia")
+    obt_af = LogroObtenido.create!(user: miembro_af, logro: logro, obtenido_en: Time.current)
+    obt_mp = LogroObtenido.create!(user: miembro_mp, logro: logro, obtenido_en: Time.current)
+    expect_aislado(LogroObtenidoPolicy, record_af: obt_af, record_mp: obt_mp)
   end
 end

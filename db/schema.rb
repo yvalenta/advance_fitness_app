@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_04_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_04_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -123,6 +123,34 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_04_000001) do
     t.index ["registro_entrenamiento_id"], name: "index_feedback_ia_on_registro_entrenamiento_id", unique: true
   end
 
+  create_table "logros", force: :cascade do |t|
+    t.boolean "activo", default: true, null: false
+    t.string "categoria", null: false
+    t.string "codigo", null: false
+    t.bigint "creado_por_id"
+    t.datetime "created_at", null: false
+    t.string "descripcion"
+    t.string "icono"
+    t.string "nombre", null: false
+    t.integer "puntos", default: 0, null: false
+    t.bigint "tenant_id"
+    t.datetime "updated_at", null: false
+    t.index ["codigo"], name: "index_logros_on_codigo", unique: true
+    t.index ["creado_por_id"], name: "index_logros_on_creado_por_id"
+    t.index ["tenant_id"], name: "index_logros_on_tenant_id"
+  end
+
+  create_table "logros_obtenidos", force: :cascade do |t|
+    t.jsonb "contexto", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.bigint "logro_id", null: false
+    t.datetime "obtenido_en", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["logro_id"], name: "index_logros_obtenidos_on_logro_id"
+    t.index ["user_id", "logro_id"], name: "index_logros_obtenidos_on_user_id_and_logro_id", unique: true
+  end
+
   create_table "mediciones", force: :cascade do |t|
     t.decimal "brazo_cm", precision: 5, scale: 1
     t.decimal "cadera_cm", precision: 5, scale: 1
@@ -204,6 +232,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_04_000001) do
     t.index ["anulado_por_id"], name: "index_pagos_on_anulado_por_id"
     t.index ["membresia_id"], name: "index_pagos_on_membresia_id"
     t.index ["registrado_por_id"], name: "index_pagos_on_registrado_por_id"
+  end
+
+  create_table "perfiles_juego", force: :cascade do |t|
+    t.string "apodo"
+    t.datetime "created_at", null: false
+    t.integer "logros_count", default: 0, null: false
+    t.integer "nivel", default: 1, null: false
+    t.integer "puntos_total", default: 0, null: false
+    t.integer "racha_actual", default: 0, null: false
+    t.integer "racha_mejor", default: 0, null: false
+    t.bigint "tenant_id"
+    t.date "ultima_fecha_racha"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.boolean "visible_en_tabla", default: false, null: false
+    t.index ["tenant_id", "visible_en_tabla", "puntos_total"], name: "idx_on_tenant_id_visible_en_tabla_puntos_total_ebacdf60cd"
+    t.index ["user_id"], name: "index_perfiles_juego_on_user_id", unique: true
   end
 
   create_table "planes", force: :cascade do |t|
@@ -295,6 +340,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_04_000001) do
     t.index ["user_id", "fecha"], name: "index_registros_entrenamiento_on_user_id_and_fecha", unique: true
   end
 
+  create_table "registros_puntos", force: :cascade do |t|
+    t.bigint "creado_por_id"
+    t.datetime "created_at", null: false
+    t.date "fecha", null: false
+    t.bigint "origen_id"
+    t.string "origen_tipo"
+    t.integer "puntos", null: false
+    t.string "tipo", null: false
+    t.bigint "user_id", null: false
+    t.index ["creado_por_id"], name: "index_registros_puntos_on_creado_por_id"
+    t.index ["fecha"], name: "index_registros_puntos_on_fecha"
+    t.index ["user_id", "fecha"], name: "index_registros_puntos_on_user_id_and_fecha"
+    t.index ["user_id", "tipo", "origen_tipo", "origen_id"], name: "index_registros_puntos_origen_unico", unique: true, where: "(origen_id IS NOT NULL)"
+  end
+
   create_table "sessions", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "ip_address"
@@ -363,6 +423,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_04_000001) do
   add_foreign_key "detalle_entrenamientos", "ejercicios"
   add_foreign_key "detalle_entrenamientos", "registros_entrenamiento", on_delete: :cascade
   add_foreign_key "feedback_ia", "registros_entrenamiento", on_delete: :cascade
+  add_foreign_key "logros", "tenants"
+  add_foreign_key "logros", "users", column: "creado_por_id"
+  add_foreign_key "logros_obtenidos", "logros"
+  add_foreign_key "logros_obtenidos", "users"
   add_foreign_key "mediciones", "users"
   add_foreign_key "mediciones", "users", column: "tomada_por_id"
   add_foreign_key "membresias", "users"
@@ -371,6 +435,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_04_000001) do
   add_foreign_key "pagos", "membresias"
   add_foreign_key "pagos", "users", column: "anulado_por_id"
   add_foreign_key "pagos", "users", column: "registrado_por_id"
+  add_foreign_key "perfiles_juego", "tenants"
+  add_foreign_key "perfiles_juego", "users"
   add_foreign_key "planes_personalizados", "users"
   add_foreign_key "planes_personalizados", "users", column: "aprobado_por_id"
   add_foreign_key "plantillas_comida", "users", column: "creado_por_id"
@@ -380,6 +446,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_04_000001) do
   add_foreign_key "posts", "users", column: "autor_id"
   add_foreign_key "registros_calorias", "users"
   add_foreign_key "registros_entrenamiento", "users"
+  add_foreign_key "registros_puntos", "users"
+  add_foreign_key "registros_puntos", "users", column: "creado_por_id"
   add_foreign_key "sessions", "users"
   add_foreign_key "suscripciones", "membresias"
   add_foreign_key "suscripciones", "planes"
