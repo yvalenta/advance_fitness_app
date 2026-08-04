@@ -71,18 +71,18 @@
   default: true;
   color-scheme: light;
 
-  --color-base-100: #faf9f5; /* card / modal                      */
-  --color-base-200: #f1efe8; /* page background — hueso cálido    */
-  --color-base-300: #e0dcd1; /* bordes, divisores                 */
+  --color-base-100: #fbfaf6; /* card / modal — blanco cálido      */
+  --color-base-200: #efede4; /* page background — crema Pulse     */
+  --color-base-300: #e1ddd1; /* bordes, divisores                 */
   --color-base-content: #1c1917; /* texto base — tinta            */
   --color-primary: #b4f000;
   --color-primary-content: #0b1220;
-  --color-secondary: #e7e4db;
+  --color-secondary: #e9e6db; /* tiles crema (2º nivel de superficie) */
   --color-secondary-content: #1c1917;
   --color-accent: #0284c7; /* ocean con contraste AA sobre claro */
   --color-accent-content: #ffffff;
-  --color-neutral: #1c1917; /* chips tinta de la referencia      */
-  --color-neutral-content: #f1efe8;
+  --color-neutral: #14120f; /* componentes tinta de la referencia */
+  --color-neutral-content: #efede4;
   --color-info: #0284c7;
   --color-info-content: #ffffff;
   --color-success: #6b8f00;

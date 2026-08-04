@@ -22,10 +22,13 @@ export default class extends Controller {
       kcal += parseFloat(card.querySelector("[name='comida[kcal]']")?.value        || 0)
     })
 
-    if (this.hasProteinasTarget) this.proteinasTarget.textContent = Math.round(p)
-    if (this.hasCarbosTarget)    this.carbosTarget.textContent    = Math.round(c)
-    if (this.hasGrasasTarget)    this.grasasTarget.textContent    = Math.round(g)
-    if (this.hasKcalTarget)      this.kcalTarget.textContent      = Math.round(kcal).toLocaleString("es-CO")
+    // Targets en PLURAL: "proteinas" existe dos veces (la meta y el chip del
+    // resumen) — el singular solo actualizaba el primero y el chip quedaba
+    // congelado en "P 0 g" (bug reportado con captura).
+    this.proteinasTargets.forEach((el) => el.textContent = Math.round(p))
+    this.carbosTargets.forEach((el) => el.textContent = Math.round(c))
+    this.grasasTargets.forEach((el) => el.textContent = Math.round(g))
+    this.kcalTargets.forEach((el) => el.textContent = Math.round(kcal).toLocaleString("es-CO"))
 
     if (this.metaProteinaValue > 0 && this.hasBarraProteinaTarget) {
       const pct = Math.min((p / this.metaProteinaValue) * 100, 100)
