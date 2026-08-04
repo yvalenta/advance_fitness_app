@@ -1,0 +1,49 @@
+<%# Panel de UN ejercicio del modo sesión: media grande (proxy del catálogo
+    con ícono de respaldo detrás), prescripción y chips de series que
+    sesion_controller.js marca al tap. Solo el ejercicio en curso es visible. %>
+<%# locals: (ejercicio:, indice:, total:, catalogo:) %>
+<% ficha = catalogo[ejercicio["ejercicio_id"]] %>
+<article class="card border border-base-300 bg-base-100 shadow-md"
+         data-sesion-target="ejercicio" <%= "hidden" unless indice.zero? %>>
+  <div class="card-body items-center gap-3 text-center">
+    <figure class="relative aspect-square w-full max-w-72 overflow-hidden rounded-2xl">
+      <span class="absolute inset-0 flex items-center justify-center bg-base-200 text-steel-3">
+        <%= render "shared/icono", nombre: :actividad, clase: "size-14" %>
+      </span>
+      <% if ficha %>
+        <img src="<%= media_ejercicio_path(ficha, tipo: :gif) %>" alt="<%= ejercicio["nombre"] %>"
+             class="relative h-full w-full bg-white object-contain"
+             loading="<%= indice.zero? ? "eager" : "lazy" %>"
+             data-action="error->sesion#ocultarMedia">
+      <% end %>
+    </figure>
+
+    <div>
+      <h2 class="font-display text-2xl font-bold leading-tight"><%= ejercicio["nombre"] %></h2>
+      <p class="mt-1 font-semibold text-volt-d">
+        <%= ejercicio["series"] %> × <%= ejercicio["repeticiones"] %>
+        <% if ejercicio["peso_sugerido_kg"].to_f.positive? %>
+          <span class="text-pulse">· ≈<%= ejercicio["peso_sugerido_kg"] %> kg</span>
+        <% end %>
+      </p>
+      <% if ejercicio["nota_tecnica"].present? %>
+        <p class="mt-2 rounded-xl bg-volt/10 px-3 py-2 text-sm leading-snug text-steel-7"><%= ejercicio["nota_tecnica"] %></p>
+      <% end %>
+    </div>
+
+    <div class="flex flex-wrap justify-center gap-2">
+      <% [ ejercicio["series"].to_i, 1 ].max.times do |serie| %>
+        <button type="button" class="btn btn-outline btn-sm rounded-full px-4 font-bold"
+                data-action="sesion#marcarSerie" data-serie="<%= serie %>">
+          Serie <%= serie + 1 %>
+        </button>
+      <% end %>
+    </div>
+
+    <button type="button" class="btn btn-primary w-full font-bold" hidden
+            data-sesion-target="siguiente" data-action="sesion#siguiente">
+      <%= indice == total - 1 ? "Ver resumen" : "Siguiente ejercicio" %>
+      <%= render "shared/icono", nombre: :flecha_derecha, clase: "size-4" %>
+    </button>
+  </div>
+</article>

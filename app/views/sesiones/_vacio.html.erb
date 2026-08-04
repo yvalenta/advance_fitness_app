@@ -1,0 +1,16 @@
+<%# Estado vacío amable del modo sesión: sin plan publicado o día de descanso. %>
+<%# locals: (titulo:, mensaje:) %>
+<section class="mx-auto w-full max-w-lg px-4 py-10">
+  <div class="card border border-base-300 bg-base-100 shadow-md">
+    <div class="card-body items-center gap-3 py-10 text-center">
+      <span class="flex size-14 items-center justify-center rounded-full bg-volt/15 text-volt-d">
+        <%= render "shared/icono", nombre: :calendario, clase: "size-7" %>
+      </span>
+      <h1 class="font-display text-2xl font-bold"><%= titulo %></h1>
+      <p class="max-w-sm text-sm text-steel-3"><%= mensaje %></p>
+      <%= link_to mi_plan_path, class: "btn btn-primary mt-2 font-bold" do %>
+        Ir a mi plan <%= render "shared/icono", nombre: :flecha_derecha, clase: "size-4" %>
+      <% end %>
+    </div>
+  </div>
+</section>
