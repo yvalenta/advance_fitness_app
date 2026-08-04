@@ -38,6 +38,12 @@ Rails.application.routes.draw do
   resources :ciclos_menstruales, only: %i[ create destroy ]
   resource :consentimiento_ciclo, only: %i[ create destroy ], controller: "consentimientos_ciclo"
 
+  # Web Push (Fase 15, Nota 20): el dispositivo actual se suscribe o se
+  # retira, siempre en primera persona; la identidad es el endpoint que
+  # manda el propio navegador — no se acepta ningún id.
+  post "suscripciones_push", to: "suscripciones_push#create", as: :suscripciones_push
+  delete "suscripciones_push", to: "suscripciones_push#destroy"
+
   # Registro cuantitativo de series (SDD §18, feature premium): index carga
   # el dialog por fecha+ejercicio (query string, mismo patrón de :ayuda);
   # create/destroy responden turbo_stream. Rutas nombradas a mano (en vez de

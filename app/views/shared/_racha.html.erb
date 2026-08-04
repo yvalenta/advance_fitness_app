@@ -22,5 +22,38 @@
         Entrena hoy y enciéndela
       <% end %>
     </p>
+
+    <%# Web Push (Fase 15): opt-in del recordatorio de racha para ESTE
+        dispositivo. El estado real vive en el navegador (permiso +
+        suscripción), así que la zona nace oculta y push_controller la
+        revela ya resuelta — sin flash de estado equivocado. %>
+    <% if ENV["VAPID_PUBLIC_KEY"].present? %>
+      <div class="mt-1.5 hidden border-t border-base-300 pt-3"
+           data-controller="push"
+           data-push-target="zona"
+           data-push-clave-value="<%= ENV["VAPID_PUBLIC_KEY"] %>"
+           data-push-url-value="<%= suscripciones_push_path %>">
+        <p class="hidden text-xs text-steel-5" data-push-target="pista">
+          Instala la app en tu pantalla de inicio (Compartir → Agregar a inicio)
+          para poder recibir recordatorios de racha.
+        </p>
+        <div class="hidden space-y-2" data-push-target="apagado">
+          <p class="text-xs text-steel-5">Te avisamos a las 6pm si tu racha peligra.</p>
+          <button type="button" data-action="push#activar"
+                  class="btn btn-sm rounded-xl border-0 bg-volt font-semibold text-steel-9 hover:bg-volt/90">
+            Activar
+          </button>
+        </div>
+        <div class="hidden space-y-2" data-push-target="encendido">
+          <p class="text-xs text-steel-5">
+            <span class="text-volt">●</span> Recordatorio activo en este dispositivo
+          </p>
+          <button type="button" data-action="push#desactivar"
+                  class="btn btn-ghost btn-sm rounded-xl text-steel-4">
+            Quitar
+          </button>
+        </div>
+      </div>
+    <% end %>
   </div>
 </div>

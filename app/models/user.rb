@@ -39,6 +39,7 @@ class User < ApplicationRecord
   # Dato de salud sensible (Fase 14.15): se va con la cuenta. `delete_all`
   # también libera la FK de creado_por (siempre es la propia usuaria).
   has_many :ciclos_menstruales, dependent: :delete_all
+  has_many :suscripciones_push, dependent: :delete_all
 
   normalizes :email_address, with: ->(e) { e.strip.downcase }
 

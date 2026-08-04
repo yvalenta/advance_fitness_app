@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_05_030000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_05_100001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -259,6 +259,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_030000) do
     t.integer "puntos_total", default: 0, null: false
     t.integer "racha_actual", default: 0, null: false
     t.integer "racha_mejor", default: 0, null: false
+    t.date "racha_recordada_en"
     t.bigint "tenant_id"
     t.date "ultima_fecha_racha"
     t.datetime "updated_at", null: false
@@ -421,6 +422,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_030000) do
     t.index ["user_id"], name: "index_suscripciones_una_activa_por_user", unique: true, where: "((estado)::text = 'activa'::text)"
   end
 
+  create_table "suscripciones_push", force: :cascade do |t|
+    t.string "auth", null: false
+    t.datetime "created_at", null: false
+    t.text "endpoint", null: false
+    t.string "p256dh", null: false
+    t.datetime "updated_at", null: false
+    t.string "user_agent"
+    t.bigint "user_id", null: false
+    t.index ["endpoint"], name: "index_suscripciones_push_on_endpoint", unique: true
+    t.index ["user_id"], name: "index_suscripciones_push_on_user_id"
+  end
+
   create_table "tenants", force: :cascade do |t|
     t.boolean "activo", default: true, null: false
     t.datetime "created_at", null: false
@@ -501,5 +514,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_030000) do
   add_foreign_key "suscripciones", "planes"
   add_foreign_key "suscripciones", "tenants"
   add_foreign_key "suscripciones", "users"
+  add_foreign_key "suscripciones_push", "users"
   add_foreign_key "users", "tenants"
 end
