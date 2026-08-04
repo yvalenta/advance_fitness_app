@@ -142,4 +142,14 @@ RSpec.describe "Aislamiento cross-tenant en policies", type: :model do
                                           serie: 1, repeticiones: 10, peso_kg: 55, rpe: 7)
     expect_aislado(DetalleEntrenamientoPolicy, record_af: det_af, record_mp: det_mp)
   end
+
+  it "ConsentimientoPolicy — estrictamente personal: cada quien ve SOLO los suyos" do
+    # El scope es más cerrado que el resto (ni el staff ve los ajenos), así
+    # que el aislamiento se prueba con consentimientos de los propios admins.
+    cons_af = Consentimiento.create!(user: admin_af, tipo: "tabla_posiciones",
+                                     accion: "otorgado", version_texto: "v1")
+    cons_mp = Consentimiento.create!(user: admin_mp, tipo: "tabla_posiciones",
+                                     accion: "otorgado", version_texto: "v1")
+    expect_aislado(ConsentimientoPolicy, record_af: cons_af, record_mp: cons_mp)
+  end
 end

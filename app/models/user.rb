@@ -26,6 +26,10 @@ class User < ApplicationRecord
   has_many :planes_personalizados, dependent: :destroy
   has_many :mediciones, dependent: :destroy
   has_many :registros_entrenamiento, dependent: :destroy
+  # Filas append-only (readonly tras persistir): `destroy` levantaría
+  # ReadOnlyRecord, por eso `delete_all` — al borrar el user, el rastro
+  # de sus consentimientos se va con él (dato personal, RGPD-friendly).
+  has_many :consentimientos, dependent: :delete_all
 
   normalizes :email_address, with: ->(e) { e.strip.downcase }
 
