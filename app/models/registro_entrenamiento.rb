@@ -57,6 +57,15 @@ class RegistroEntrenamiento < ApplicationRecord
     estados.any? { |_clave, estado| estado.is_a?(Hash) && estado["hecho"] }
   end
 
+  # Cuántos ejercicios del día están marcados "hecho" (dashboard Hoy, Fase
+  # 14.5). Mismo recorrido bi-formato que algun_ejercicio_hecho?: en v2 los
+  # estados viven en "items", en v1 son las claves numéricas del nivel
+  # superior; "novedad" (String) y "legacy" se descartan con el is_a?(Hash).
+  def conteo_hechos
+    estados = ejercicios_hash.key?("version") ? items_hash : ejercicios_hash
+    estados.count { |_clave, estado| estado.is_a?(Hash) && estado["hecho"] }
+  end
+
   # Novedad del día para TODA la rutina (Fase 5.11): lesión, cambio de sede…
   # Vive en el nivel superior del JSONB, igual en v1 y v2.
   def novedad = ejercicios_hash["novedad"].to_s

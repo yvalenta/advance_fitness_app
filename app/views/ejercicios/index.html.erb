@@ -1,46 +1,108 @@
-<%# Catálogo buscable dentro de la biblioteca del editor (Fase 6.4). Vive en %>
-<%# un turbo-frame perezoso: el form navega solo el frame, sin recargar el %>
-<%# modal. Aplicar reutiliza modal-ejercicios#aplicar con defaults 3×10-12. %>
-<%= turbo_frame_tag "catalogo_ejercicios" do %>
-  <%= form_with url: ejercicios_path, method: :get, class: "mb-2 flex items-center gap-2" do %>
-    <label class="input input-bordered input-sm flex flex-1 items-center gap-2">
-      <%= render "shared/icono", nombre: :busqueda, clase: "size-4 text-steel-3" %>
-      <input type="search" name="q" value="<%= params[:q] %>" class="grow"
-             placeholder="Buscar en el catálogo (1.324 ejercicios)…">
-    </label>
-    <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
-  <% end %>
-
-  <%# Fragment cache por búsqueda (Fase de Calidad): el catálogo solo cambia
-      con seeds — con caché la relación @ejercicios ni siquiera se ejecuta.
-      El max(updated_at) invalida todo si el catálogo se re-siembra. %>
-  <% cache [ "catalogo_ejercicios", Ejercicio.normalizar(params[:q].to_s), params[:musculo].to_s, Ejercicio.maximum(:updated_at) ] do %>
-  <% if @ejercicios.any? %>
-    <div class="grid gap-1.5 sm:grid-cols-2">
-      <% @ejercicios.each do |ejercicio| %>
-        <button type="button"
-                class="group flex items-center gap-2 rounded-xl border border-base-300 px-3 py-2 text-left text-sm transition-colors hover:border-volt-d/50 hover:bg-volt/5"
-                data-action="modal-ejercicios#aplicar"
-                data-nombre="<%= ejercicio.nombre %>" data-series="3"
-                data-repeticiones="10-12" data-descanso="60"
-                data-ejercicio-id="<%= ejercicio.id %>">
-          <% if ejercicio.imagen_ruta.present? %>
-            <span class="shrink-0 cursor-zoom-in" title="Ver ejecución"
-                  data-action="click->ayuda-ejercicio#abrir:stop"
-                  data-ayuda-url="<%= ayuda_ejercicios_path(ejercicio_id: ejercicio.id, marco: "ayuda_ejercicio_editor") %>">
-              <img src="<%= media_ejercicio_path(ejercicio, tipo: :imagen) %>" loading="lazy"
-                   width="32" height="32" class="size-8 rounded-lg bg-white object-cover" alt="">
-            </span>
-          <% end %>
-          <span class="min-w-0 flex-1">
-            <span class="block truncate font-medium"><%= ejercicio.nombre %></span>
-            <span class="block truncate text-xs text-steel-3"><%= PlantillaEjercicio::NOMBRES_MUSCULO.fetch(ejercicio.musculo, ejercicio.musculo) %><%= " · #{ejercicio.equipo}" if ejercicio.equipo.present? %></span>
-          </span>
-        </button>
-      <% end %>
-    </div>
-  <% else %>
-    <p class="py-4 text-center text-sm text-steel-3">Nada coincide con tu búsqueda en el catálogo.</p>
-  <% end %>
-  <% end %>
+<%# Catálogo de ejercicios — una sola vista para dos contextos (Fase 6.4 + 14.5):
+    · Página completa (/ejercicios): explorador del miembro Y del staff — hero,
+      buscador y cards por músculo; tocar una categoría navega SOLO el frame
+      al listado filtrado (el buscador y el volver también).
+    · Turbo-frame "catalogo_ejercicios": la biblioteca del editor lo carga
+      perezoso dentro del modal; Turbo extrae el frame de esta misma respuesta
+      (layout mínimo vía turbo_frame_request?), así que el hero y el dialog de
+      ayuda de la página no viajan al modal.
+    Los botones del listado reutilizan modal-ejercicios#aplicar (defaults
+    3×10-12) — sin ese controller (página del miembro) son inertes, y la
+    miniatura abre la ayuda visual con ayuda-ejercicio. %>
+<% unless turbo_frame_request? %>
+  <% content_for :title, "Ejercicios — #{Negocio.nombre}" %>
+  <%= render "shared/encabezado",
+        eyebrow: "Biblioteca",
+        titulo: "Explora los ejercicios",
+        descripcion: "1.324 movimientos con guía visual de ejecución, organizados por músculo." %>
 <% end %>
+
+<div class="<%= "relative mx-auto -mt-8 mb-12 w-full max-w-6xl px-4" unless turbo_frame_request? %>"
+     data-controller="ayuda-ejercicio">
+  <div class="<%= "rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm sm:p-6" unless turbo_frame_request? %>">
+    <%= turbo_frame_tag "catalogo_ejercicios" do %>
+      <%# El controller del buscador en vivo viaja DENTRO del frame para que
+          también se active cuando el modal del editor extrae solo el frame. %>
+      <div data-controller="buscador-en-vivo">
+        <%= form_with url: ejercicios_path, method: :get, class: "mb-2 flex items-center gap-2",
+              data: { buscador_en_vivo_target: "form" } do %>
+          <label class="input input-bordered input-sm flex flex-1 items-center gap-2">
+            <%= render "shared/icono", nombre: :busqueda, clase: "size-4 text-steel-3" %>
+            <input type="search" name="q" value="<%= params[:q] %>" class="grow"
+                   data-action="input->buscador-en-vivo#buscar"
+                   placeholder="Buscar en el catálogo (1.324 ejercicios)…">
+          </label>
+          <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+        <% end %>
+
+        <%# Fragment cache por estado (Fase de Calidad): el catálogo solo cambia
+            con seeds; el max(updated_at) invalida todo si se re-siembra. El
+            explorador (q y musculo vacíos) tiene su propia entrada de caché. %>
+        <% cache [ "catalogo_ejercicios", Ejercicio.normalizar(params[:q].to_s), params[:musculo].to_s, Ejercicio.maximum(:updated_at) ] do %>
+        <% if @explorar %>
+          <div class="grid grid-cols-2 gap-3 pt-2 sm:grid-cols-3">
+            <% PlantillaEjercicio::MUSCULOS.each do |musculo| %>
+              <% conteo = @conteos_musculo[musculo].to_i %>
+              <% next if conteo.zero? %>
+              <% portada = @portadas_musculo[musculo] %>
+              <%= link_to ejercicios_path(musculo: musculo),
+                    class: "group card card-hover overflow-hidden border border-base-300 bg-base-100 shadow-sm" do %>
+                <% if portada %>
+                  <figure class="aspect-[4/3] overflow-hidden bg-white">
+                    <img src="<%= media_ejercicio_path(portada, tipo: :imagen) %>" loading="lazy"
+                         class="size-full object-cover transition-transform duration-300 group-hover:scale-105" alt="">
+                  </figure>
+                <% end %>
+                <div class="card-body gap-0.5 p-3">
+                  <h3 class="font-semibold leading-tight"><%= PlantillaEjercicio::NOMBRES_MUSCULO.fetch(musculo, musculo) %></h3>
+                  <p class="text-xs text-steel-3"><%= conteo %> <%= "ejercicio".pluralize(conteo) %></p>
+                </div>
+              <% end %>
+            <% end %>
+          </div>
+        <% else %>
+          <% if params[:musculo].present? %>
+            <div class="mb-2 flex items-center justify-between gap-2">
+              <h3 class="font-semibold"><%= PlantillaEjercicio::NOMBRES_MUSCULO.fetch(params[:musculo], params[:musculo]) %></h3>
+              <%= link_to "← Categorías", ejercicios_path, class: "btn btn-ghost btn-xs text-steel-3" %>
+            </div>
+          <% end %>
+          <% if @ejercicios.any? %>
+            <div class="grid gap-1.5 sm:grid-cols-2">
+              <% @ejercicios.each do |ejercicio| %>
+                <button type="button"
+                        class="group flex items-center gap-2 rounded-xl border border-base-300 px-3 py-2 text-left text-sm transition-colors hover:border-volt-d/50 hover:bg-volt/5"
+                        data-action="modal-ejercicios#aplicar"
+                        data-nombre="<%= ejercicio.nombre %>" data-series="3"
+                        data-repeticiones="10-12" data-descanso="60"
+                        data-ejercicio-id="<%= ejercicio.id %>">
+                  <% if ejercicio.imagen_ruta.present? %>
+                    <span class="shrink-0 cursor-zoom-in" title="Ver ejecución"
+                          data-action="click->ayuda-ejercicio#abrir:stop"
+                          data-ayuda-url="<%= ayuda_ejercicios_path(ejercicio_id: ejercicio.id, marco: "ayuda_ejercicio_editor") %>">
+                      <img src="<%= media_ejercicio_path(ejercicio, tipo: :imagen) %>" loading="lazy"
+                           width="32" height="32" class="size-8 rounded-lg bg-white object-cover" alt="">
+                    </span>
+                  <% end %>
+                  <span class="min-w-0 flex-1">
+                    <span class="block truncate font-medium"><%= ejercicio.nombre %></span>
+                    <span class="block truncate text-xs text-steel-3"><%= PlantillaEjercicio::NOMBRES_MUSCULO.fetch(ejercicio.musculo, ejercicio.musculo) %><%= " · #{ejercicio.equipo}" if ejercicio.equipo.present? %></span>
+                  </span>
+                </button>
+              <% end %>
+            </div>
+          <% else %>
+            <p class="py-4 text-center text-sm text-steel-3">Nada coincide con tu búsqueda en el catálogo.</p>
+          <% end %>
+        <% end %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <%# Dialog de ayuda visual para la página completa. El listado apunta al
+      marco "ayuda_ejercicio_editor" (heredado del modal del editor), así que
+      el dialog de esta página usa el MISMO marco — en el modal este dialog no
+      viaja (queda fuera del frame) y aplica el suyo propio. %>
+  <%= render "ejercicios/dialogo_ayuda", marco: "ayuda_ejercicio_editor" unless turbo_frame_request? %>
+</div>

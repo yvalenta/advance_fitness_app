@@ -1,0 +1,26 @@
+<%# Racha de entrenamiento (Fase 14.5): días consecutivos desde el
+    PerfilJuego del miembro — proyección de solo lectura del motor de juego
+    (Fase 14.12). `perfil` puede venir sin persistir (find_or_initialize):
+    los defaults de columna (racha 0) pintan el estado apagado. %>
+<%# locals: (perfil:) %>
+<% encendida = perfil.racha_actual.to_i.positive? %>
+<div class="card card-hover border border-base-300 bg-base-100 shadow-sm">
+  <div class="card-body gap-1.5">
+    <div class="flex items-start justify-between">
+      <h2 class="eyebrow text-steel-3">Racha</h2>
+      <span class="flex size-9 items-center justify-center rounded-xl <%= encendida ? "bg-volt/15 text-volt" : "bg-base-200 text-steel-3" %>">
+        <%= render "shared/icono", nombre: :fuego, clase: "size-4.5" %>
+      </span>
+    </div>
+    <span class="font-display text-4xl font-bold tracking-tight <%= "text-volt" if encendida %>">
+      <%= perfil.racha_actual.to_i %><span class="ml-1 text-base font-semibold text-steel-5">días</span>
+    </span>
+    <p class="text-sm text-steel-5">
+      <% if perfil.racha_mejor.to_i.positive? %>
+        Mejor racha: <%= perfil.racha_mejor.to_i %> días
+      <% else %>
+        Entrena hoy y enciéndela
+      <% end %>
+    </p>
+  </div>
+</div>
