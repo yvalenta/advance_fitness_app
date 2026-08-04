@@ -14,6 +14,13 @@ class PlanPersonalizado < ApplicationRecord
   # ubicar el RegistroEntrenamiento de la semana actual (Fase 5.10/6.9).
   DIAS_OFFSET = { "lunes" => 0, "martes" => 1, "miercoles" => 2, "jueves" => 3,
                   "viernes" => 4, "sabado" => 5, "domingo" => 6 }.freeze
+  # Contrato `rutina` v2 con mesociclo (Fase 14.7): rutina["dias"] pasa a ser
+  # la plantilla base y rutina["semanas"] la modula por copy-on-write (una
+  # semana con "dias" => nil hereda la base aplicando su "ajuste").
+  VERSION_MESOCICLO = 2
+  CAMPOS_AJUSTE = %w[series_delta peso_factor reps_delta].freeze
+  RANGO_PESO_FACTOR = (0.5..1.5)
+  RANGO_DELTAS = (-2..2)
 
   belongs_to :user
   belongs_to :aprobado_por, class_name: "User", optional: true
@@ -61,8 +68,18 @@ class PlanPersonalizado < ApplicationRecord
     return unless objetivo
 
     create!(user: user, generado_por: "reglas", estado: "aprobado",
-            rutina: GeneradorPlanBasico.para(user, objetivo: objetivo),
+            rutina: rutina_con_inicio(GeneradorPlanBasico.para(user, objetivo: objetivo)),
             plan_nutricional: {})
+  end
+
+  # Fija mesociclo["inicio"] al lunes de la semana de `fecha` — el calendario
+  # (Rutina::Calendario) arranca cuando el plan se le entrega al miembro.
+  # Una rutina v1 (sin "version") vuelve tal cual: no se le inventa mesociclo.
+  def self.rutina_con_inicio(rutina, fecha = Date.current)
+    return rutina unless rutina.is_a?(Hash) && rutina["version"].to_i >= VERSION_MESOCICLO
+
+    mesociclo = (rutina["mesociclo"] || {}).merge("inicio" => fecha.beginning_of_week.iso8601)
+    rutina.merge("mesociclo" => mesociclo)
   end
 
   # ── Generación con IA ──────────────────────────────────────────────────
@@ -103,54 +120,118 @@ class PlanPersonalizado < ApplicationRecord
     guardar_comidas!(lista)
   end
 
-  # Publicar = darle visibilidad al miembro (la policy show? exige aprobado?)
+  # Publicar = darle visibilidad al miembro (la policy show? exige aprobado?).
+  # En un contrato v2 además (re)arranca el calendario: el mesociclo inicia
+  # el lunes de la semana en que se publica.
   def publicar!(staff)
-    update!(estado: "aprobado", aprobado_por: staff)
+    update!(estado: "aprobado", aprobado_por: staff,
+            rutina: self.class.rutina_con_inicio(rutina))
   end
 
   # ── Rutina (SDD Fase 5.7b) — mismo patrón que las comidas pero 2D (día + ejercicio) ──
-  def dias = Array(rutina["dias"])
+  # Sin `semana:` devuelve la plantilla base (comportamiento histórico); con
+  # `semana: n` devuelve los días EFECTIVOS de esa semana del mesociclo
+  # (Rutina::Resolutor: herencia base + ajuste, o la copia materializada).
+  def dias(semana: nil)
+    return Array(rutina["dias"]) if semana.nil?
 
-  def ejercicios_de(dia_indice) = Array(dias.fetch(dia_indice)["ejercicios"])
+    Rutina::Resolutor.dias(rutina_normalizada, semana)
+  end
 
-  def actualizar_ejercicio!(dia_indice, ej_indice, campos)
-    con_dia!(dia_indice) do |dia|
+  def ejercicios_de(dia_indice, semana: nil) = Array(dias(semana: semana).fetch(dia_indice)["ejercicios"])
+
+  def actualizar_ejercicio!(dia_indice, ej_indice, campos, semana: nil)
+    con_dia!(dia_indice, semana: semana) do |dia|
       lista = Array(dia["ejercicios"])
       lista[ej_indice] = lista.fetch(ej_indice).merge(ejercicio_saneado(campos))
       dia["ejercicios"] = lista
     end
   end
 
-  def agregar_ejercicio!(dia_indice, campos = {})
-    con_dia!(dia_indice) do |dia|
+  def agregar_ejercicio!(dia_indice, campos = {}, semana: nil)
+    con_dia!(dia_indice, semana: semana) do |dia|
       dia["ejercicios"] = Array(dia["ejercicios"]) + [ ejercicio_saneado(campos, defaults: true) ]
     end
   end
 
-  def eliminar_ejercicio!(dia_indice, ej_indice)
-    con_dia!(dia_indice) do |dia|
+  def eliminar_ejercicio!(dia_indice, ej_indice, semana: nil)
+    con_dia!(dia_indice, semana: semana) do |dia|
       lista = Array(dia["ejercicios"])
       lista.delete_at(ej_indice) or raise ActiveRecord::RecordNotFound
       dia["ejercicios"] = lista
     end
   end
 
-  def actualizar_enfoque!(dia_indice, texto)
-    con_dia!(dia_indice) { |dia| dia["enfoque"] = texto.to_s.strip }
+  def actualizar_enfoque!(dia_indice, texto, semana: nil)
+    con_dia!(dia_indice, semana: semana) { |dia| dia["enfoque"] = texto.to_s.strip }
   end
 
   # Sesión completa por músculo (Fase 5.11): reemplaza el enfoque y TODOS los
   # ejercicios del día con la biblioteca de plantillas de ese músculo.
-  def aplicar_sesion!(dia_indice, musculo, plantillas)
+  def aplicar_sesion!(dia_indice, musculo, plantillas, semana: nil)
     raise ActiveRecord::RecordNotFound, "Sin plantillas para #{musculo}" if plantillas.empty?
 
-    con_dia!(dia_indice) do |dia|
+    con_dia!(dia_indice, semana: semana) do |dia|
       dia["enfoque"] = PlantillaEjercicio::NOMBRES_MUSCULO.fetch(musculo, musculo.to_s.capitalize)
       dia["ejercicios"] = plantillas.map do |plantilla|
         { "nombre" => plantilla.nombre, "series" => plantilla.series || 3,
           "repeticiones" => plantilla.repeticiones, "descanso_seg" => plantilla.descanso_seg || 60,
           "ejercicio_id" => plantilla.ejercicio_id }.compact
       end
+    end
+  end
+
+  # ── Mesociclo (contrato rutina v2, Fase 14.7) ──────────────────────────
+  # Toda la lectura pasa por `rutina_normalizada`: un plan v1 se ve como un
+  # mesociclo sintético de 1 semana identidad SIN escribir nada.
+  def semanas = Array(rutina_normalizada["semanas"])
+
+  def semana(numero) = semanas.find { |sem| sem["numero"] == numero }
+
+  def semanas_total
+    total = rutina_normalizada.dig("mesociclo", "semanas_total").to_i
+    total.positive? ? total : [ semanas.size, 1 ].max
+  end
+
+  # Semana del mesociclo en la que estamos hoy, con clamp a 1..semanas_total:
+  # antes del inicio se entrena la semana 1; terminado el ciclo, la última.
+  def semana_actual = Rutina::Calendario.semana_de(self, Date.current).clamp(1, semanas_total)
+
+  def mesociclo_completado? = Rutina::Calendario.semana_de(self, Date.current) > semanas_total
+
+  def semana_materializada?(numero)
+    sem = semana(numero)
+    sem.present? && !sem["dias"].nil?
+  end
+
+  # Congela la semana como copia independiente de la base (copy-on-write):
+  # días resueltos con su ajuste ya horneado, listos para edición estructural.
+  # Los ejercicios conservan TODAS sus claves — uid incluido —: base y semana
+  # comparten uid porque son el MISMO ejercicio (el uid identifica al
+  # ejercicio a través del mesociclo, no a una copia por semana). Idempotente:
+  # una semana ya materializada no se toca. Sobre un plan v1 la primera
+  # mutación semanal persiste la estructura v2 (la lectura jamás escribe).
+  def materializar_semana!(numero)
+    return self if semana_materializada?(numero)
+
+    con_semana!(numero) do |sem, norm|
+      sem["dias"] = Rutina::Resolutor.dias(norm, numero)
+    end
+  end
+
+  # Vuelve la semana a herencia base + ajuste, descartando sus ediciones
+  # estructurales (es la operación inversa y con pérdida deliberada).
+  def desmaterializar_semana!(numero)
+    return self unless semana_materializada?(numero)
+
+    con_semana!(numero) { |sem, _norm| sem["dias"] = nil }
+  end
+
+  # Merge de campos del ajuste (solo CAMPOS_AJUSTE, con clamps) preservando
+  # lo que no venga — mismo patrón de saneo que ejercicio_saneado.
+  def actualizar_ajuste_semana!(numero, campos)
+    con_semana!(numero) do |sem, _norm|
+      sem["ajuste"] = (sem["ajuste"] || {}).merge(ajuste_saneado(campos))
     end
   end
 
@@ -221,12 +302,70 @@ class PlanPersonalizado < ApplicationRecord
       (numero % 1).zero? ? numero.to_i : numero.round(1)
     end
 
-    # Muta el día indicado dentro del array jsonb y persiste la rutina completa.
-    def con_dia!(dia_indice)
-      lista_dias = dias
-      dia = lista_dias.fetch(dia_indice)
-      yield dia
-      update!(rutina: rutina.merge("dias" => lista_dias))
+    # Muta el día indicado dentro del array jsonb y persiste la rutina
+    # completa. Sin `semana:` opera sobre la plantilla base (comportamiento
+    # histórico, idéntico para planes v1). Con `semana: n` el cambio es
+    # estructural PARA ESA SEMANA: la materializa si hace falta y muta su
+    # copia, dejando la base y las demás semanas intactas.
+    def con_dia!(dia_indice, semana: nil)
+      if semana
+        materializar_semana!(semana)
+        con_semana!(semana) do |sem, _norm|
+          yield sem["dias"].fetch(dia_indice)
+        end
+      else
+        lista_dias = dias
+        dia = lista_dias.fetch(dia_indice)
+        yield dia
+        update!(rutina: rutina.merge("dias" => lista_dias))
+      end
+    end
+
+    # Lectura tolerante (Fase 14.7): un plan v1 (sin "version") se ve EN
+    # MEMORIA como un mesociclo de 1 semana identidad; desde la lectura jamás
+    # se escribe. El inicio sintético es el lunes de la semana de creación —
+    # el mismo fallback que usa Rutina::Calendario.
+    def rutina_normalizada
+      return rutina if rutina.is_a?(Hash) && rutina["version"].to_i >= VERSION_MESOCICLO
+
+      base = rutina.is_a?(Hash) ? rutina : {}
+      base.merge(
+        "version" => VERSION_MESOCICLO,
+        "mesociclo" => { "nombre" => "Mesociclo", "semanas_total" => 1,
+                         "inicio" => (created_at || Time.current).to_date.beginning_of_week.iso8601,
+                         "progresion" => "lineal" },
+        "semanas" => [ { "numero" => 1, "etiqueta" => "Semana 1", "descarga" => false,
+                        "ajuste" => Rutina::Resolutor::AJUSTE_IDENTIDAD.dup, "dias" => nil } ]
+      )
+    end
+
+    # Muta la semana indicada dentro de la rutina v2 y persiste. Si el plan
+    # aún es v1, esta primera escritura semanal "asciende" el contrato: se
+    # persiste la normalización (mesociclo sintético de 1 semana identidad,
+    # con inicio ya fijado para que el calendario no dependa de created_at).
+    def con_semana!(numero)
+      norm = rutina_normalizada.deep_dup
+      lista = Array(norm["semanas"])
+      sem = lista.find { |s| s["numero"] == numero } or
+        raise ActiveRecord::RecordNotFound, "Semana #{numero} no existe en el mesociclo"
+
+      yield sem, norm
+      update!(rutina: norm.merge("semanas" => lista))
+      self
+    end
+
+    # Solo claves conocidas del ajuste, con tipos y rangos seguros: deltas
+    # enteros en -2..2 y peso_factor en 0.5..1.5 (dos decimales, sin ".0").
+    def ajuste_saneado(campos)
+      campos.to_h.slice(*CAMPOS_AJUSTE).each_with_object({}) do |(clave, valor), saneado|
+        saneado[clave.to_s] =
+          if clave.to_s == "peso_factor"
+            factor = valor.to_f.clamp(RANGO_PESO_FACTOR).round(2)
+            (factor % 1).zero? ? factor.to_i : factor
+          else
+            valor.to_i.clamp(RANGO_DELTAS)
+          end
+      end
     end
 
     # series/descanso enteros, repeticiones y nombre como texto.
