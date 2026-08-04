@@ -12,17 +12,21 @@ module RenderizaDiaRutina
       usuario = Current.user
       con_seguimiento = @plan.user_id == usuario.id
       registro = fecha = nil
+      anteriores = {}
 
       if con_seguimiento
         fecha = Date.current.beginning_of_week + PlanPersonalizado::DIAS_OFFSET.fetch(dia["dia"].to_s.downcase, 0)
         registro = usuario.registros_entrenamiento.find_by(fecha: fecha)
+        # "La vez pasada" (Fase 14.2): una query para todo el día, jamás en el partial
+        ids = Array(dia["ejercicios"]).map { |ejercicio| ejercicio["ejercicio_id"] }.compact
+        anteriores = DetalleEntrenamiento.ultimos_por_ejercicio(usuario, ids)
       end
 
       render turbo_stream: turbo_stream.replace(
         "dia_editor_#{indice}",
         partial: "planes_personalizados/dia_editor",
         locals: { plan: @plan, dia: dia, indice: indice, editable: true, editando_por_defecto: true,
-                  con_seguimiento: con_seguimiento, registro: registro, fecha: fecha }
+                  con_seguimiento: con_seguimiento, registro: registro, fecha: fecha, anteriores: anteriores }
       )
     end
 end

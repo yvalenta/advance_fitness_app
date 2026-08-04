@@ -4,12 +4,15 @@
 <%# Conserva su id y data-dia-url: GestionDiasController los usa como turbo_ %>
 <%# stream replace target y modal_ejercicios#abrir/#aplicarSesion los usan %>
 <%# para ubicar el día destino. %>
-<%# locals: (plan:, dia:, indice:, con_seguimiento: false, editable: false, editando_por_defecto: false, registro: nil, fecha: nil) %>
+<%# locals: (plan:, dia:, indice:, con_seguimiento: false, editable: false, editando_por_defecto: false, registro: nil, fecha: nil, anteriores: {}) %>
 <% con_seguimiento = local_assigns.fetch(:con_seguimiento, false) %>
 <% editable = local_assigns.fetch(:editable, false) %>
 <% editando_por_defecto = local_assigns.fetch(:editando_por_defecto, false) %>
 <% registro = local_assigns[:registro] %>
 <% fecha = local_assigns[:fecha] %>
+<%# {ejercicio_id => última serie registrada} — lo calcula el controller en
+    UNA query (Fase 14.2); aquí está prohibido consultar (N+1 por fila). %>
+<% anteriores = local_assigns[:anteriores] || {} %>
 <% futuro = con_seguimiento && fecha && fecha > Date.current %>
 <% ejercicios = Array(dia["ejercicios"]) %>
 
@@ -45,17 +48,17 @@
       <% hecho = con_seguimiento && registro&.estado_de(uid: ejercicio["uid"], indice: ei)&.dig("hecho") %>
       <div class="flex flex-col gap-2 rounded-xl border p-3 transition-colors <%= hecho ? "border-success/50 bg-success/5" : "border-base-300 bg-base-100 hover:border-volt-d/40 hover:bg-base-200/50" %>"
            <% if editable %>data-autosave-target="card" data-url="<%= plan_personalizado_dia_ejercicio_path(plan, indice, ei) %>"<% end %>
-           data-indice="<%= ei %>" data-nombre="<%= ejercicio["nombre"] %>" data-uid="<%= ejercicio["uid"] %>">
+           data-indice="<%= ei %>" data-uid="<%= ejercicio["uid"] %>" data-nombre="<%= ejercicio["nombre"] %>">
 
-        <%# ── Lectura: check/número, nombre tappable, cápsula principal y línea secundaria ── %>
+        <%# ── Lectura (Fase 14.2, referencia Gymnax): miniatura, nombre + línea
+            densa única, "la vez pasada" y check circular al extremo derecho ── %>
         <div class="flex items-center gap-3" data-modo-edicion-target="lectura" <%= "hidden" if editando_por_defecto %>>
-          <% if con_seguimiento %>
-            <input type="checkbox" class="checkbox checkbox-success checkbox-sm shrink-0"
-                   <%= "checked" if hecho %> <%= "disabled" if futuro %>
-                   aria-label="¿Hiciste <%= ejercicio["nombre"] %>?"
-                   data-action="change->seguimiento#marcar">
+          <% if ejercicio["ejercicio_id"].present? %>
+            <img src="<%= media_ejercicio_path(ejercicio["ejercicio_id"], tipo: :imagen) %>" loading="lazy"
+                 width="56" height="56" class="size-14 shrink-0 rounded-xl bg-white/90 object-cover"
+                 alt="<%= ejercicio["nombre"] %>">
           <% else %>
-            <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-base-200 font-display text-sm font-bold text-steel-5">
+            <span class="flex size-14 shrink-0 items-center justify-center rounded-xl bg-base-200 font-display text-base font-bold text-steel-5">
               <%= ei + 1 %>
             </span>
           <% end %>
@@ -66,21 +69,20 @@
               <span class="min-w-0"><%= ejercicio["nombre"] %></span>
               <%= render "shared/icono", nombre: :busqueda, clase: "size-3.5 shrink-0 text-steel-3" %>
             </p>
-            <div class="mt-1.5">
-              <span class="inline-flex items-center whitespace-nowrap rounded-full bg-volt/15 px-2 py-0.5 text-xs font-bold text-volt-d">
-                <%= ejercicio["series"] %> × <%= ejercicio["repeticiones"] %>
-              </span>
-            </div>
-            <% if ejercicio["descanso_seg"].to_i.positive? || ejercicio["peso_sugerido_kg"].to_f.positive? %>
-              <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-steel-3">
-                <% if ejercicio["descanso_seg"].to_i.positive? %>
-                  <span class="whitespace-nowrap">Descanso <%= ejercicio["descanso_seg"] %> s</span>
-                <% end %>
-                <% if ejercicio["peso_sugerido_kg"].to_f.positive? %>
-                  <%# Peso inicial sugerido por el análisis del perfil (Fase 6.5) %>
-                  <span class="whitespace-nowrap font-semibold text-pulse">≈ <%= ejercicio["peso_sugerido_kg"] %> kg</span>
-                <% end %>
-              </div>
+            <p class="mt-0.5 text-sm">
+              <span class="whitespace-nowrap font-bold text-volt-d"><%= ejercicio["series"] %> × <%= ejercicio["repeticiones"] %></span>
+              <% if ejercicio["peso_sugerido_kg"].to_f.positive? %>
+                <%# Peso inicial sugerido por el análisis del perfil (Fase 6.5) %>
+                <span class="whitespace-nowrap text-steel-3">· ≈<%= ejercicio["peso_sugerido_kg"] %> kg</span>
+              <% end %>
+              <% if ejercicio["descanso_seg"].to_i.positive? %>
+                <span class="whitespace-nowrap text-steel-3">· <%= ejercicio["descanso_seg"] %> s</span>
+              <% end %>
+            </p>
+            <% if (anterior = anteriores[ejercicio["ejercicio_id"]]) %>
+              <p class="mt-0.5 text-xs text-ocean">
+                Anterior: <%= anterior.peso_kg.present? ? "#{number_with_precision(anterior.peso_kg, precision: 1, strip_insignificant_zeros: true)} kg × #{anterior.repeticiones}" : "#{anterior.repeticiones} reps" %>
+              </p>
             <% end %>
             <% if ejercicio["nota_tecnica"].present? %>
               <p class="mt-1 text-xs leading-snug text-steel-3"><%= ejercicio["nota_tecnica"] %></p>
@@ -93,6 +95,19 @@
                     data-registro-series-url="<%= detalles_entrenamiento_path(fecha: fecha, ejercicio_id: ejercicio["ejercicio_id"], nombre: ejercicio["nombre"], series_plan: ejercicio["series"], repeticiones_plan: ejercicio["repeticiones"]) %>">
               <%= render "shared/icono", nombre: :actividad, clase: "size-3.5" %> Registrar
             </button>
+          <% end %>
+          <% if con_seguimiento %>
+            <%# Check circular a la derecha (patrón has-checked de _plan): el
+                input sigue siendo el mismo checkbox de seguimiento#marcar. %>
+            <label class="group shrink-0 <%= futuro ? "cursor-not-allowed" : "cursor-pointer" %>">
+              <input type="checkbox" class="sr-only"
+                     <%= "checked" if hecho %> <%= "disabled" if futuro %>
+                     aria-label="¿Hiciste <%= ejercicio["nombre"] %>?"
+                     data-action="change->seguimiento#marcar">
+              <span class="flex size-8 items-center justify-center rounded-full border-2 border-base-300 text-transparent transition-colors group-has-[:checked]:border-success group-has-[:checked]:bg-success group-has-[:checked]:text-white <%= "opacity-40" if futuro %>">
+                <%= render "shared/icono", nombre: :check, clase: "size-4" %>
+              </span>
+            </label>
           <% end %>
         </div>
 

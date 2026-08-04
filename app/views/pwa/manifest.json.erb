@@ -1,6 +1,12 @@
 {
+  "id": "/",
   "name": "<%= Negocio.nombre %>",
   "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
     {
       "src": "/icon.png",
       "type": "image/png",
@@ -15,8 +21,26 @@
   ],
   "start_url": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "scope": "/",
   "description": "<%= Negocio.nombre %>: membresías, progreso y planes analizados con IA.",
   "theme_color": "<%= Negocio.theme_color %>",
-  "background_color": "<%= Negocio.theme_color %>"
+  "background_color": "<%= Negocio.theme_color %>",
+  "shortcuts": [
+    {
+      "name": "Mi plan",
+      "url": "/mi_plan",
+      "icons": [ { "src": "/icon-192.png", "sizes": "192x192" } ]
+    },
+    {
+      "name": "Nutrición",
+      "url": "/objetivo",
+      "icons": [ { "src": "/icon-192.png", "sizes": "192x192" } ]
+    },
+    {
+      "name": "Progreso",
+      "url": "/progreso",
+      "icons": [ { "src": "/icon-192.png", "sizes": "192x192" } ]
+    }
+  ]
 }

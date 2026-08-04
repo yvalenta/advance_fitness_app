@@ -2,7 +2,7 @@
 <html lang="es" data-theme="advance">
   <head>
     <title><%= content_for(:title) || Negocio.nombre %></title>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="application-name" content="<%= Negocio.nombre %>">
     <meta name="mobile-web-app-capable" content="yes">
@@ -53,6 +53,9 @@
   </head>
 
   <body class="min-h-screen bg-base-200 font-sans text-base-content">
+    <%# Tab bar inferior (Fase 14.1): solo miembros/staff de tenant — los
+        roles globales (superadmin/comercializador) no la necesitan. %>
+    <% con_tab_bar = Current.user && !Current.user.global? %>
     <% if authenticated? %>
       <%= render "shared/navbar" %>
     <% end %>
@@ -79,9 +82,12 @@
       </div>
     <% end %>
 
-    <main>
+    <%# pb-20: el contenido no queda debajo de la tab bar fija en móvil %>
+    <main class="<%= "pb-20 md:pb-0" if con_tab_bar %>">
       <%= yield %>
     </main>
+
+    <%= render "shared/tab_bar" if con_tab_bar %>
 
     <footer class="flex flex-col items-center gap-0.5 py-4 text-center">
       <span class="font-mono text-[10px] text-base-content/40">v<%= Rails.application.config.x.version %></span>
