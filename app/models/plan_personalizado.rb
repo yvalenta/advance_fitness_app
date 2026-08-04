@@ -243,4 +243,6 @@ class PlanPersonalizado < ApplicationRecord
           end
       end
     end
+
+  include MesocicloPlaceholder # PLACEHOLDER 14.9 (al final: envuelve `dias`) — lo retira la integración (14.7 trae el real)
 end
