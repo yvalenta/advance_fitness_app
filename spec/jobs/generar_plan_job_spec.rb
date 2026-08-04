@@ -77,6 +77,34 @@ RSpec.describe GenerarPlanJob, type: :job do
     expect(perfil_visto[:adherencia][:pct_global]).to eq(100)
   end
 
+  # Etapa 14.10: al regenerar, la adherencia lleva la posición en el
+  # mesociclo del plan vigente y el desglose por semana del ciclo
+  it "la adherencia lleva la posición del ciclo del plan vigente" do
+    Suscripcion.create!(user: @user, plan: planes(:personalizado), estado: "activa", fecha_inicio: Date.current)
+    vigente = PlanPersonalizado.new(
+      user: @user, generado_por: "reglas", estado: "aprobado", plan_nutricional: {},
+      rutina: { "dias" => [ { "dia" => "lunes", "ejercicios" => [] } ],
+                "semanas" => [ { "numero" => 1, "etiqueta" => "Adaptación", "descarga" => false },
+                               { "numero" => 2, "etiqueta" => "Acumulación", "descarga" => false },
+                               { "numero" => 3, "etiqueta" => "Intensificación", "descarga" => false },
+                               { "numero" => 4, "etiqueta" => "Descarga", "descarga" => true } ] })
+    vigente.created_at = 2.weeks.ago # su ciclo va en la semana 3 de 4
+    vigente.save!
+    RegistroEntrenamiento.create!(user: @user, fecha: Date.current.beginning_of_week,
+                                  ejercicios: { "0" => { "hecho" => true, "nombre" => "Press banca" } })
+    plan = plan_generando
+    perfil_visto = nil
+
+    con_ia_stub(->(perfil) { perfil_visto = perfil; resultado }) { GenerarPlanJob.perform_now(plan.id) }
+
+    adherencia = perfil_visto[:adherencia]
+    expect(adherencia[:contexto_ciclo])
+      .to eq("Va en la semana 3 de 4 (Intensificación); la próxima es descarga.")
+    expect(adherencia[:por_semana])
+      .to eq([ { numero: 3, etiqueta: "Intensificación", descarga: false,
+                 hechos: 1, total: 1, porcentaje: 100 } ])
+  end
+
   it "un fallo de la IA deja el plan en fallido con su mensaje" do
     Suscripcion.create!(user: @user, plan: planes(:personalizado), estado: "activa", fecha_inicio: Date.current)
     plan = plan_generando
