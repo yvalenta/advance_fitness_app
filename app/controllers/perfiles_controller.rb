@@ -26,10 +26,11 @@ class PerfilesController < ApplicationController
       @total_entrenamientos = @user.registros_entrenamiento.count
       @perfil_juego = PerfilJuego.find_or_initialize_by(user: @user)
       @records_total = @user.records_personales.vigentes.count
+      @peso_actual = @user.mediciones.recientes.first&.peso_kg
     end
 
-    # rol jamás asignable aquí (SDD §08); tema sí es del usuario (Fase 16)
+    # rol jamás asignable aquí (SDD §08); tema y acento sí son del usuario
     def perfil_params
-      params.expect(user: %i[nombre fecha_nacimiento sexo talla_cm nivel_actividad tema])
+      params.expect(user: %i[nombre fecha_nacimiento sexo talla_cm nivel_actividad tema acento])
     end
 end

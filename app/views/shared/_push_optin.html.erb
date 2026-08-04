@@ -1,0 +1,32 @@
+<%# Opt-in de Web Push del DISPOSITIVO actual (Fase 15; extraído en Fase 17
+    para vivir en la card de racha Y en el hub de cuenta). La zona nace
+    oculta y push_controller la revela ya resuelta — el estado real está en
+    el navegador (permiso + suscripción), no en el servidor. %>
+<% if ENV["VAPID_PUBLIC_KEY"].present? %>
+  <div class="hidden"
+       data-controller="push"
+       data-push-target="zona"
+       data-push-clave-value="<%= ENV["VAPID_PUBLIC_KEY"] %>"
+       data-push-url-value="<%= suscripciones_push_path %>">
+    <p class="hidden text-xs text-steel-5" data-push-target="pista">
+      Instala la app en tu pantalla de inicio (Compartir → Agregar a inicio)
+      para poder recibir recordatorios de racha.
+    </p>
+    <div class="hidden space-y-2" data-push-target="apagado">
+      <p class="text-xs text-steel-5">Te avisamos a las 6pm si tu racha peligra.</p>
+      <button type="button" data-action="push#activar"
+              class="btn btn-sm rounded-xl border-0 bg-volt font-semibold text-steel-9 hover:bg-volt/90">
+        Activar
+      </button>
+    </div>
+    <div class="hidden space-y-2" data-push-target="encendido">
+      <p class="text-xs text-steel-5">
+        <span class="text-volt-d">●</span> Recordatorio activo en este dispositivo
+      </p>
+      <button type="button" data-action="push#desactivar"
+              class="btn btn-ghost btn-sm rounded-xl text-steel-5">
+        Quitar
+      </button>
+    </div>
+  </div>
+<% end %>

@@ -48,7 +48,7 @@
 
   <%# tag.attributes omite el atributo cuando es nil — clave para "sistema":
       un data-theme="" vacío matchearía [data-theme] y rompería el caso. %>
-  <body class="min-h-screen bg-base-200 font-sans text-base-content" <%= tag.attributes("data-theme": tema_data_theme) %>>
+  <body class="min-h-screen bg-base-200 font-sans text-base-content" <%= tag.attributes("data-theme": tema_data_theme, "data-acento": acento_data) %>>
     <%# Tab bar inferior (Fase 14.1): solo miembros/staff de tenant — los
         roles globales (superadmin/comercializador) no la necesitan. %>
     <% con_tab_bar = Current.user && !Current.user.global? %>

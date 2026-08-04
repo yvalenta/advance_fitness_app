@@ -346,6 +346,34 @@
   }
 }
 
+/* ── Acentos personales (Fase 17, Nota 22f) — FUERA de @layer a propósito:
+      el override del tenant es un <style> inline sin capa y las reglas en
+      capa perderían contra él aunque tuvieran más especificidad. Aquí,
+      body[data-acento] (0,1,1) le gana a `:root, [data-theme]` (0,1,0) del
+      tenant: el acento elegido manda en la sesión del miembro. "volt" no
+      emite atributo — sigue la marca. ── */
+body[data-acento="ambar"] {
+  --color-volt: #f6a71b;
+  --color-volt-d: #d97706;
+  --color-volt-l: #fcd34d;
+  --color-primary: #f6a71b;
+  --color-primary-content: #1a1002;
+}
+body[data-theme="advance-claro"][data-acento="ambar"] {
+  --color-volt-d: #b45309; /* texto legible sobre claro */
+}
+
+body[data-acento="azul"] {
+  --color-volt: #60a5fa; /* claro adrede: los chips llevan tinta encima */
+  --color-volt-d: #2563eb;
+  --color-volt-l: #93c5fd;
+  --color-primary: #60a5fa;
+  --color-primary-content: #0b1220;
+}
+body[data-theme="advance-claro"][data-acento="azul"] {
+  --color-volt-d: #1d4ed8;
+}
+
 /* ── Movimiento reducido (Fase 16.5): apagar las animaciones FIJANDO los
       estados finales — fade-up, grafica-area y grafica-punto parten de
       opacity 0 y apagarlas a secas dejaría contenido invisible. ── */

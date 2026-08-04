@@ -18,6 +18,8 @@ Rails.application.routes.draw do
 
   # Nutrición y objetivos (SDD §09, Fase 4)
   resource :perfil, only: %i[ edit update ], controller: "perfiles"
+  # Credenciales de la cuenta (Fase 17): correo/contraseña con password_challenge
+  resource :cuenta, only: :update, controller: "cuentas"
   resource :objetivo, only: %i[ show new create update ], controller: "objetivos"
   resources :registros_calorias, only: :create
 

@@ -56,6 +56,13 @@ module ApplicationHelper
     end
   end
 
+  # data-acento del body (Fase 17, Nota 22f): nil con "volt" (el default de
+  # la marca/tenant) para no emitir atributo ni pelear especificidades.
+  def acento_data
+    acento = Current.user&.acento
+    acento unless acento.blank? || acento == "volt"
+  end
+
   # <meta theme-color> acompañando al tema activo (Fase 16): oscuro usa el
   # color del tenant (Negocio.theme_color), claro el hueso del fondo, y
   # sistema emite AMBAS metas con media query para que el navegador elija.
