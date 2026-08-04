@@ -48,8 +48,13 @@ class RegistroEntrenamiento < ApplicationRecord
   # ¿Ya hay algún ejercicio del día marcado como hecho? (Fase 14.12: el
   # primer "hecho" del día dispara los puntos del motor de juego). La clave
   # "novedad" guarda un String y se descarta sola con el is_a?(Hash).
+  # Bi-formato (integración 14.6 + 14.12): en v2 los estados viven en "items";
+  # en v1 son las claves numéricas del nivel superior. Recorrer solo el nivel
+  # superior dejaría el v2 siempre en falso y el motor de juego encolaría un
+  # job por CADA ejercicio marcado, no uno por día.
   def algun_ejercicio_hecho?
-    ejercicios_hash.any? { |_indice, estado| estado.is_a?(Hash) && estado["hecho"] }
+    estados = ejercicios_hash.key?("version") ? items_hash : ejercicios_hash
+    estados.any? { |_clave, estado| estado.is_a?(Hash) && estado["hecho"] }
   end
 
   # Novedad del día para TODA la rutina (Fase 5.11): lesión, cambio de sede…
