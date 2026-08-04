@@ -38,7 +38,7 @@
                 stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
           <% puntos.each_with_index do |(x, y), indice| %>
             <circle class="grafica-punto" style="animation-delay: <%= 500 + (indice * 90) %>ms"
-                    cx="<%= x %>" cy="<%= y %>" r="5" fill="var(--color-ocean)" stroke="white" stroke-width="2"
+                    cx="<%= x %>" cy="<%= y %>" r="5" fill="var(--color-ocean)" stroke="var(--color-base-100)" stroke-width="2"
                     data-indice="<%= indice %>"
                     data-etiqueta="<%= valores[indice] %> kg · <%= l progreso.pesos[indice].first %> — ver detalle"/>
           <% end %>
@@ -46,7 +46,7 @@
           <text x="<%= GraficaSvg::MARGEN %>" y="228" class="fill-steel-3" font-size="10"><%= l progreso.pesos.first.first %></text>
           <text x="<%= 560 - GraficaSvg::MARGEN %>" y="228" text-anchor="end" class="fill-steel-3" font-size="10"><%= l progreso.pesos.last.first %></text>
         </svg>
-        <div class="pointer-events-none absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-steel px-2.5 py-1 text-xs font-semibold text-volt shadow-lg"
+        <div class="pointer-events-none absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-steel px-2.5 py-1 text-xs font-semibold text-volt-d shadow-lg"
              hidden data-grafica-target="tooltip"></div>
 
         <%# Detalle por punto: la medición o el objetivo que originó ese peso %>

@@ -8,11 +8,11 @@
   <div class="card-body gap-1.5">
     <div class="flex items-start justify-between">
       <h2 class="eyebrow text-steel-3">Racha</h2>
-      <span class="flex size-9 items-center justify-center rounded-xl <%= encendida ? "bg-volt/15 text-volt" : "bg-base-200 text-steel-3" %>">
+      <span class="flex size-9 items-center justify-center rounded-xl <%= encendida ? "bg-volt/15 text-volt-d" : "bg-base-200 text-steel-3" %>">
         <%= render "shared/icono", nombre: :fuego, clase: "size-4.5" %>
       </span>
     </div>
-    <span class="font-display text-4xl font-bold tracking-tight <%= "text-volt" if encendida %>">
+    <span class="font-display text-4xl font-bold tracking-tight <%= "text-volt-d" if encendida %>">
       <%= perfil.racha_actual.to_i %><span class="ml-1 text-base font-semibold text-steel-5">días</span>
     </span>
     <p class="text-sm text-steel-5">
@@ -46,10 +46,10 @@
         </div>
         <div class="hidden space-y-2" data-push-target="encendido">
           <p class="text-xs text-steel-5">
-            <span class="text-volt">●</span> Recordatorio activo en este dispositivo
+            <span class="text-volt-d">●</span> Recordatorio activo en este dispositivo
           </p>
           <button type="button" data-action="push#desactivar"
-                  class="btn btn-ghost btn-sm rounded-xl text-steel-4">
+                  class="btn btn-ghost btn-sm rounded-xl text-steel-5">
             Quitar
           </button>
         </div>

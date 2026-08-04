@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_05_100001) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_05_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -462,6 +462,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_100001) do
     t.string "sexo"
     t.string "somatotipo"
     t.decimal "talla_cm", precision: 5, scale: 1
+    t.string "tema", default: "oscuro", null: false
     t.bigint "tenant_id"
     t.datetime "updated_at", null: false
     t.boolean "vip", default: false, null: false

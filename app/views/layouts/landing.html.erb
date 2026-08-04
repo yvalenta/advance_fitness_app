@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="advance">
+<%# Las landings de campaña son de marca: SIEMPRE tema oscuro (Nota 21),
+    en el body por la misma razón Turbo que el layout principal. %>
+<html lang="es">
   <head>
     <title><%= content_for(:title).presence || (@campana&.nombre || "Únete") %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta name="theme-color" content="#0b1220">
+    <meta name="theme-color" content="<%= Negocio.theme_color %>">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
     <%= turbo_refreshes_with method: :morph, scroll: :preserve %>
@@ -15,20 +17,9 @@
     <%= stylesheet_link_tag "application" %>
     <%= javascript_importmap_tags %>
 
-    <%# Paleta del tenant si existe %>
-    <% if Current.tenant&.paleta_colores.is_a?(Hash) && Current.tenant.paleta_colores.any? %>
-      <style>
-        :root {
-          <% Current.tenant.paleta_colores.each do |token, valor| %>
-            <% if valor.to_s.match?(/\A#[0-9a-fA-F]{3,8}\z/) && %w[volt primary accent].include?(token.to_s) %>
-              --color-<%= token %>: <%= valor %>;
-            <% end %>
-          <% end %>
-        }
-      </style>
-    <% end %>
+    <%= render "shared/paleta_tenant" %>
   </head>
-  <body class="min-h-screen bg-base-100 font-sans antialiased">
+  <body class="min-h-screen bg-base-100 font-sans antialiased" data-theme="advance">
     <%= render "shared/toast" if defined?(flash) %>
     <%= yield %>
   </body>

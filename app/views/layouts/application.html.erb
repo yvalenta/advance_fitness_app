@@ -1,12 +1,14 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="advance">
+<%# data-theme vive en el BODY (Nota 21b): Turbo (replace y morph) solo
+    actualiza el body — en <html> cambiar el tema exigiría F5. %>
+<html lang="es">
   <head>
     <title><%= content_for(:title) || Negocio.nombre %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="application-name" content="<%= Negocio.nombre %>">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="<%= Negocio.theme_color %>">
+    <%= metas_theme_color %>
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
     <%# Turbo 8 morphing (Fase de Calidad): los refreshes actualizan el DOM
@@ -35,24 +37,12 @@
     <%# Paleta del tenant (SDD §16.6): overrides de los tokens CSS del tema
         DaisyUI/Tailwind. Solo se aceptan colores hex (#rgb, #rgba, #rrggbb,
         #rrggbbaa) para evitar CSS injection desde el jsonb. %>
-    <% if Current.tenant&.paleta_colores.is_a?(Hash) && Current.tenant.paleta_colores.any? %>
-      <style>
-        :root {
-          <% Current.tenant.paleta_colores.each do |token, valor| %>
-            <% if valor.to_s.match?(/\A#[0-9a-fA-F]{3,8}\z/) && %w[volt primary accent].include?(token.to_s) %>
-              --color-<%= token %>: <%= valor %>;
-              <% if token.to_s == "volt" %>
-              --color-volt-d: color-mix(in srgb, <%= valor %> 70%, #000000);
-              --color-volt-l: color-mix(in srgb, <%= valor %> 60%, #ffffff);
-              <% end %>
-            <% end %>
-          <% end %>
-        }
-      </style>
-    <% end %>
+    <%= render "shared/paleta_tenant" %>
   </head>
 
-  <body class="min-h-screen bg-base-200 font-sans text-base-content">
+  <%# tag.attributes omite el atributo cuando es nil — clave para "sistema":
+      un data-theme="" vacío matchearía [data-theme] y rompería el caso. %>
+  <body class="min-h-screen bg-base-200 font-sans text-base-content" <%= tag.attributes("data-theme": tema_data_theme) %>>
     <%# Tab bar inferior (Fase 14.1): solo miembros/staff de tenant — los
         roles globales (superadmin/comercializador) no la necesitan. %>
     <% con_tab_bar = Current.user && !Current.user.global? %>

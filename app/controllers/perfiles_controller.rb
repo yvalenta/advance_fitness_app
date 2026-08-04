@@ -18,8 +18,8 @@ class PerfilesController < ApplicationController
 
   private
 
-    # rol jamás asignable aquí (SDD §08)
+    # rol jamás asignable aquí (SDD §08); tema sí es del usuario (Fase 16)
     def perfil_params
-      params.expect(user: %i[nombre fecha_nacimiento sexo talla_cm nivel_actividad])
+      params.expect(user: %i[nombre fecha_nacimiento sexo talla_cm nivel_actividad tema])
     end
 end

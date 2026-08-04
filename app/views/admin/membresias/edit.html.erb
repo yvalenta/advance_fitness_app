@@ -5,7 +5,7 @@
   <div class="relative mx-auto flex w-full max-w-2xl items-center gap-4 px-4 pb-14 pt-10">
     <%= render "shared/avatar", user: @membresia.user, clase: "size-14 text-lg" %>
     <div>
-      <p class="eyebrow mb-1 text-volt">Membresía</p>
+      <p class="eyebrow mb-1 text-volt-d">Membresía</p>
       <h1 class="font-display text-2xl font-bold text-white sm:text-3xl"><%= nombre_visible(@membresia.user) %></h1>
       <p class="mt-1.5 flex flex-wrap items-center gap-2 text-sm text-white/60">
         <%= badge_estado(@membresia.estado) %>

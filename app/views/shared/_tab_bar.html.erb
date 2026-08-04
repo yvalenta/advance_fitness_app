@@ -16,7 +16,7 @@
   <div class="grid grid-cols-5">
     <% destinos.each do |texto, ruta, icono| %>
       <% activo = current_page?(ruta) %>
-      <%= link_to ruta, class: "flex min-h-14 flex-col items-center justify-center gap-0.5 py-1.5 transition-colors #{activo ? "text-volt" : "text-steel-3"}",
+      <%= link_to ruta, class: "flex min-h-14 flex-col items-center justify-center gap-0.5 py-1.5 transition-colors #{activo ? "text-volt-d" : "text-steel-3"}",
             "aria-current": (activo ? "page" : nil) do %>
         <%= render "shared/icono", nombre: icono, clase: "size-5" %>
         <span class="text-[10px] font-semibold"><%= texto %></span>

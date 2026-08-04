@@ -51,6 +51,27 @@
           Tu edad se calcula a partir de la fecha de nacimiento; no se almacena.
         </p>
 
+        <%# Apariencia (Fase 16): radio-cards del tema. El servidor renderiza
+            el data-theme del body — al guardar, el redirect ya vuelve pintado
+            con el tema elegido, sin JS. %>
+        <fieldset class="border-t border-base-300 pt-4">
+          <legend class="sr-only">Apariencia</legend>
+          <span class="label-text mb-2 block text-xs font-semibold">Apariencia</span>
+          <div class="grid grid-cols-3 gap-2">
+            <% [ [ "oscuro", "Oscuro", "Volt sobre tinta" ],
+                 [ "claro", "Claro", "Tinta sobre hueso" ],
+                 [ "sistema", "Sistema", "Sigue a tu equipo" ] ].each do |valor, nombre, detalle| %>
+              <label class="flex cursor-pointer flex-col gap-0.5 rounded-xl border border-base-300 p-3 transition-colors has-checked:border-volt has-checked:bg-volt/10">
+                <span class="flex items-center gap-2">
+                  <%= form.radio_button :tema, valor, class: "radio radio-xs radio-primary" %>
+                  <span class="text-sm font-semibold"><%= nombre %></span>
+                </span>
+                <span class="text-xs text-steel-5"><%= detalle %></span>
+              </label>
+            <% end %>
+          </div>
+        </fieldset>
+
         <div class="flex gap-2 pt-2">
           <%= form.submit "Guardar perfil", class: "btn btn-primary font-bold" %>
           <%= link_to "Volver", root_path, class: "btn btn-ghost" %>

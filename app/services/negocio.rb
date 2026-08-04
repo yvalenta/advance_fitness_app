@@ -24,6 +24,10 @@ module Negocio
   # — un `variant` para cuadrar el logo del tenant a 512×512 requiere ruby-vips
   # (no disponible en producción, ver commit 75628c9).
   DEFAULT_THEME_COLOR = "#0b1220".freeze
+  # Barra del navegador cuando el tema activo es el claro (Fase 16): el hueso
+  # del fondo de página, no el primary del tenant (que asume superficie tinta).
+  THEME_COLOR_CLARO = "#f1efe8".freeze
+
   def self.theme_color
     paleta = Current.tenant&.paleta_colores
     valor = paleta.is_a?(Hash) ? paleta["primary"].to_s : ""
