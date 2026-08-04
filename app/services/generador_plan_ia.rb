@@ -18,11 +18,17 @@ module GeneradorPlanIa
     JSON válido, sin texto adicional ni fences de código, con esta estructura:
     {
       "rutina": {
+        "version": 2,
+        "mesociclo": { "nombre": "...", "semanas_total": 4, "inicio": null, "progresion": "lineal" },
         "dias": [
           { "dia": "lunes", "enfoque": "...", "ejercicios": [
             { "ejercicio_id": 0, "nombre": "...", "series": 4, "repeticiones": "8-10",
               "descanso_seg": 90, "peso_sugerido_kg": 20, "nota_tecnica": "..." }
           ] }
+        ],
+        "semanas": [
+          { "numero": 1, "etiqueta": "Adaptación", "descarga": false,
+            "ajuste": { "series_delta": 0, "peso_factor": 1.0, "reps_delta": 0 } }
         ]
       },
       "plan_nutricional": {
@@ -37,6 +43,14 @@ module GeneradorPlanIa
     entrenamiento de FUERZA con pesos; NO incluyas días dedicados a cardio
     ni ejercicios de cardio como enfoque principal de un día. Las kcal de las
     comidas deben sumar aproximadamente el objetivo diario indicado.
+    La rutina es un MESOCICLO de 4 semanas: "dias" es la semana base y va UNA
+    sola vez; "semanas" trae EXACTAMENTE 4 entradas con SOLO los metadatos
+    numero, etiqueta, descarga y ajuste. JAMÁS materialices ni repitas los
+    días dentro de una semana: la progresión se expresa únicamente con
+    "ajuste" (series_delta y reps_delta enteros entre -2 y 2, peso_factor
+    entre 0.5 y 1.5) y debe ser coherente con el nivel, la meta y el perfil
+    del miembro. La última semana SIEMPRE es de descarga: "descarga": true y
+    "peso_factor" máximo 0.9.
     Si el prompt incluye un CATÁLOGO PERMITIDO, elige los ejercicios
     EXCLUSIVAMENTE de esa lista, copiando su ejercicio_id y su nombre EXACTOS;
     no inventes ejercicios ni ids. peso_sugerido_kg (número, opcional) es un
@@ -120,6 +134,19 @@ module GeneradorPlanIa
     raise ArgumentError, "Respuesta de IA sin rutina o plan nutricional" unless
       datos.is_a?(Hash) && datos["rutina"].present? && datos["plan_nutricional"].present?
 
-    { rutina: datos["rutina"], plan_nutricional: datos["plan_nutricional"] }
+    { rutina: normalizar_rutina(datos["rutina"]), plan_nutricional: datos["plan_nutricional"] }
+  end
+
+  # Mesociclo v2 (Fase 14.8): si el modelo respondió la forma v1 (solo la
+  # semana base en "dias"), se sintetiza la progresión lineal por defecto en
+  # vez de tumbar el plan — mismo espíritu del validador de catálogo.
+  def self.normalizar_rutina(rutina)
+    return rutina unless rutina.is_a?(Hash) && rutina["dias"].present?
+
+    defecto = Ejercicios::ValidadorRutina.progresion_defecto
+    rutina["mesociclo"] = defecto["mesociclo"] if rutina["mesociclo"].blank?
+    rutina["semanas"] = defecto["semanas"] if rutina["semanas"].blank?
+    rutina["version"] ||= 2
+    rutina
   end
 end
