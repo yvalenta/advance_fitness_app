@@ -3,7 +3,7 @@
 <%# locals: (top:, mi_perfil:) %>
 <% columnas = [
      { perfil: top[1], puesto: 2, pedestal: "h-16 bg-steel-7",      cifra: "text-steel-1",  numero: "text-white/70" },
-     { perfil: top[0], puesto: 1, pedestal: "h-24 bg-volt",         cifra: "text-volt",     numero: "text-steel-9" },
+     { perfil: top[0], puesto: 1, pedestal: "h-24 bg-volt",         cifra: "text-volt-d",     numero: "text-steel-9" },
      { perfil: top[2], puesto: 3, pedestal: "h-12 bg-amber-700/80", cifra: "text-amber-500", numero: "text-white/70" }
    ] %>
 <div class="grid grid-cols-3 items-end gap-3">
@@ -13,7 +13,7 @@
       <div class="flex min-w-0 flex-col items-center gap-1.5">
         <%= render "shared/avatar", user: perfil.user,
               clase: columna[:puesto] == 1 ? "size-16 text-xl" : "size-12 text-base" %>
-        <p class="max-w-full truncate text-sm font-semibold <%= "text-volt" if propia %>">
+        <p class="max-w-full truncate text-sm font-semibold <%= "text-volt-d" if propia %>">
           <%= nombre_en_ranking(perfil) %><%= " (tú)" if propia %>
         </p>
         <p class="font-display text-lg font-bold leading-none <%= columna[:cifra] %>">

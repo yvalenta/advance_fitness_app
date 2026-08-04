@@ -1,0 +1,13 @@
+<%# Contenido del frame perezoso de una gráfica (Fase 16.6). target="_top"
+    en el frame de la página: los enlaces de autoservicio dentro de las
+    gráficas navegan la página completa, no el frame. %>
+<%= turbo_frame_tag "grafica_#{@tipo}" do %>
+  <% case @tipo %>
+  <% when "peso" %>
+    <%= render "shared/grafica_peso", progreso: @progreso, editable: true %>
+  <% when "calorias" %>
+    <%= render "shared/grafica_calorias", progreso: @progreso, editable: true %>
+  <% when "asistencia" %>
+    <%= render "shared/grafica_asistencia", progreso: @progreso %>
+  <% end %>
+<% end %>

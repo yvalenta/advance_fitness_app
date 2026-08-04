@@ -1,13 +1,42 @@
 @import "tailwindcss";
 
+/* ── Tipografía self-hosted (Fase 16.5, SDD §06): fuentes VARIABLES — un
+      woff2 por familia cubre todos los pesos (51KB total) y elimina el
+      render-blocking de Google Fonts. Licencia SIL OFL 1.1 (ver
+      app/assets/fonts/LICENCIAS.md); propshaft reescribe las url(). ── */
+@font-face {
+  font-family: "Geist";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("geist-variable.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("space-grotesk-variable.woff2") format("woff2");
+}
+
 @source not "./daisyui{,*}.mjs";
 
 @plugin "./daisyui.mjs";
 
-/* ── Tema "advance" — dark tech (SDD §06 rev. Fase 13.3) ── */
+/* ══ Sistema de DOS temas (SDD §06 rev. Fase 16, Nota 21) ══════════════════
+   - `@theme` (abajo) solo REGISTRA las utilidades y da el fallback oscuro.
+   - Los VALORES por tema viven en los bloques @plugin: cada uno define los
+     tokens daisyUI Y los tokens de marca (steel-N, volt-d…) — el plugin los
+     pasa al selector del tema ([data-theme="…"], que vive en el BODY).
+   - "advance-claro" es el default daisyUI y "advance" lleva prefersdark:
+     sin data-theme (preferencia "sistema"), el SO decide vía media query.
+     Con data-theme explícito en el body, gana el elegido. Cero JS. */
+
+/* ── Tema "advance" — dark tech (el default del PRODUCTO: el body siempre
+      lo lleva salvo preferencia claro/sistema del usuario) ── */
 @plugin "./daisyui-theme.mjs" {
   name: "advance";
-  default: true;
+  prefersdark: true;
   color-scheme: dark;
 
   --color-base-100: #111827; /* card / modal                      */
@@ -31,6 +60,20 @@
   --color-error: #ef4444;
   --color-error-content: #ffffff;
 
+  /* Tokens de marca en dark. steel-5 subió de #475569 (≈1.8:1 sobre card,
+     el "no se percibe" reportado con capturas) a un gris legible AA. */
+  --color-volt: #b4f000;
+  --color-volt-d: #8fbf00;
+  --color-volt-l: #d3ff4d;
+  --color-pulse: #ef4444;
+  --color-ocean: #0ea5e9;
+  --color-steel: #1e293b;
+  --color-steel-9: #0b1220;
+  --color-steel-7: #334155;
+  --color-steel-5: #7c8ba1;
+  --color-steel-3: #94a3b8;
+  --color-steel-1: #cbd5e1;
+
   --radius-selector: 0.5rem;
   --radius-field: 0.625rem;
   --radius-box: 1rem;
@@ -38,7 +81,62 @@
   --noise: 0;
 }
 
-/* ── Utilidades de marca (bg-volt, text-steel-3, font-display…) ── */
+/* ── Tema "advance-claro" — hueso + tinta + volt (Fase 16, referencia
+      Pulse). El MISMO volt de marca; la escala steel se espeja a neutros
+      cálidos sobre claro. Las superficies .gradient-hero siguen en tinta
+      en ambos temas (regla de identidad, §06). ── */
+@plugin "./daisyui-theme.mjs" {
+  name: "advance-claro";
+  default: true;
+  color-scheme: light;
+
+  --color-base-100: #fbfaf6; /* card / modal — blanco cálido      */
+  --color-base-200: #efede4; /* page background — crema Pulse     */
+  --color-base-300: #e1ddd1; /* bordes, divisores                 */
+  --color-base-content: #1c1917; /* texto base — tinta            */
+  --color-primary: #b4f000;
+  --color-primary-content: #0b1220;
+  --color-secondary: #e9e6db; /* tiles crema (2º nivel de superficie) */
+  --color-secondary-content: #1c1917;
+  --color-accent: #0284c7; /* ocean con contraste AA sobre claro */
+  --color-accent-content: #ffffff;
+  --color-neutral: #14120f; /* componentes tinta de la referencia */
+  --color-neutral-content: #efede4;
+  --color-info: #0284c7;
+  --color-info-content: #ffffff;
+  --color-success: #6b8f00;
+  --color-success-content: #ffffff;
+  --color-warning: #d97706;
+  --color-warning-content: #1c1917;
+  --color-error: #dc2626;
+  --color-error-content: #ffffff;
+
+  /* Tokens de marca espejados: 1 = énfasis … 9 = tinta (steel-9 y steel se
+     mantienen — texto sobre volt y tooltips-chip son tinta en ambos temas).
+     volt-d baja a un verde legible como TEXTO sobre claro. */
+  --color-volt: #b4f000;
+  --color-volt-d: #6b8f00;
+  --color-volt-l: #d3ff4d;
+  --color-pulse: #dc2626;
+  --color-ocean: #0284c7;
+  --color-steel: #1e293b;
+  --color-steel-9: #0b1220;
+  --color-steel-7: #a8a29e;
+  --color-steel-5: #79716b;
+  --color-steel-3: #57534e;
+  --color-steel-1: #292524;
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.625rem;
+  --radius-box: 1rem;
+  --depth: 1;
+  --noise: 0;
+}
+
+/* ── Registro de utilidades de marca (bg-volt, text-steel-3, font-display…).
+      Los valores de color son SOLO fallback (= dark): los reales por tema
+      viven arriba, en los bloques @plugin. No agregar colores nuevos aquí
+      sin definirlos también en ambos temas. ── */
 @theme {
   --color-volt: #b4f000;
   --color-volt-d: #8fbf00;
@@ -48,7 +146,7 @@
   --color-steel: #1e293b;
   --color-steel-9: #0b1220;
   --color-steel-7: #334155;
-  --color-steel-5: #475569;
+  --color-steel-5: #7c8ba1;
   --color-steel-3: #94a3b8;
   --color-steel-1: #cbd5e1;
 
@@ -73,6 +171,17 @@
   body {
     -webkit-font-smoothing: antialiased;
   }
+
+  /* El tema vive en el body; los scrollbars del viewport los pinta el html.
+     Sin esto, tema claro explícito + SO oscuro deja scrollbars oscuras.
+     :root:has(...) — especificidad (0,2,1): debe ganarle al media query
+     prefersdark de daisyUI (:root:not([data-theme]) = (0,2,0)). */
+  :root:has(body[data-theme="advance-claro"]) {
+    color-scheme: light;
+  }
+  :root:has(body[data-theme="advance"]) {
+    color-scheme: dark;
+  }
 }
 
 @layer components {
@@ -82,19 +191,32 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 
-  /* Fondo hero oscuro de marca (navbar, cabeceras, panel de auth) */
+  /* Fondo hero de marca (navbar, cabeceras, panel de auth): TINTA en ambos
+     temas — regla de identidad §06. Vars por si algún día se quiere variar. */
   .gradient-hero {
-    background: linear-gradient(160deg, #0b1220 0%, #1e293b 55%, #26364c 100%);
+    background: linear-gradient(
+      160deg,
+      var(--hero-a, #0b1220) 0%,
+      var(--hero-b, #1e293b) 55%,
+      var(--hero-c, #26364c) 100%
+    );
   }
 
-  /* Trama de puntos sutil sobre superficies oscuras */
+  /* Trama de puntos sutil — vive sobre el hero (oscuro en ambos temas) */
   .trama-puntos {
     background-image: radial-gradient(rgb(148 163 184 / 0.18) 1px, transparent 1px);
     background-size: 22px 22px;
   }
 
+  /* Con var(): un tenant con volt propio tiñe también los gradientes — el
+     bug visible era la dona VERDE en el tenant coral (Nota 21e). */
   .gradient-volt {
-    background: linear-gradient(135deg, #8fbf00 0%, #b4f000 55%, #d3ff4d 100%);
+    background: linear-gradient(
+      135deg,
+      var(--color-volt-d) 0%,
+      var(--color-volt) 55%,
+      var(--color-volt-l) 100%
+    );
   }
 
   /* Barra corta decorativa bajo títulos de sección */
@@ -102,7 +224,7 @@
     width: 56px;
     height: 3px;
     border-radius: 999px;
-    background: linear-gradient(90deg, #8fbf00, #d3ff4d);
+    background: linear-gradient(90deg, var(--color-volt-d), var(--color-volt-l));
   }
 
   .eyebrow {
@@ -130,10 +252,10 @@
   @keyframes pulse-volt {
     0%,
     100% {
-      box-shadow: 0 0 0 0 rgb(180 240 0 / 0.45);
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-volt) 45%, transparent);
     }
     50% {
-      box-shadow: 0 0 0 10px rgb(180 240 0 / 0);
+      box-shadow: 0 0 0 10px transparent;
     }
   }
 
@@ -221,5 +343,64 @@
     to {
       opacity: 1;
     }
+  }
+}
+
+/* ── Acentos personales (Fase 17, Nota 22f) — FUERA de @layer a propósito:
+      el override del tenant es un <style> inline sin capa y las reglas en
+      capa perderían contra él aunque tuvieran más especificidad. Aquí,
+      body[data-acento] (0,1,1) le gana a `:root, [data-theme]` (0,1,0) del
+      tenant: el acento elegido manda en la sesión del miembro. "volt" no
+      emite atributo — sigue la marca. ── */
+body[data-acento="ambar"] {
+  --color-volt: #f6a71b;
+  --color-volt-d: #d97706;
+  --color-volt-l: #fcd34d;
+  --color-primary: #f6a71b;
+  --color-primary-content: #1a1002;
+}
+body[data-theme="advance-claro"][data-acento="ambar"] {
+  --color-volt-d: #b45309; /* texto legible sobre claro */
+}
+
+body[data-acento="azul"] {
+  --color-volt: #60a5fa; /* claro adrede: los chips llevan tinta encima */
+  --color-volt-d: #2563eb;
+  --color-volt-l: #93c5fd;
+  --color-primary: #60a5fa;
+  --color-primary-content: #0b1220;
+}
+body[data-theme="advance-claro"][data-acento="azul"] {
+  --color-volt-d: #1d4ed8;
+}
+
+/* ── Movimiento reducido (Fase 16.5): apagar las animaciones FIJANDO los
+      estados finales — fade-up, grafica-area y grafica-punto parten de
+      opacity 0 y apagarlas a secas dejaría contenido invisible. ── */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .pop-celebracion,
+  .grafica-barra,
+  .grafica-linea,
+  .grafica-area,
+  .grafica-punto {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    stroke-dashoffset: 0;
+  }
+
+  .pulse-volt {
+    animation: none;
+  }
+
+  .card-hover,
+  .grafica-punto,
+  .grafica-barra {
+    transition: none;
+  }
+
+  .card-hover:hover {
+    transform: none;
   }
 }

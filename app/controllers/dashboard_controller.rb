@@ -15,9 +15,31 @@ class DashboardController < ApplicationController
     @dia_hoy = dia_de_hoy
     @entrenamiento_hoy = Current.user.registros_entrenamiento.find_by(fecha: Date.current)
     @hechos_hoy = @entrenamiento_hoy&.conteo_hechos.to_i
+    @dias_semana = dias_semana
   end
 
   private
+    # Tira de la semana (Fase 16.4, referencia Pulse): 7 entradas L–D con si
+    # el día contó para la racha — misma regla que Juego::Racha: check-in O
+    # al menos un ejercicio marcado. Dos queries FIJAS (el spec de queries
+    # constantes las cuenta), agregación en Ruby.
+    def dias_semana
+      inicio = Date.current.beginning_of_week
+      con_acceso = Current.user.accesos
+                          .where(fecha_hora: inicio.beginning_of_day..)
+                          .pluck(:fecha_hora).map(&:to_date).to_set
+      con_marca = Current.user.registros_entrenamiento
+                         .where(fecha: inicio..)
+                         .select { |registro| registro.conteo_hechos.positive? }
+                         .map(&:fecha).to_set
+
+      (inicio..inicio + 6).map do |fecha|
+        { fecha: fecha,
+          cumplido: con_acceso.include?(fecha) || con_marca.include?(fecha),
+          futuro: fecha > Date.current }
+      end
+    end
+
     # Día de la rutina que corresponde a hoy, por nombre del día de la semana
     # (DIAS_OFFSET, Fase 5.10). La rutina v2 (Fase 14.6) usa el mismo array
     # "dias" que la v1, así que no hay bifurcación. Domingo (o cualquier día

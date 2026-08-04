@@ -47,6 +47,10 @@ env:
     - GOOGLE_CLIENT_SECRET
     - GEMINI_API_KEY
     - IA_PROVEEDOR
+    # Web Push (Fase 15): par VAPID propio de producción, generado con
+    # WebPush.generate_key y agregado a .kamal/secrets (nunca el par de dev).
+    - VAPID_PUBLIC_KEY
+    - VAPID_PRIVATE_KEY
   clear:
     # Host real de la app: usado por default_url_options (links de correo) y
     # config.hosts (protección DNS rebinding). Cambia por tenant en despliegues

@@ -27,7 +27,7 @@
         <% end %>
       </p>
       <% if ejercicio["nota_tecnica"].present? %>
-        <p class="mt-2 rounded-xl bg-volt/10 px-3 py-2 text-sm leading-snug text-steel-7"><%= ejercicio["nota_tecnica"] %></p>
+        <p class="mt-2 rounded-xl bg-volt/10 px-3 py-2 text-sm leading-snug text-base-content/80"><%= ejercicio["nota_tecnica"] %></p>
       <% end %>
     </div>
 
@@ -42,7 +42,10 @@
       <% end %>
     </div>
 
-    <button type="button" class="btn btn-primary w-full font-bold" hidden
+    <%# Tinta, no volt (Fase 17 — reporte del usuario): con las series ya en
+        volt, un cuarto botón volt era una pared sin jerarquía. La tinta es
+        la firma de marca y separa "avanzar" de "marcar". %>
+    <button type="button" class="btn w-full rounded-2xl border border-white/10 bg-neutral font-bold text-neutral-content hover:bg-neutral/90" hidden
             data-sesion-target="siguiente" data-action="sesion#siguiente">
       <%= indice == total - 1 ? "Ver resumen" : "Siguiente ejercicio" %>
       <%= render "shared/icono", nombre: :flecha_derecha, clase: "size-4" %>

@@ -24,4 +24,53 @@ RSpec.describe "Perfiles", type: :request do
     expect(users(:one).reload.rol).to eq("miembro")
     expect(users(:one).reload.nombre).to eq("Uno Actualizado")
   end
+
+  # Fase 16.4: cabecera con stats — y mirar el perfil NO siembra filas del
+  # motor de juego (find_or_initialize, patrón dashboard).
+  it "muestra los stats del miembro sin crear PerfilJuego" do
+    users(:one).registros_entrenamiento.create!(
+      fecha: Date.current, ejercicios: { "version" => 2, "items" => { "aaaaaaaaaa" => { "hecho" => true } } }
+    )
+    sign_in_as users(:one)
+
+    expect { get edit_perfil_path }.not_to change(PerfilJuego, :count)
+
+    expect(response.body).to include("Entrenamientos")
+    expect(response.body).to include("Mejor racha")
+    expect(response.body).to include("Récords")
+  end
+
+  # Fase 16 (Nota 21): la preferencia de tema es del usuario y el SERVIDOR
+  # renderiza el data-theme en el body — el redirect ya vuelve pintado.
+  describe "preferencia de tema" do
+    it "guardar 'claro' pinta el body con advance-claro en la siguiente página" do
+      sign_in_as users(:one)
+
+      patch perfil_path, params: { user: { tema: "claro" } }
+      expect(users(:one).reload.tema).to eq("claro")
+
+      get root_path
+      expect(response.body).to match(/<body[^>]*data-theme="advance-claro"/)
+    end
+
+    it "'sistema' deja el body SIN data-theme (el SO decide vía CSS)" do
+      users(:one).update!(tema: "sistema")
+      sign_in_as users(:one)
+
+      get root_path
+      cuerpo = response.body[/<body[^>]*>/]
+      expect(cuerpo).not_to include("data-theme")
+    end
+
+    it "el default es oscuro y un tema inválido no entra" do
+      sign_in_as users(:one)
+
+      get root_path
+      expect(response.body).to match(/<body[^>]*data-theme="advance"/)
+
+      patch perfil_path, params: { user: { tema: "fucsia" } }
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(users(:one).reload.tema).to eq("oscuro")
+    end
+  end
 end

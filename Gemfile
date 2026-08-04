@@ -86,3 +86,6 @@ gem "omniauth-rails_csrf_protection", "~> 2.0"
 
 # Locale es (fechas, errores de ActiveRecord)
 gem "rails-i18n", "~> 8.0"
+
+# Web Push con VAPID para los recordatorios de racha (SDD Fase 15, Nota 20)
+gem "web-push", "~> 3.0"

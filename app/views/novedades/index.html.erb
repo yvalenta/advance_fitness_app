@@ -13,10 +13,10 @@
           <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
             <div class="card-body">
               <% if novedad.fecha_evento %>
-                <p class="eyebrow text-volt"><%= l novedad.fecha_evento, format: :long %></p>
+                <p class="eyebrow text-volt-d"><%= l novedad.fecha_evento, format: :long %></p>
               <% end %>
               <h2 class="font-display text-lg font-bold"><%= novedad.titulo %></h2>
-              <p class="whitespace-pre-line text-sm text-steel-7"><%= novedad.contenido %></p>
+              <p class="whitespace-pre-line text-sm text-base-content/80"><%= novedad.contenido %></p>
             </div>
           </div>
         <% end %>

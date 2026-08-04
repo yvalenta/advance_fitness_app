@@ -1,61 +1,271 @@
-<% content_for :title, "Mi perfil — #{Negocio.nombre}" %>
+<% content_for :title, "Mi cuenta — #{Negocio.nombre}" %>
 
 <%= render "shared/encabezado",
       eyebrow: "Mi cuenta",
-      titulo: "Completar perfil",
-      descripcion: "Estos datos alimentan el cálculo de tu gasto calórico (Mifflin-St Jeor)." %>
+      titulo: "Perfil",
+      descripcion: "Tu información, tu apariencia y tu configuración — todo en un lugar." %>
 
 <div class="mx-auto -mt-8 w-full max-w-2xl px-4 pb-12">
+  <% if @user.errors.any? %>
+    <div role="alert" class="alert alert-error mb-4 text-sm">
+      <%= render "shared/icono", nombre: :alerta, clase: "size-5 shrink-0" %>
+      <span><%= @user.errors.full_messages.to_sentence %></span>
+    </div>
+  <% end %>
+
+  <%# ── Cabecera (referencia Pulse): avatar, identidad y plan ─────────── %>
   <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
-    <div class="card-body">
-      <% if @user.errors.any? %>
-        <div role="alert" class="alert alert-error text-sm">
-          <%= render "shared/icono", nombre: :alerta, clase: "size-5 shrink-0" %>
-          <span><%= @user.errors.full_messages.to_sentence %></span>
-        </div>
+    <div class="card-body items-center gap-1 py-6 text-center">
+      <div class="rounded-full p-1 ring-2 ring-volt">
+        <%= render "shared/avatar", user: @user, clase: "size-20 text-2xl" %>
+      </div>
+      <h2 class="mt-2 font-display text-xl font-bold"><%= @user.nombre.presence || "Sin nombre" %></h2>
+      <p class="text-sm text-steel-5"><%= @user.email_address %></p>
+      <% if @user.premium? %>
+        <span class="badge mt-1 border-0 bg-volt font-bold uppercase tracking-wide text-steel-9">Plan Personalizado</span>
+      <% else %>
+        <span class="badge badge-ghost mt-1 font-semibold uppercase tracking-wide">Plan de membresía</span>
       <% end %>
 
-      <%= form_with model: @user, url: perfil_path, method: :patch, class: "flex flex-col gap-4" do |form| %>
-        <label class="form-control">
-          <span class="label-text mb-1 text-xs font-semibold">Nombre completo</span>
-          <%= form.text_field :nombre, required: true, class: "input input-bordered w-full" %>
-        </label>
+      <%# Tile corporal edad/peso/talla, estilo referencia %>
+      <div class="mt-4 grid w-full grid-cols-3 divide-x divide-base-300 rounded-2xl bg-secondary py-3 text-secondary-content">
+        <% [ [ @user.edad, "Edad", "años" ],
+             [ @peso_actual&.to_f, "Peso", "kg" ],
+             [ @user.talla_cm&.to_f, "Talla", "cm" ] ].each do |valor, etiqueta, unidad| %>
+          <div class="px-2 text-center">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-steel-5"><%= etiqueta %></p>
+            <p class="font-display text-lg font-bold">
+              <%= valor || "—" %><span class="ml-0.5 text-[10px] font-semibold text-steel-5"><%= unidad if valor %></span>
+            </p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
 
-        <div class="grid gap-4 sm:grid-cols-2">
-          <label class="form-control">
-            <span class="label-text mb-1 text-xs font-semibold">Fecha de nacimiento</span>
-            <%= form.date_field :fecha_nacimiento, required: true, max: Date.current, class: "input input-bordered w-full" %>
-          </label>
-          <label class="form-control">
-            <span class="label-text mb-1 text-xs font-semibold">Sexo</span>
-            <%= form.select :sexo, options_for_select([ [ "Hombre", "M" ], [ "Mujer", "F" ] ], @user.sexo),
-                  { prompt: "Selecciona" }, { class: "select select-bordered w-full", required: true } %>
-          </label>
-        </div>
+  <%# ── Stats de juego (Fase 16.4) ─────────────────────────────────────── %>
+  <div class="animate-fade-up fade-delay-1 mt-4 grid grid-cols-3 gap-2">
+    <% [ [ @total_entrenamientos, "Entrenamientos" ],
+         [ @perfil_juego.racha_mejor.to_i, "Mejor racha" ],
+         [ @records_total, "Récords" ] ].each do |numero, etiqueta| %>
+      <div class="rounded-2xl border border-base-300 bg-base-100 px-2 py-3 text-center shadow-sm">
+        <p class="font-display text-2xl font-bold"><%= numero %></p>
+        <p class="text-[10px] font-bold uppercase tracking-wider text-steel-5"><%= etiqueta %></p>
+      </div>
+    <% end %>
+  </div>
 
-        <div class="grid gap-4 sm:grid-cols-2">
+  <%# ── MI CUENTA ──────────────────────────────────────────────────────── %>
+  <p class="eyebrow mb-2 mt-6 px-1 text-steel-3">Mi cuenta</p>
+  <div class="animate-fade-up flex flex-col gap-2">
+    <details class="group rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+      <summary class="flex min-h-13 cursor-pointer list-none items-center gap-3 px-4 py-3">
+        <span class="flex size-8 items-center justify-center rounded-xl bg-volt/15 text-volt-d">
+          <%= render "shared/icono", nombre: :usuarios, clase: "size-4" %>
+        </span>
+        <span class="flex-1 text-sm font-semibold">Mi información</span>
+        <span class="text-steel-3 transition-transform group-open:rotate-90">›</span>
+      </summary>
+      <div class="border-t border-base-200 p-4">
+        <%= form_with model: @user, url: perfil_path, method: :patch, class: "flex flex-col gap-4" do |form| %>
           <label class="form-control">
-            <span class="label-text mb-1 text-xs font-semibold">Talla (cm)</span>
-            <%= form.number_field :talla_cm, step: 0.5, min: 100, max: 250, required: true,
-                  placeholder: "175", class: "input input-bordered w-full" %>
+            <span class="label-text mb-1 text-xs font-semibold">Nombre completo</span>
+            <%= form.text_field :nombre, required: true, class: "input input-bordered w-full" %>
+          </label>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="form-control">
+              <span class="label-text mb-1 text-xs font-semibold">Fecha de nacimiento</span>
+              <%= form.date_field :fecha_nacimiento, required: true, max: Date.current, class: "input input-bordered w-full" %>
+            </label>
+            <label class="form-control">
+              <span class="label-text mb-1 text-xs font-semibold">Sexo</span>
+              <%= form.select :sexo, options_for_select([ [ "Hombre", "M" ], [ "Mujer", "F" ] ], @user.sexo),
+                    { prompt: "Selecciona" }, { class: "select select-bordered w-full", required: true } %>
+            </label>
+          </div>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="form-control">
+              <span class="label-text mb-1 text-xs font-semibold">Talla (cm)</span>
+              <%= form.number_field :talla_cm, step: 0.5, min: 100, max: 250, required: true,
+                    placeholder: "175", class: "input input-bordered w-full" %>
+            </label>
+            <label class="form-control">
+              <span class="label-text mb-1 text-xs font-semibold">Nivel de actividad</span>
+              <%= form.select :nivel_actividad,
+                    options_for_select(User::NIVELES_ACTIVIDAD.map { |factor, nombre| [ nombre, factor ] }, @user.nivel_actividad&.to_f),
+                    { prompt: "Selecciona" }, { class: "select select-bordered w-full", required: true } %>
+            </label>
+          </div>
+          <p class="text-xs text-steel-3">Tu edad se calcula a partir de la fecha de nacimiento; no se almacena.</p>
+          <%= form.submit "Guardar", class: "btn btn-primary btn-sm self-start font-bold" %>
+        <% end %>
+      </div>
+    </details>
+
+    <%= link_to objetivo_path, class: "flex min-h-13 items-center gap-3 rounded-2xl border border-base-300 bg-base-100 px-4 py-3 shadow-sm transition-colors hover:border-volt-d/40" do %>
+      <span class="flex size-8 items-center justify-center rounded-xl bg-volt/15 text-volt-d">
+        <%= render "shared/icono", nombre: :fuego, clase: "size-4" %>
+      </span>
+      <span class="flex-1 text-sm font-semibold">Mi objetivo</span>
+      <span class="text-xs text-steel-5"><%= @user.objetivo_activo&.nombre || "Sin fijar" %></span>
+      <span class="text-steel-3">›</span>
+    <% end %>
+
+    <% unless @user.premium? %>
+      <%= link_to upgrade_path, class: "flex min-h-13 items-center gap-3 rounded-2xl border border-volt/50 bg-volt/5 px-4 py-3 shadow-sm transition-colors hover:border-volt" do %>
+        <span class="flex size-8 items-center justify-center rounded-xl bg-volt text-steel-9">
+          <%= render "shared/icono", nombre: :rayo, clase: "size-4" %>
+        </span>
+        <span class="flex-1 text-sm font-semibold">Mejorar a Plan Personalizado</span>
+        <span class="text-steel-3">›</span>
+      <% end %>
+    <% end %>
+  </div>
+
+  <%# ── AJUSTES ────────────────────────────────────────────────────────── %>
+  <p class="eyebrow mb-2 mt-6 px-1 text-steel-3">Ajustes</p>
+  <div class="animate-fade-up fade-delay-1 flex flex-col gap-2">
+    <details class="group rounded-2xl border border-base-300 bg-base-100 shadow-sm" open>
+      <summary class="flex min-h-13 cursor-pointer list-none items-center gap-3 px-4 py-3">
+        <span class="flex size-8 items-center justify-center rounded-xl bg-volt/15 text-volt-d">
+          <%= render "shared/icono", nombre: :rayo, clase: "size-4" %>
+        </span>
+        <span class="flex-1 text-sm font-semibold">Apariencia</span>
+        <span class="text-steel-3 transition-transform group-open:rotate-90">›</span>
+      </summary>
+      <div class="border-t border-base-200 p-4">
+        <%= form_with model: @user, url: perfil_path, method: :patch, class: "flex flex-col gap-4" do |form| %>
+          <fieldset>
+            <legend class="sr-only">Tema</legend>
+            <span class="label-text mb-2 block text-xs font-semibold">Tema</span>
+            <div class="grid grid-cols-3 gap-2">
+              <% [ [ "oscuro", "Oscuro", "Volt sobre tinta" ],
+                   [ "claro", "Claro", "Tinta sobre hueso" ],
+                   [ "sistema", "Sistema", "Sigue a tu equipo" ] ].each do |valor, nombre, detalle| %>
+                <label class="flex cursor-pointer flex-col gap-0.5 rounded-xl border border-base-300 p-3 transition-colors has-checked:border-volt has-checked:bg-volt/10">
+                  <span class="flex items-center gap-2">
+                    <%= form.radio_button :tema, valor, class: "radio radio-xs radio-primary" %>
+                    <span class="text-sm font-semibold"><%= nombre %></span>
+                  </span>
+                  <span class="text-xs text-steel-5"><%= detalle %></span>
+                </label>
+              <% end %>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend class="sr-only">Acento</legend>
+            <span class="label-text mb-2 block text-xs font-semibold">Acento</span>
+            <div class="flex items-center gap-4">
+              <% [ [ "volt", "Volt", "#b4f000" ], [ "ambar", "Ámbar", "#f6a71b" ], [ "azul", "Azul", "#60a5fa" ] ].each do |valor, nombre, muestra| %>
+                <label class="flex cursor-pointer flex-col items-center gap-1">
+                  <%= form.radio_button :acento, valor, class: "peer sr-only" %>
+                  <span class="size-9 rounded-full border-2 border-base-300 transition-shadow peer-checked:border-base-content peer-checked:ring-2 peer-checked:ring-base-content/30 peer-checked:ring-offset-2"
+                        style="background: <%= muestra %>"></span>
+                  <span class="text-[10px] font-semibold text-steel-5"><%= nombre %></span>
+                </label>
+              <% end %>
+            </div>
+          </fieldset>
+
+          <%= form.submit "Aplicar", class: "btn btn-primary btn-sm self-start font-bold" %>
+        <% end %>
+      </div>
+    </details>
+
+    <div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-3 shadow-sm">
+      <div class="flex items-center gap-3">
+        <span class="flex size-8 items-center justify-center rounded-xl bg-volt/15 text-volt-d">
+          <%= render "shared/icono", nombre: :alerta, clase: "size-4" %>
+        </span>
+        <span class="flex-1 text-sm font-semibold">Notificaciones</span>
+      </div>
+      <div class="mt-2 pl-11"><%= render "shared/push_optin" %></div>
+    </div>
+
+    <details class="group rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+      <summary class="flex min-h-13 cursor-pointer list-none items-center gap-3 px-4 py-3">
+        <span class="flex size-8 items-center justify-center rounded-xl bg-volt/15 text-volt-d">
+          <%= render "shared/icono", nombre: :candado, clase: "size-4" %>
+        </span>
+        <span class="flex-1 text-sm font-semibold">Seguridad</span>
+        <span class="text-steel-3 transition-transform group-open:rotate-90">›</span>
+      </summary>
+      <div class="flex flex-col gap-5 border-t border-base-200 p-4">
+        <%# Cambiar correo — siempre con la contraseña actual (Nota 22a) %>
+        <%= form_with model: @user, url: cuenta_path, method: :patch, class: "flex flex-col gap-3" do |form| %>
+          <span class="text-xs font-bold uppercase tracking-wide text-steel-3">Cambiar correo</span>
+          <label class="form-control">
+            <span class="label-text mb-1 text-xs font-semibold">Correo</span>
+            <%= form.email_field :email_address, class: "input input-bordered w-full" %>
           </label>
           <label class="form-control">
-            <span class="label-text mb-1 text-xs font-semibold">Nivel de actividad</span>
-            <%= form.select :nivel_actividad,
-                  options_for_select(User::NIVELES_ACTIVIDAD.map { |factor, nombre| [ nombre, factor ] }, @user.nivel_actividad&.to_f),
-                  { prompt: "Selecciona" }, { class: "select select-bordered w-full", required: true } %>
+            <span class="label-text mb-1 text-xs font-semibold">Tu contraseña actual</span>
+            <%= form.password_field :password_challenge, required: true, autocomplete: "current-password", class: "input input-bordered w-full" %>
           </label>
-        </div>
+          <%= form.submit "Actualizar correo", class: "btn btn-outline btn-sm self-start font-semibold" %>
+        <% end %>
+
+        <%# Cambiar contraseña %>
+        <%= form_with model: @user, url: cuenta_path, method: :patch, class: "flex flex-col gap-3 border-t border-base-200 pt-4" do |form| %>
+          <span class="text-xs font-bold uppercase tracking-wide text-steel-3">Cambiar contraseña</span>
+          <label class="form-control">
+            <span class="label-text mb-1 text-xs font-semibold">Tu contraseña actual</span>
+            <%= form.password_field :password_challenge, required: true, autocomplete: "current-password", class: "input input-bordered w-full" %>
+          </label>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <label class="form-control">
+              <span class="label-text mb-1 text-xs font-semibold">Nueva contraseña</span>
+              <%= form.password_field :password, required: true, minlength: 8, autocomplete: "new-password", class: "input input-bordered w-full" %>
+            </label>
+            <label class="form-control">
+              <span class="label-text mb-1 text-xs font-semibold">Confirmarla</span>
+              <%= form.password_field :password_confirmation, required: true, autocomplete: "new-password", class: "input input-bordered w-full" %>
+            </label>
+          </div>
+          <p class="text-xs text-steel-3">Al cambiarla, las sesiones abiertas en otros dispositivos se cierran.</p>
+          <%= form.submit "Cambiar contraseña", class: "btn btn-outline btn-sm self-start font-semibold" %>
+        <% end %>
 
         <p class="text-xs text-steel-3">
-          Tu edad se calcula a partir de la fecha de nacimiento; no se almacena.
+          ¿Entras con Google y no conoces tu contraseña?
+          <%= link_to "Restablécela por correo", new_password_path, class: "font-semibold text-volt-d" %>.
         </p>
+      </div>
+    </details>
+  </div>
 
-        <div class="flex gap-2 pt-2">
-          <%= form.submit "Guardar perfil", class: "btn btn-primary font-bold" %>
-          <%= link_to "Volver", root_path, class: "btn btn-ghost" %>
-        </div>
+  <%# ── PRIVACIDAD ─────────────────────────────────────────────────────── %>
+  <p class="eyebrow mb-2 mt-6 px-1 text-steel-3">Privacidad</p>
+  <div class="animate-fade-up fade-delay-2 flex flex-col gap-2">
+    <%= link_to ranking_path, class: "flex min-h-13 items-center gap-3 rounded-2xl border border-base-300 bg-base-100 px-4 py-3 shadow-sm transition-colors hover:border-volt-d/40" do %>
+      <span class="flex size-8 items-center justify-center rounded-xl bg-volt/15 text-volt-d">
+        <%= render "shared/icono", nombre: :tendencia_alta, clase: "size-4" %>
+      </span>
+      <span class="flex-1 text-sm font-semibold">Tabla de posiciones</span>
+      <% if @perfil_juego.visible_en_tabla? %>
+        <span class="badge badge-sm border-0 bg-volt font-bold text-steel-9">Participando</span>
+      <% else %>
+        <span class="text-xs text-steel-5">No participas</span>
       <% end %>
-    </div>
+      <span class="text-steel-3">›</span>
+    <% end %>
+
+    <% if @user.sexo == "F" %>
+      <%= link_to progreso_path(anchor: "mi_ciclo"), class: "flex min-h-13 items-center gap-3 rounded-2xl border border-base-300 bg-base-100 px-4 py-3 shadow-sm transition-colors hover:border-volt-d/40" do %>
+        <span class="flex size-8 items-center justify-center rounded-xl bg-pulse/15 text-pulse">
+          <%= render "shared/icono", nombre: :calendario, clase: "size-4" %>
+        </span>
+        <span class="flex-1 text-sm font-semibold">Mi ciclo</span>
+        <span class="badge badge-ghost badge-sm gap-1"><%= render "shared/icono", nombre: :candado, clase: "size-3" %> Privado</span>
+        <span class="text-steel-3">›</span>
+      <% end %>
+    <% end %>
+  </div>
+
+  <%# ── Cerrar sesión ──────────────────────────────────────────────────── %>
+  <div class="animate-fade-up fade-delay-2 mt-6">
+    <%= button_to "Cerrar sesión", session_path, method: :delete,
+          class: "btn btn-outline btn-error btn-block rounded-2xl font-bold" %>
   </div>
 </div>

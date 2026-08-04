@@ -4,8 +4,10 @@
 <%# Cierre por click en el fondo vía JS, no <form method="dialog"> (Fase %>
 <%# 5.16): evita que el submit del backdrop deje pasar el click al elemento %>
 <%# que queda debajo al cerrarse. %>
-<dialog class="modal" data-modal-ejercicios-target="dialogo" data-action="click->modal-ejercicios#cerrarEnBackdrop">
-  <div class="modal-box flex max-h-[85vh] max-w-2xl flex-col p-0">
+<%# Bottom-sheet en móvil (Fase 16.3): mismo patrón que la biblioteca de comidas. %>
+<dialog class="modal modal-bottom sm:modal-middle" data-modal-ejercicios-target="dialogo" data-action="click->modal-ejercicios#cerrarEnBackdrop">
+  <div class="modal-box flex max-h-[85dvh] max-w-2xl flex-col rounded-t-3xl p-0 pb-[env(safe-area-inset-bottom)] sm:rounded-2xl">
+    <span class="mx-auto mb-0.5 mt-2.5 block h-1.5 w-10 shrink-0 rounded-full bg-base-300 sm:hidden" aria-hidden="true"></span>
     <header class="sticky top-0 z-10 border-b border-base-200 bg-base-100 p-4 pb-3">
       <div class="mb-3 flex items-center justify-between">
         <h3 class="font-display text-lg font-bold">Biblioteca de ejercicios</h3>

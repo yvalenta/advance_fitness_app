@@ -99,13 +99,33 @@
       ciclos_menstruales/ (no en shared/, que admin/users/show reutiliza con
       progreso ajeno) y además se auto-protege con Current.user == usuario. %>
   <div class="animate-fade-up fade-delay-2">
-    <%= render "ciclos_menstruales/card", usuario: Current.user %>
+    <%= render "ciclos_menstruales/card", usuario: Current.user, datos: @ciclo %>
   </div>
 
+  <%# Gráficas perezosas por scroll (Fase 16.6): cada frame pide su serie al
+      entrar al viewport — la página cargó solo el resumen. target="_top":
+      los enlaces internos navegan la página, no el frame. %>
   <div class="mt-6 grid items-start gap-6 lg:grid-cols-2">
-    <div class="animate-fade-up"><%= render "shared/grafica_peso", progreso: @progreso, editable: true %></div>
-    <div class="animate-fade-up fade-delay-1"><%= render "shared/grafica_calorias", progreso: @progreso, editable: true %></div>
-    <div class="animate-fade-up fade-delay-2 lg:col-span-2"><%= render "shared/grafica_asistencia", progreso: @progreso %></div>
+    <% placeholder = capture do %>
+      <div class="flex h-56 items-center justify-center rounded-2xl border border-base-300 bg-base-100">
+        <span class="loading loading-spinner loading-md text-steel-3"></span>
+      </div>
+    <% end %>
+    <div class="animate-fade-up">
+      <%= turbo_frame_tag "grafica_peso", src: progreso_grafica_path(tipo: "peso"), loading: :lazy, target: "_top" do %>
+        <%= placeholder %>
+      <% end %>
+    </div>
+    <div class="animate-fade-up fade-delay-1">
+      <%= turbo_frame_tag "grafica_calorias", src: progreso_grafica_path(tipo: "calorias"), loading: :lazy, target: "_top" do %>
+        <%= placeholder %>
+      <% end %>
+    </div>
+    <div class="animate-fade-up fade-delay-2 lg:col-span-2">
+      <%= turbo_frame_tag "grafica_asistencia", src: progreso_grafica_path(tipo: "asistencia"), loading: :lazy, target: "_top" do %>
+        <%= placeholder %>
+      <% end %>
+    </div>
     <div class="animate-fade-up fade-delay-2 lg:col-span-2"><%= render "shared/historial_analisis", progreso: @progreso %></div>
   </div>
 </div>

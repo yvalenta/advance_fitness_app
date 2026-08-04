@@ -1,7 +1,8 @@
-<%# Tab bar inferior (Fase 14.1): navegación primaria del miembro en móvil, %>
-<%# estilo app nativa. Solo usuarios de tenant — superadmin/comercializador %>
-<%# viven en el portal comercial y no la necesitan (el layout ya lo filtra). %>
-<%# Targets táctiles ≥44px (min-h-14 = 56px); safe-area en .tab-bar-inferior. %>
+<%# Tab bar inferior (Fase 14.1, rediseño Fase 16 — referencia Pulse): %>
+<%# píldora TINTA flotante con el destino activo en chip volt. La tinta %>
+<%# (bg-neutral) es la firma de marca en ambos temas: flota sobre crema %>
+<%# en claro y sobre midnight (con borde sutil) en oscuro. Solo usuarios %>
+<%# de tenant — el layout ya filtra. Targets táctiles ≥44px. %>
 <%
   destinos = [
     [ "Hoy", root_path, :rayo ],
@@ -11,15 +12,20 @@
     [ "Perfil", edit_perfil_path, :usuarios ]
   ]
 %>
-<nav class="tab-bar-inferior fixed inset-x-0 bottom-0 z-40 border-t border-base-300 bg-base-100/95 backdrop-blur md:hidden"
+<nav class="tab-bar-inferior fixed inset-x-0 bottom-0 z-40 px-3 pb-2 md:hidden"
      aria-label="Navegación principal">
-  <div class="grid grid-cols-5">
+  <div class="mx-auto flex max-w-md items-center justify-between gap-1 rounded-full border border-white/10 bg-neutral p-1.5 shadow-lg shadow-black/25">
     <% destinos.each do |texto, ruta, icono| %>
       <% activo = current_page?(ruta) %>
-      <%= link_to ruta, class: "flex min-h-14 flex-col items-center justify-center gap-0.5 py-1.5 transition-colors #{activo ? "text-volt" : "text-steel-3"}",
+      <%= link_to ruta,
+            class: "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full px-2 py-2 transition-colors #{activo ? "bg-volt text-steel-9" : "text-neutral-content/60"}",
             "aria-current": (activo ? "page" : nil) do %>
-        <%= render "shared/icono", nombre: icono, clase: "size-5" %>
-        <span class="text-[10px] font-semibold"><%= texto %></span>
+        <%= render "shared/icono", nombre: icono, clase: "size-5 shrink-0" %>
+        <% if activo %>
+          <span class="text-[11px] font-bold whitespace-nowrap"><%= texto %></span>
+        <% else %>
+          <span class="sr-only"><%= texto %></span>
+        <% end %>
       <% end %>
     <% end %>
   </div>

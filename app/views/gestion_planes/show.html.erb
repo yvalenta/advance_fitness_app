@@ -6,7 +6,7 @@
     <%= render "shared/avatar", user: @plan.user, clase: "size-14 text-lg" %>
     <div class="min-w-0">
       <div class="mb-1 flex items-center gap-2">
-        <p class="eyebrow text-volt">Plan · <%= origen_plan(@plan) %></p>
+        <p class="eyebrow text-volt-d">Plan · <%= origen_plan(@plan) %></p>
         <span class="badge badge-sm <%= @plan.aprobado? ? "badge-success" : "badge-warning" %>">
           <%= @plan.aprobado? ? "Publicado" : "Borrador" %>
         </span>

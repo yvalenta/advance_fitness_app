@@ -45,6 +45,41 @@ module ApplicationHelper
     ORIGENES_PLAN.fetch(plan.generado_por, plan.generado_por)
   end
 
+  # data-theme del body según la preferencia del usuario (Fase 16, Nota 21).
+  # "sistema" devuelve nil: SIN atributo, el CSS resuelve solo (default claro
+  # + prefersdark del tema advance). Invitados y "oscuro" fuerzan advance.
+  def tema_data_theme
+    case Current.user&.tema
+    when "claro" then "advance-claro"
+    when "sistema" then nil
+    else "advance"
+    end
+  end
+
+  # data-acento del body (Fase 17, Nota 22f): nil con "volt" (el default de
+  # la marca/tenant) para no emitir atributo ni pelear especificidades.
+  def acento_data
+    acento = Current.user&.acento
+    acento unless acento.blank? || acento == "volt"
+  end
+
+  # <meta theme-color> acompañando al tema activo (Fase 16): oscuro usa el
+  # color del tenant (Negocio.theme_color), claro el hueso del fondo, y
+  # sistema emite AMBAS metas con media query para que el navegador elija.
+  def metas_theme_color
+    case Current.user&.tema
+    when "claro"
+      tag.meta(name: "theme-color", content: Negocio::THEME_COLOR_CLARO)
+    when "sistema"
+      safe_join([
+        tag.meta(name: "theme-color", media: "(prefers-color-scheme: dark)", content: Negocio.theme_color),
+        tag.meta(name: "theme-color", media: "(prefers-color-scheme: light)", content: Negocio::THEME_COLOR_CLARO)
+      ])
+    else
+      tag.meta(name: "theme-color", content: Negocio.theme_color)
+    end
+  end
+
   # Link del navbar con estado activo
   def nav_link(texto, ruta)
     activo = current_page?(ruta)

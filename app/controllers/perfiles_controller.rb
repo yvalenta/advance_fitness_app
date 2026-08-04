@@ -2,6 +2,7 @@ class PerfilesController < ApplicationController
   def edit
     @user = Current.user
     authorize @user, :update?
+    cargar_stats
   end
 
   def update
@@ -12,14 +13,24 @@ class PerfilesController < ApplicationController
       destino = @user.perfil_nutricional_completo? ? objetivo_path : edit_perfil_path
       redirect_to destino, notice: "Perfil actualizado."
     else
+      cargar_stats # el render :edit también pinta la cabecera de stats
       render :edit, status: :unprocessable_entity
     end
   end
 
   private
 
-    # rol jamás asignable aquí (SDD §08)
+    # Cabecera con stats (Fase 16.4, referencia Pulse). find_or_initialize:
+    # mirar el perfil no siembra filas del motor de juego (patrón dashboard).
+    def cargar_stats
+      @total_entrenamientos = @user.registros_entrenamiento.count
+      @perfil_juego = PerfilJuego.find_or_initialize_by(user: @user)
+      @records_total = @user.records_personales.vigentes.count
+      @peso_actual = @user.mediciones.recientes.first&.peso_kg
+    end
+
+    # rol jamás asignable aquí (SDD §08); tema y acento sí son del usuario
     def perfil_params
-      params.expect(user: %i[nombre fecha_nacimiento sexo talla_cm nivel_actividad])
+      params.expect(user: %i[nombre fecha_nacimiento sexo talla_cm nivel_actividad tema acento])
     end
 end

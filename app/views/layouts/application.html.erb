@@ -1,17 +1,23 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="advance">
+<%# data-theme vive en el BODY (Nota 21b): Turbo (replace y morph) solo
+    actualiza el body — en <html> cambiar el tema exigiría F5. %>
+<html lang="es">
   <head>
     <title><%= content_for(:title) || Negocio.nombre %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="application-name" content="<%= Negocio.nombre %>">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="<%= Negocio.theme_color %>">
+    <%= metas_theme_color %>
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
     <%# Turbo 8 morphing (Fase de Calidad): los refreshes actualizan el DOM
         en sitio y conservan el scroll — sin "flash" de página completa. %>
     <%= turbo_refreshes_with method: :morph, scroll: :preserve %>
+    <%# View transitions (Fase 16.7): cross-fade nativo en visitas de página
+        completa donde el navegador lo soporte; los refreshes con morph no
+        pasan por aquí, así que no compiten. Progresivo: sin soporte, nada. %>
+    <meta name="view-transition" content="same-origin">
 
     <%= yield :head %>
 
@@ -22,37 +28,27 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
 
-    <%# Tipografía de marca (SDD §06): Geist (body) + Space Grotesk (display) %>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <%# Tipografía de marca self-hosted (Fase 16.5): variables, 51KB total,
+        sin render-blocking de CDN. crossorigin es obligatorio en preload
+        de fuentes aunque sean del mismo origen. %>
+    <%= preload_link_tag "geist-variable.woff2", as: "font", type: "font/woff2", crossorigin: "anonymous" %>
+    <%= preload_link_tag "space-grotesk-variable.woff2", as: "font", type: "font/woff2", crossorigin: "anonymous" %>
 
-    <%# Includes all stylesheet files in app/assets/stylesheets %>
-    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
-    <%= stylesheet_link_tag "actiontext", "data-turbo-track": "reload" %>
+    <%# Hojas EXPLÍCITAS (Fase 16.5): el :app de Rails engloba todo css del
+        load path — incluía actiontext.css en cada página. Ahora esa hoja va
+        por content_for :head solo donde hay rich text (blog, admin posts). %>
+    <%= stylesheet_link_tag "application", "tailwind", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
 
     <%# Paleta del tenant (SDD §16.6): overrides de los tokens CSS del tema
         DaisyUI/Tailwind. Solo se aceptan colores hex (#rgb, #rgba, #rrggbb,
         #rrggbbaa) para evitar CSS injection desde el jsonb. %>
-    <% if Current.tenant&.paleta_colores.is_a?(Hash) && Current.tenant.paleta_colores.any? %>
-      <style>
-        :root {
-          <% Current.tenant.paleta_colores.each do |token, valor| %>
-            <% if valor.to_s.match?(/\A#[0-9a-fA-F]{3,8}\z/) && %w[volt primary accent].include?(token.to_s) %>
-              --color-<%= token %>: <%= valor %>;
-              <% if token.to_s == "volt" %>
-              --color-volt-d: color-mix(in srgb, <%= valor %> 70%, #000000);
-              --color-volt-l: color-mix(in srgb, <%= valor %> 60%, #ffffff);
-              <% end %>
-            <% end %>
-          <% end %>
-        }
-      </style>
-    <% end %>
+    <%= render "shared/paleta_tenant" %>
   </head>
 
-  <body class="min-h-screen bg-base-200 font-sans text-base-content">
+  <%# tag.attributes omite el atributo cuando es nil — clave para "sistema":
+      un data-theme="" vacío matchearía [data-theme] y rompería el caso. %>
+  <body class="min-h-screen bg-base-200 font-sans text-base-content" <%= tag.attributes("data-theme": tema_data_theme, "data-acento": acento_data) %>>
     <%# Tab bar inferior (Fase 14.1): solo miembros/staff de tenant — los
         roles globales (superadmin/comercializador) no la necesitan. %>
     <% con_tab_bar = Current.user && !Current.user.global? %>
@@ -65,16 +61,20 @@
           w-full) pero no debe bloquear sus clics — solo cada caja visible
           (pointer-events-auto) los captura. Se cierra solo a los 5s. %>
       <div class="toast toast-top toast-center z-50 w-full max-w-lg px-4 pt-16 pointer-events-none" data-controller="toast">
+        <%# Toasts en chip TINTA (Fase 17 — reporte del usuario): el verde
+            alert-success peleaba con el acento elegido. Sobre bg-neutral el
+            ícono usa text-volt, que sigue SOLO al tema y al acento (ámbar,
+            azul…). El error conserva su rojo semántico — eso no se negocia. %>
         <% if (mensaje = flash[:alert]) %>
-          <div role="alert" class="alert alert-error pointer-events-auto shadow-lg" id="alert" data-toast-target="item">
-            <%= render "shared/icono", nombre: :alerta, clase: "size-5 shrink-0" %>
+          <div role="alert" class="alert pointer-events-auto rounded-2xl border border-error/40 bg-neutral text-neutral-content shadow-lg" id="alert" data-toast-target="item">
+            <span class="text-error"><%= render "shared/icono", nombre: :alerta, clase: "size-5 shrink-0" %></span>
             <span class="text-sm font-medium"><%= mensaje %></span>
             <button type="button" class="btn btn-ghost btn-xs btn-circle" data-action="toast#cerrar" aria-label="Cerrar">✕</button>
           </div>
         <% end %>
         <% if (mensaje = flash[:notice]) %>
-          <div role="alert" class="alert alert-success pointer-events-auto shadow-lg" id="notice" data-toast-target="item">
-            <%= render "shared/icono", nombre: :check, clase: "size-5 shrink-0" %>
+          <div role="alert" class="alert pointer-events-auto rounded-2xl border border-white/10 bg-neutral text-neutral-content shadow-lg" id="notice" data-toast-target="item">
+            <span class="text-volt"><%= render "shared/icono", nombre: :check, clase: "size-5 shrink-0" %></span>
             <span class="text-sm font-medium"><%= mensaje %></span>
             <button type="button" class="btn btn-ghost btn-xs btn-circle" data-action="toast#cerrar" aria-label="Cerrar">✕</button>
           </div>

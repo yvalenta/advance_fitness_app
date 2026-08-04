@@ -15,8 +15,8 @@
     <% color = { "progreso" => "badge-success", "estancado" => "badge-warning", "alerta" => "badge-error" }.fetch(feedback.diagnostico) %>
     <div class="flex flex-col gap-1">
       <span class="badge badge-sm <%= color %> w-fit capitalize"><%= feedback.diagnostico %></span>
-      <p class="text-sm text-steel-7"><%= feedback.analisis %></p>
-      <p class="text-sm font-semibold text-steel-7"><%= feedback.accion_recomendada %></p>
+      <p class="text-sm text-base-content/80"><%= feedback.analisis %></p>
+      <p class="text-sm font-semibold text-base-content/80"><%= feedback.accion_recomendada %></p>
     </div>
   <% end %>
 </div>

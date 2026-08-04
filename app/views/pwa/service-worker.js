@@ -50,3 +50,31 @@ self.addEventListener("fetch", (event) => {
     )
   )
 })
+
+// Web Push (Fase 15): el payload viene cifrado del servidor como JSON
+// { titulo, cuerpo, url, tag } — mínimo y sin datos de salud (SDD Nota 20).
+self.addEventListener("push", (event) => {
+  if (!event.data) return
+  const datos = event.data.json()
+  event.waitUntil(
+    self.registration.showNotification(datos.titulo, {
+      body: datos.cuerpo,
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      tag: datos.tag || "advance",
+      data: { url: datos.url || "/" }
+    })
+  )
+})
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close()
+  const url = event.notification.data?.url || "/"
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((ventanas) => {
+      const abierta = ventanas.find((ventana) => "focus" in ventana)
+      if (abierta) return abierta.navigate(url).then((v) => v && v.focus())
+      return clients.openWindow(url)
+    })
+  )
+})

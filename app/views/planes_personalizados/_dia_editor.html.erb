@@ -32,7 +32,7 @@
     <div class="flex flex-wrap items-center gap-2 rounded-xl bg-volt/10 px-3 py-2"
          data-modo-edicion-target="lectura" <%= "hidden" if editando_por_defecto %>>
       <%= render "shared/icono", nombre: :rayo, clase: "size-4 shrink-0 text-volt-d" %>
-      <p class="min-w-0 text-sm font-semibold text-steel-7"><span class="text-steel-3">Enfoque:</span> <%= dia["enfoque"] %></p>
+      <p class="min-w-0 text-sm font-semibold text-base-content/80"><span class="text-steel-3">Enfoque:</span> <%= dia["enfoque"] %></p>
       <% if con_seguimiento && !futuro %>
         <span class="ml-auto shrink-0 text-xs text-steel-3"><%= l fecha, format: "%d %b" %></span>
       <% end %>

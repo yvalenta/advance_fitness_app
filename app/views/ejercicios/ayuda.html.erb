@@ -33,7 +33,7 @@
       <% if @ejercicio.instrucciones.any? %>
         <ol class="flex list-none flex-col gap-1.5">
           <% @ejercicio.instrucciones.each_with_index do |paso, indice| %>
-            <li class="flex items-start gap-2 text-sm leading-snug text-steel-7">
+            <li class="flex items-start gap-2 text-sm leading-snug text-base-content/80">
               <span class="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-volt/15 text-xs font-bold text-volt-d"><%= indice + 1 %></span>
               <%= paso %>
             </li>

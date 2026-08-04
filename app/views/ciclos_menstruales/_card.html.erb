@@ -1,17 +1,19 @@
-<%# locals: (usuario:) %>
+<%# locals: (usuario:, datos:) %>
 <%# Privacidad primero (Fase 14.15): esta card SOLO existe para la propia
     usuaria. El guard de abajo es defensivo — aunque alguien la renderice
     desde otra vista (p. ej. un panel de staff con el user equivocado), sin
     Current.user == usuario no sale ni un byte. Jamás va en parciales
-    shared/* (admin/users/show los reutiliza con @progreso ajeno). %>
+    shared/* (admin/users/show los reutiliza con @progreso ajeno).
+    `datos` lo calcula ProgresosController#datos_ciclo (Fase 16.6 — era la
+    única query-desde-vista del repo); nil = sin consentimiento vigente. %>
 <% if Current.user && Current.user == usuario %>
-  <% if Consentimiento.vigente?(usuario, "ciclo_menstrual") %>
+  <% if datos %>
     <%
-      fase = Ciclo::Fase.para(usuario)
-      ajuste = Ciclo::Ajuste.para(fase)
-      proxima = Ciclo::Fase.proxima_menstruacion(usuario)
-      dia = Ciclo::Fase.dia_del_ciclo(usuario)
-      ciclos = usuario.ciclos_menstruales.recientes.limit(3)
+      fase = datos[:fase]
+      ajuste = datos[:ajuste]
+      proxima = datos[:proxima]
+      dia = datos[:dia]
+      ciclos = datos[:ciclos]
       nombre_fase = { menstrual: "Menstrual", folicular: "Folicular", ovulacion: "Ovulación",
                       lutea: "Lútea", desconocida: "Aún sin estimar" }[fase]
     %>
@@ -89,7 +91,7 @@
               Solo tú ves estos datos: no aparecen en ningún panel de entrenadores ni administradores.
               Tu fase se calcula al momento y nunca se guarda.
             </p>
-            <% if Consentimiento.vigente?(usuario, "ciclo_menstrual_ia") %>
+            <% if datos[:consentimiento_ia] %>
               <%= form_with url: consentimiento_ciclo_path(ambito: "ia"), method: :delete, class: "flex items-center gap-2" do |form| %>
                 <%= form.submit "Dejar de usar mi fase en mi plan", class: "btn btn-ghost btn-xs" %>
                 <span class="text-xs text-steel-3">Hoy tu fase puede usarse para personalizar tu plan (IA externa).</span>

@@ -34,6 +34,14 @@ production:
     queue: background
     schedule: at 4:10am every day
 
+  # Fase 15: el recordatorio va con timezone explícito — el resto de la
+  # escalera de las 4am corre en la hora del contenedor y ahí no importa,
+  # pero un push a deshora sí molesta.
+  recordatorio_racha:
+    class: RecordatorioRachaJob
+    queue: background
+    schedule: every day at 6pm America/Bogota
+
   liberar_planes_estancados:
     class: LiberarPlanesEstancadosJob
     queue: default

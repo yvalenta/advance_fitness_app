@@ -3,27 +3,31 @@
 <%# Cierre por click en el fondo vía JS, no <form method="dialog"> (Fase %>
 <%# 5.16): evita que el submit del backdrop deje pasar el click al elemento %>
 <%# que queda debajo al cerrarse. %>
-<dialog class="modal" data-modal-plantillas-target="dialogo" data-action="click->modal-plantillas#cerrarEnBackdrop">
-  <div class="modal-box flex max-h-[85vh] max-w-2xl flex-col p-0">
+<%# Bottom-sheet en móvil (Fase 16.3, referencia Pulse): modal-bottom de
+    daisyUI desliza desde abajo con handle; en ≥sm vuelve al dialog centrado.
+    Chips en carrusel horizontal y targets táctiles ≥44px. %>
+<dialog class="modal modal-bottom sm:modal-middle" data-modal-plantillas-target="dialogo" data-action="click->modal-plantillas#cerrarEnBackdrop">
+  <div class="modal-box flex max-h-[85dvh] max-w-2xl flex-col rounded-t-3xl p-0 pb-[env(safe-area-inset-bottom)] sm:rounded-2xl">
+    <span class="mx-auto mb-0.5 mt-2.5 block h-1.5 w-10 shrink-0 rounded-full bg-base-300 sm:hidden" aria-hidden="true"></span>
     <header class="sticky top-0 z-10 border-b border-base-200 bg-base-100 p-4 pb-3">
       <div class="mb-3 flex items-center justify-between">
         <h3 class="font-display text-lg font-bold">Biblioteca de comidas</h3>
         <button type="button" class="btn btn-circle btn-ghost btn-sm" data-action="modal-plantillas#cerrar" aria-label="Cerrar">✕</button>
       </div>
 
-      <label class="input input-bordered input-sm flex items-center gap-2">
+      <label class="input input-bordered flex w-full items-center gap-2 sm:input-sm">
         <%= render "shared/icono", nombre: :busqueda, clase: "size-4 text-steel-3" %>
         <input type="search" class="grow" placeholder="Buscar comida…"
                data-modal-plantillas-target="buscador" data-action="input->modal-plantillas#filtrar">
       </label>
 
-      <%# Chips de filtro por tipo de comida %>
-      <div class="mt-2.5 flex flex-wrap gap-1.5">
-        <button type="button" class="btn btn-xs rounded-full btn-primary" data-tipo="todos"
+      <%# Chips de filtro: carrusel horizontal en móvil, wrap en desktop %>
+      <div class="-mx-4 mt-2.5 flex gap-1.5 overflow-x-auto px-4 pb-0.5 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+        <button type="button" class="btn btn-sm shrink-0 rounded-full btn-primary" data-tipo="todos"
                 data-modal-plantillas-target="chip" data-action="modal-plantillas#filtrarTipo">Todas</button>
         <% PlantillaComida::TIPOS.each do |tipo| %>
           <% next if plantillas.none? { |p| p.tipo == tipo } %>
-          <button type="button" class="btn btn-ghost btn-xs rounded-full border border-base-300" data-tipo="<%= tipo %>"
+          <button type="button" class="btn btn-ghost btn-sm shrink-0 rounded-full border border-base-300" data-tipo="<%= tipo %>"
                   data-modal-plantillas-target="chip" data-action="modal-plantillas#filtrarTipo">
             <%= PlantillaComida::NOMBRES_TIPO[tipo] %>
           </button>
@@ -41,7 +45,7 @@
             <div class="grid gap-1.5 sm:grid-cols-2" data-modal-plantillas-target="grupo" data-tipo="<%= tipo %>">
               <% del_tipo.each do |plantilla| %>
                 <button type="button"
-                        class="group flex flex-col gap-1 rounded-xl border border-base-300 px-3 py-2 text-left text-sm transition-colors hover:border-volt-d/50 hover:bg-volt/5"
+                        class="group flex min-h-14 flex-col justify-center gap-1 rounded-xl border border-base-300 px-3 py-2.5 text-left text-sm transition-colors hover:border-volt-d/50 hover:bg-volt/5 active:bg-volt/10"
                         data-action="modal-plantillas#aplicar"
                         data-descripcion="<%= plantilla.descripcion %>" data-kcal="<%= plantilla.kcal %>"
                         data-p="<%= plantilla.proteinas_g.to_f %>" data-c="<%= plantilla.carbohidratos_g.to_f %>"

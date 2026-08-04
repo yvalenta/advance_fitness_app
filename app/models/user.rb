@@ -4,6 +4,10 @@ class User < ApplicationRecord
   ROLES = %w[miembro entrenador admin superadmin comercializador].freeze
   ROLES_GLOBALES = %w[superadmin comercializador].freeze
   SOMATOTIPOS = %w[ectomorfo mesomorfo endomorfo].freeze
+  # Preferencia de apariencia (Fase 16, Nota 21): "sistema" sigue al SO.
+  TEMAS = %w[oscuro claro sistema].freeze
+  # Acento personal (Fase 17, Nota 22f): "volt" = el de la marca/tenant.
+  ACENTOS = %w[volt ambar azul].freeze
 
   # Factores de actividad para el TDEE (SDD §07: 1.2–1.9). La columna es
   # decimal(2,1), por eso los factores clásicos van redondeados a 1 decimal.
@@ -39,6 +43,7 @@ class User < ApplicationRecord
   # Dato de salud sensible (Fase 14.15): se va con la cuenta. `delete_all`
   # también libera la FK de creado_por (siempre es la propia usuaria).
   has_many :ciclos_menstruales, dependent: :delete_all
+  has_many :suscripciones_push, dependent: :delete_all
 
   normalizes :email_address, with: ->(e) { e.strip.downcase }
 
@@ -54,6 +59,8 @@ class User < ApplicationRecord
   validates :somatotipo, inclusion: { in: SOMATOTIPOS }, allow_nil: true
   validates :talla_cm, numericality: { greater_than: 0 }, allow_nil: true
   validates :nivel_actividad, numericality: { in: 1.2..1.9 }, allow_nil: true
+  validates :tema, inclusion: { in: TEMAS }
+  validates :acento, inclusion: { in: ACENTOS }
 
   def staff? = rol.in?(%w[entrenador admin])
   def admin? = rol == "admin"

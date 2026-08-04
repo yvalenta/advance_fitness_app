@@ -18,11 +18,11 @@
               data-action="mesociclo#seleccionar" data-dia-indice="<%= indice %>"
             <% end %>
             aria-label="Día <%= indice + 1 %>: <%= dia["enfoque"].presence || "descanso" %>"
-            class="flex min-w-13 flex-col items-center gap-0.5 rounded-xl border px-2 py-1.5 transition-colors [&.tab-active]:ring-2 [&.tab-active]:ring-volt-d <%= hecho ? "border-volt bg-volt text-white" : "border-base-300 bg-base-100 text-steel-3 hover:border-volt-d/40" %>">
-      <span class="font-display text-base font-bold leading-none <%= "text-steel-7" unless hecho %>"><%= indice + 1 %></span>
+            class="flex min-w-13 flex-col items-center gap-0.5 rounded-xl border px-2 py-1.5 transition-colors [&.tab-active]:ring-2 [&.tab-active]:ring-volt-d <%= hecho ? "border-volt bg-volt text-steel-9" : "border-base-300 bg-base-100 text-steel-3 hover:border-volt-d/40" %>">
+      <span class="font-display text-base font-bold leading-none <%= "text-base-content/70" unless hecho %>"><%= indice + 1 %></span>
       <span class="max-w-14 truncate text-[10px] font-semibold uppercase tracking-wide"><%= etiqueta %></span>
       <% if hecho %>
-        <%= render "shared/icono", nombre: :check, clase: "size-3 text-white" %>
+        <%= render "shared/icono", nombre: :check, clase: "size-3" %>
       <% end %>
     </button>
   <% end %>

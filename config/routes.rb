@@ -18,11 +18,17 @@ Rails.application.routes.draw do
 
   # Nutrición y objetivos (SDD §09, Fase 4)
   resource :perfil, only: %i[ edit update ], controller: "perfiles"
+  # Credenciales de la cuenta (Fase 17): correo/contraseña con password_challenge
+  resource :cuenta, only: :update, controller: "cuentas"
   resource :objetivo, only: %i[ show new create update ], controller: "objetivos"
   resources :registros_calorias, only: :create
 
   # Progreso (SDD §09 — mitad adelantada de la Fase 3, ver nota §11)
   resource :progreso, only: :show, controller: "progresos"
+  # Gráficas perezosas por scroll (Fase 16.6): cada turbo-frame trae SOLO su
+  # serie — la página del miembro carga el resumen y nada más.
+  get "progreso/grafica/:tipo", to: "progreso_graficas#show", as: :progreso_grafica,
+      constraints: { tipo: /peso|calorias|asistencia/ }
 
   # Auto-registro de peso del miembro (Fase 5.9): crea una medición propia.
   resources :mediciones, only: :create
@@ -37,6 +43,12 @@ Rails.application.routes.draw do
   # "conservar mis datos" (ver ConsentimientosCicloController).
   resources :ciclos_menstruales, only: %i[ create destroy ]
   resource :consentimiento_ciclo, only: %i[ create destroy ], controller: "consentimientos_ciclo"
+
+  # Web Push (Fase 15, Nota 20): el dispositivo actual se suscribe o se
+  # retira, siempre en primera persona; la identidad es el endpoint que
+  # manda el propio navegador — no se acepta ningún id.
+  post "suscripciones_push", to: "suscripciones_push#create", as: :suscripciones_push
+  delete "suscripciones_push", to: "suscripciones_push#destroy"
 
   # Registro cuantitativo de series (SDD §18, feature premium): index carga
   # el dialog por fecha+ejercicio (query string, mismo patrón de :ayuda);
