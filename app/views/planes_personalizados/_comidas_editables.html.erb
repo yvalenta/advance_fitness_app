@@ -70,6 +70,22 @@
           </label>
         </div>
 
+        <%# Tipo de comida (Fase 14.4): agrupa el grid 2×2 del plan. El autosave
+            lo envía como cualquier campo de CAMPOS_COMIDA; la vista normaliza
+            al renderizar (valores fuera de PlantillaComida::TIPOS, viejos o
+            sin clasificar, caen al bucket "otros" sin romper nada). %>
+        <label class="flex items-center gap-2 text-xs font-medium text-steel-5">
+          Tipo
+          <select name="comida[tipo]" aria-label="Tipo de comida"
+                  class="select select-bordered select-sm flex-1"
+                  data-action="change->autosave#programar">
+            <option value="">Sin clasificar</option>
+            <% PlantillaComida::TIPOS.each do |tipo| %>
+              <option value="<%= tipo %>" <%= "selected" if comida["tipo"] == tipo %>><%= tipo.capitalize %></option>
+            <% end %>
+          </select>
+        </label>
+
         <%# Descripción %>
         <textarea name="comida[descripcion]" rows="3" aria-label="¿Qué comes? Ajústalo a tu gusto"
                   placeholder="Describe lo que comes — puedes adaptarlo a tus gustos"

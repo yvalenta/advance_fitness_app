@@ -1,0 +1,85 @@
+<%# locals: (consumidas:, objetivo:, quemadas: nil, macros: nil) %>
+<%# Dona de calorías del día (Fase 14.4) — card resumen compartida. %>
+<%# SVG server-rendered puro, mismo patrón que GraficaSvg/_grafica_*: el %>
+<%# servidor pinta la geometría y el CSS existente (.grafica-linea) anima el %>
+<%# trazo — cero JS. Interfaz FIJA para otros consumidores: %>
+<%#   consumidas:, objetivo: — kcal del día. %>
+<%#   quemadas: — kcal del entrenamiento; nil oculta ese lado. %>
+<%#   macros: — {proteinas: [consumido, objetivo], carbohidratos: […], %>
+<%#             grasas: […]} en gramos; nil oculta las mini-barras. %>
+<%# Restantes = objetivo − consumidas + quemadas (entrenar "devuelve" %>
+<%# presupuesto). El número clampa en 0; pasarse enciende "excedido" en pulse. %>
+<% consumidas_kcal = consumidas.to_i %>
+<% quemadas_kcal = quemadas&.to_i %>
+<% presupuesto = objetivo.to_i + quemadas_kcal.to_i %>
+<% restantes = presupuesto - consumidas_kcal %>
+<% excedido = restantes.negative? %>
+<% fraccion = presupuesto.positive? ? consumidas_kcal.fdiv(presupuesto).clamp(0.0, 1.0) : 0.0 %>
+<%# Arco de progreso: r 80 centrado en (100,100), arranca arriba (−90°) %>
+<% angulo_fin = ((fraccion * 360) - 90) * Math::PI / 180 %>
+<% arco_x = (100 + (80 * Math.cos(angulo_fin))).round(2) %>
+<% arco_y = (100 + (80 * Math.sin(angulo_fin))).round(2) %>
+
+<div class="card border-2 border-volt/40 bg-gradient-to-b from-volt/15 via-volt/5 to-base-100 shadow-md">
+  <div class="card-body">
+    <div class="flex items-center justify-center gap-6 sm:gap-10">
+      <div class="text-center">
+        <p class="font-display text-2xl font-bold leading-none"><%= number_with_delimiter(consumidas_kcal, delimiter: ".") %></p>
+        <p class="mt-1 text-xs font-semibold text-steel-5">Consumidas</p>
+        <p class="text-[10px] uppercase tracking-wide text-steel-3">kcal</p>
+      </div>
+
+      <svg viewBox="0 0 200 200" class="w-40 shrink-0 sm:w-44" role="img"
+           aria-label="Te quedan <%= [ restantes, 0 ].max %> kcal de un presupuesto de <%= presupuesto %><%= " (excedido por #{restantes.abs} kcal)" if excedido %>">
+        <circle cx="100" cy="100" r="80" fill="none" stroke="var(--color-base-300)" stroke-width="14"/>
+        <% if excedido %>
+          <%# Anillo completo en pulse: el pulso (opacidad) sustituye al trazo animado %>
+          <circle class="animate-pulse" cx="100" cy="100" r="80" fill="none"
+                  stroke="var(--color-pulse)" stroke-width="14"/>
+        <% elsif fraccion >= 1 %>
+          <circle class="grafica-linea" pathLength="1" cx="100" cy="100" r="80" fill="none"
+                  stroke="var(--color-volt)" stroke-width="14" transform="rotate(-90 100 100)"/>
+        <% elsif fraccion.positive? %>
+          <path class="grafica-linea" pathLength="1" fill="none" stroke="var(--color-volt)"
+                stroke-width="14" stroke-linecap="round"
+                d="M 100 20 A 80 80 0 <%= fraccion > 0.5 ? 1 : 0 %> 1 <%= arco_x %> <%= arco_y %>"/>
+        <% end %>
+        <text x="100" y="76" text-anchor="middle" font-size="12" font-weight="600" class="fill-steel-3">Restantes</text>
+        <text id="dona-restantes" x="100" y="114" text-anchor="middle" font-size="34" font-weight="700"
+              class="font-display <%= excedido ? "fill-pulse" : "fill-base-content" %>"><%= number_with_delimiter([ restantes, 0 ].max, delimiter: ".") %></text>
+        <% if excedido %>
+          <text x="100" y="138" text-anchor="middle" font-size="12" font-weight="700"
+                class="animate-pulse fill-pulse">Excedido +<%= number_with_delimiter(restantes.abs, delimiter: ".") %> kcal</text>
+        <% else %>
+          <text x="100" y="138" text-anchor="middle" font-size="11" class="fill-steel-3">kcal</text>
+        <% end %>
+      </svg>
+
+      <% if quemadas_kcal %>
+        <div class="text-center">
+          <p class="font-display text-2xl font-bold leading-none"><%= number_with_delimiter(quemadas_kcal, delimiter: ".") %></p>
+          <p class="mt-1 text-xs font-semibold text-steel-5">Quemadas</p>
+          <p class="text-[10px] uppercase tracking-wide text-steel-3">kcal</p>
+        </div>
+      <% end %>
+    </div>
+
+    <% if macros %>
+      <% datos_macros = macros.transform_keys(&:to_sym) %>
+      <div class="mt-4 grid grid-cols-3 gap-3">
+        <% [ [ :carbohidratos, "Carbohidratos", "bg-accent" ], [ :proteinas, "Proteína", "bg-volt" ], [ :grasas, "Grasas", "bg-secondary" ] ].each do |clave, etiqueta, barra| %>
+          <% consumido_g = Array(datos_macros[clave])[0].to_i %>
+          <% meta_g = Array(datos_macros[clave])[1].to_i %>
+          <% pct_macro = meta_g.positive? ? ((consumido_g * 100.0) / meta_g).clamp(0, 100).round : 0 %>
+          <div>
+            <p class="truncate text-[11px] font-semibold text-steel-5"><%= etiqueta %></p>
+            <p class="font-mono text-xs font-bold"><%= consumido_g %>/<%= meta_g %>g</p>
+            <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-base-200">
+              <div class="h-full rounded-full <%= consumido_g > meta_g && meta_g.positive? ? "bg-pulse animate-pulse" : barra %>" style="width: <%= pct_macro %>%"></div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

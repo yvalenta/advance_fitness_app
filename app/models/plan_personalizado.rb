@@ -6,7 +6,7 @@ class PlanPersonalizado < ApplicationRecord
   # "reglas" = plan sugerido incluido con la membresía (Fase 5.11): solo
   # entrenamiento, aprobado de una vez y editable por el propio miembro.
   GENERADORES = %w[ia entrenador reglas].freeze
-  CAMPOS_COMIDA = %w[nombre descripcion kcal proteinas_g carbohidratos_g grasas_g].freeze
+  CAMPOS_COMIDA = %w[nombre descripcion kcal proteinas_g carbohidratos_g grasas_g tipo].freeze
   # ejercicio_id enlaza al catálogo visual (Fase 6); peso_sugerido_kg y
   # nota_tecnica los personaliza la IA con catálogo cerrado (Fase 6.5).
   CAMPOS_EJERCICIO = %w[nombre series repeticiones descanso_seg ejercicio_id peso_sugerido_kg nota_tecnica].freeze
