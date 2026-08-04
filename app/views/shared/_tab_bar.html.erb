@@ -1,0 +1,26 @@
+<%# Tab bar inferior (Fase 14.1): navegación primaria del miembro en móvil, %>
+<%# estilo app nativa. Solo usuarios de tenant — superadmin/comercializador %>
+<%# viven en el portal comercial y no la necesitan (el layout ya lo filtra). %>
+<%# Targets táctiles ≥44px (min-h-14 = 56px); safe-area en .tab-bar-inferior. %>
+<%
+  destinos = [
+    [ "Hoy", root_path, :rayo ],
+    [ "Plan", mi_plan_path, :actividad ],
+    [ "Nutrición", objetivo_path, :fuego ],
+    [ "Progreso", progreso_path, :tendencia_alta ],
+    [ "Perfil", edit_perfil_path, :usuarios ]
+  ]
+%>
+<nav class="tab-bar-inferior fixed inset-x-0 bottom-0 z-40 border-t border-base-300 bg-base-100/95 backdrop-blur md:hidden"
+     aria-label="Navegación principal">
+  <div class="grid grid-cols-5">
+    <% destinos.each do |texto, ruta, icono| %>
+      <% activo = current_page?(ruta) %>
+      <%= link_to ruta, class: "flex min-h-14 flex-col items-center justify-center gap-0.5 py-1.5 transition-colors #{activo ? "text-volt" : "text-steel-3"}",
+            "aria-current": (activo ? "page" : nil) do %>
+        <%= render "shared/icono", nombre: icono, clase: "size-5" %>
+        <span class="text-[10px] font-semibold"><%= texto %></span>
+      <% end %>
+    <% end %>
+  </div>
+</nav>
