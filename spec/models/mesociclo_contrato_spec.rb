@@ -26,7 +26,11 @@ RSpec.describe "Contrato del mesociclo (plan v1 identidad)", type: :model do
     expect(semana["numero"]).to eq(1)
     expect(semana["etiqueta"]).to be_present
     expect(semana["descarga"]).to be_falsey
-    expect(semana["dias"]).to eq(plan.dias)
+    # Contrato real 14.7 (copy-on-write): la semana sintética HEREDA de la
+    # base — "dias" es nil, no una copia materializada. Los días efectivos
+    # se piden con dias(semana:) — ajustado en la integración: el placeholder
+    # de esta spec materializaba, la implementación real no.
+    expect(semana["dias"]).to be_nil
 
     expect(plan.semana(1)).to eq(semana)
     expect(plan.semana_actual).to eq(1)

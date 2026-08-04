@@ -31,7 +31,7 @@
          ejercicios = Array(dias_semana[i]["ejercicios"])
          total += ejercicios.size
          registro = registros_mesociclo[fechas_por_semana[n][i]]
-         hechos_dia = ejercicios.each_index.count { |ei| registro&.estado_de(ei)&.dig("hecho") }
+         hechos_dia = ejercicios.each_with_index.count { |ej, ei| registro&.estado_de(uid: ej["uid"], indice: ei)&.dig("hecho") }
          hechos += hechos_dia
          ejercicios.any? && hechos_dia == ejercicios.size
        end
