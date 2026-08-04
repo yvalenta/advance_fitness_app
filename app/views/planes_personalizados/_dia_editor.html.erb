@@ -6,13 +6,17 @@
 <%# para ubicar el día destino. %>
 <%# Fase 14.9: el id y las URLs llevan la semana del mesociclo — el registro %>
 <%# y la fecha del seguimiento se resuelven por semana (Rutina::Calendario). %>
-<%# locals: (plan:, dia:, indice:, semana: 1, con_seguimiento: false, editable: false, editando_por_defecto: false, registro: nil, fecha: nil, anteriores: {}) %>
+<%# locals: (plan:, dia:, indice:, semana: 1, con_seguimiento: false, editable: false, editando_por_defecto: false, registro: nil, fecha: nil, anteriores: {}, premium: nil) %>
 <% semana = local_assigns.fetch(:semana, 1) %>
 <% con_seguimiento = local_assigns.fetch(:con_seguimiento, false) %>
 <% editable = local_assigns.fetch(:editable, false) %>
 <% editando_por_defecto = local_assigns.fetch(:editando_por_defecto, false) %>
 <% registro = local_assigns[:registro] %>
 <% fecha = local_assigns[:fecha] %>
+<%# Gate premium del botón Registrar: el del DUEÑO del plan, no el de quien
+    renderiza — en un broadcast Turbo no hay Current.user (nil.premium?
+    reventaba) y si renderiza el staff su premium no es el del miembro. %>
+<% premium = Current.user&.premium? if premium.nil? %>
 <%# {ejercicio_id => última serie registrada} — lo calcula el controller en
     UNA query (Fase 14.2); aquí está prohibido consultar (N+1 por fila). %>
 <% anteriores = local_assigns[:anteriores] || {} %>
@@ -33,6 +37,28 @@
         <span class="ml-auto shrink-0 text-xs text-steel-3"><%= l fecha, format: "%d %b" %></span>
       <% end %>
     </div>
+  <% end %>
+
+  <%# Hero media del día (pulido 14.17, referencia Gymnax): el GIF del primer
+      ejercicio en grande, tap = abrir su guía de ejecución. Solo lectura y
+      solo para el seguimiento del miembro — el editor del staff no lo carga. %>
+  <% hero = con_seguimiento && ejercicios.find { |e| e["ejercicio_id"].present? } %>
+  <% if hero %>
+    <button type="button" class="group relative block w-full overflow-hidden rounded-2xl bg-white/95"
+            data-modo-edicion-target="lectura" <%= "hidden" if editando_por_defecto %>
+            data-action="click->ayuda-ejercicio#abrir"
+            data-ayuda-url="<%= ayuda_ejercicios_path(ejercicio_id: hero["ejercicio_id"], nombre: hero["nombre"]) %>"
+            aria-label="Ver ejecución de <%= hero["nombre"] %>">
+      <img src="<%= media_ejercicio_path(hero["ejercicio_id"], tipo: :gif) %>" loading="lazy"
+           class="aspect-video w-full object-contain" alt="<%= hero["nombre"] %>">
+      <span class="absolute inset-0 bg-gradient-to-t from-steel-9/70 via-transparent to-transparent"></span>
+      <span class="absolute bottom-2 left-3 right-3 flex items-center gap-2 text-left">
+        <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-volt text-steel-9 shadow-lg transition-transform group-hover:scale-110">
+          <svg viewBox="0 0 24 24" class="ml-0.5 size-4" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </span>
+        <span class="min-w-0 truncate text-sm font-bold text-white drop-shadow"><%= hero["nombre"] %></span>
+      </span>
+    </button>
   <% end %>
 
   <% if editable %>
@@ -92,7 +118,7 @@
               <p class="mt-1 text-xs leading-snug text-steel-3"><%= ejercicio["nota_tecnica"] %></p>
             <% end %>
           </button>
-          <% if con_seguimiento && !futuro && Current.user.premium? %>
+          <% if con_seguimiento && !futuro && premium %>
             <%# Registro de series reales (SDD §18, feature premium) %>
             <button type="button" class="btn btn-ghost btn-xs shrink-0"
                     data-action="click->registro-series#abrir"

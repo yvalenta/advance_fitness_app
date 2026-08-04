@@ -42,7 +42,8 @@
       <%= render "planes_personalizados/dia_editor", plan: plan, dia: dia, indice: indice, semana: numero,
             con_seguimiento: con_seguimiento, editable: editable, editando_por_defecto: editando_por_defecto,
             registro: (registros[fechas[indice]] if con_seguimiento),
-            fecha: (fechas[indice] if con_seguimiento), anteriores: anteriores %>
+            fecha: (fechas[indice] if con_seguimiento), anteriores: anteriores,
+            premium: usuario&.premium? %>
     </div>
   <% end %>
 </div>

@@ -137,6 +137,18 @@
     }
   }
 
+  /* Celebración de récords (Fase 14.13, pulido 14.17): pop con rebote */
+  .pop-celebracion {
+    animation: pop-celebracion 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  @keyframes pop-celebracion {
+    from {
+      opacity: 0;
+      transform: scale(0.6) translateY(10px);
+    }
+  }
+
   .fade-delay-1 {
     animation-delay: 0.1s;
   }

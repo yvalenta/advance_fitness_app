@@ -97,6 +97,9 @@
           "otros" — comida_saneada no se toca. "Recomendado" = kcal del plan
           para ese tipo; el contador en vivo lo mueve el Stimulus al marcar. %>
       <% etiquetas_tipo = { "desayuno" => "Desayuno", "almuerzo" => "Almuerzo", "cena" => "Cena", "snack" => "Snacks", "otros" => "Otros" } %>
+      <%# Ilustración por tipo (pulido 14.17, referencia visual 2: cada comida
+          con su foto-emoji — café, ensalada, plato, banano) %>
+      <% emojis_tipo = { "desayuno" => "☕", "almuerzo" => "🥗", "cena" => "🍲", "snack" => "🍌", "otros" => "🍽️" } %>
       <% agrupadas = comidas.group_by { |comida| PlantillaComida::TIPOS.include?(comida["tipo"]) ? comida["tipo"] : "otros" } %>
 
       <div class="mt-3 grid gap-3 sm:grid-cols-2">
@@ -104,12 +107,15 @@
           <% grupo = agrupadas.fetch(tipo, []) %>
           <% recomendado = grupo.sum { |comida| comida["kcal"].to_i } %>
           <div class="flex flex-col gap-3 rounded-2xl border border-base-300 bg-base-200/50 p-3 <%= "sm:col-span-2" if tipo == "otros" %>">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <span class="badge badge-sm font-bold <%= tipo == "otros" ? "badge-ghost" : "badge-primary" %>"><%= etiquetas_tipo.fetch(tipo) %></span>
-              <p class="text-xs font-semibold text-steel-5">
-                <span class="font-display text-sm text-base-content" data-plan-nutricional-target="tipoKcal" data-tipo="<%= tipo %>" data-actual="0">0</span>
-                kcal · Recomendado: <%= number_with_delimiter(recomendado, delimiter: ".") %> kcal
-              </p>
+            <div class="flex items-center gap-3">
+              <span class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-base-100 text-2xl shadow-inner ring-1 ring-base-300" aria-hidden="true"><%= emojis_tipo.fetch(tipo) %></span>
+              <div class="min-w-0">
+                <span class="badge badge-sm font-bold <%= tipo == "otros" ? "badge-ghost" : "badge-primary" %>"><%= etiquetas_tipo.fetch(tipo) %></span>
+                <p class="mt-0.5 text-xs font-semibold text-steel-5">
+                  <span class="font-display text-sm text-base-content" data-plan-nutricional-target="tipoKcal" data-tipo="<%= tipo %>" data-actual="0">0</span>
+                  kcal · Recomendado: <%= number_with_delimiter(recomendado, delimiter: ".") %> kcal
+                </p>
+              </div>
             </div>
 
             <% if grupo.empty? %>

@@ -32,8 +32,10 @@
     </div>
 
     <div class="flex flex-wrap justify-center gap-2">
+      <%# Chips grandes (pulido 14.17): en el piso del gimnasio el tap es con
+          sudor y sin mirar — targets de 48px y número protagonista. %>
       <% [ ejercicio["series"].to_i, 1 ].max.times do |serie| %>
-        <button type="button" class="btn btn-outline btn-sm rounded-full px-4 font-bold"
+        <button type="button" class="btn btn-outline h-12 min-w-24 flex-1 whitespace-nowrap rounded-2xl font-display text-base font-bold"
                 data-action="sesion#marcarSerie" data-serie="<%= serie %>">
           Serie <%= serie + 1 %>
         </button>
