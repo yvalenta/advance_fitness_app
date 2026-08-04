@@ -87,4 +87,30 @@ RSpec.describe GeneradorPlanBasico, type: :model do
     jueves = rutina["dias"][3]["ejercicios"].map { |e| e["nombre"] }
     expect(lunes).not_to eq(jueves)
   end
+
+  # Énfasis del perfil femenino (Fase 14.16): el día de pierna prioriza
+  # glúteo. Default editable, no candado; el volumen del día no cambia.
+  describe "énfasis femenino" do
+    it "para sexo F el día de pierna del PPL pasa a Glúteo y pierna" do
+      miembra = users(:one).tap { |u| u.update!(sexo: "F") }
+      objetivo = ObjetivoNutricional.create!(user: miembra, tipo: "superavit",
+                                             peso_kg: 60, activo: true)
+
+      rutina = described_class.para(miembra, objetivo: objetivo)
+
+      enfoques = rutina["dias"].map { |d| d["enfoque"] }
+      expect(enfoques).to include("Glúteo y pierna")
+      expect(enfoques).not_to include("Pierna y glúteo")
+    end
+
+    it "para sexo M el split queda exactamente como siempre" do
+      miembro = users(:one).tap { |u| u.update!(sexo: "M") }
+      objetivo = ObjetivoNutricional.create!(user: miembro, tipo: "superavit",
+                                             peso_kg: 70, activo: true)
+
+      rutina = described_class.para(miembro, objetivo: objetivo)
+
+      expect(rutina["dias"].map { |d| d["enfoque"] }).to include("Pierna y glúteo")
+    end
+  end
 end

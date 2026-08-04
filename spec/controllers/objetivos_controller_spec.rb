@@ -20,6 +20,26 @@ RSpec.describe "Objetivos", type: :request do
     assert_select "#dona-restantes", text: /938/
   end
 
+  # Fase 14.16: la fase lútea suma su kcal_delta al presupuesto de la dona,
+  # con la leyenda del porqué. Sin consentimiento, nada de esto existe.
+  it "en fase lútea el presupuesto del día sube y se explica" do
+    miembra = users(:one)
+    sign_in_as miembra
+    post objetivo_path, params: { objetivo_nutricional: { tipo: "deficit", peso_kg: 70 } }
+
+    miembra.consentimientos.create!(tipo: "ciclo_menstrual", accion: "otorgado",
+                                    version_texto: "ciclo-v1")
+    # Día 21 de un ciclo de 28 → lútea (kcal_delta 150)
+    CicloMenstrual.create!(user: miembra, creado_por: miembra,
+                           fecha_inicio: Date.current - 20)
+
+    get objetivo_path
+
+    expect(response.body).to include("+150 kcal por tu fase")
+    # 2138 (objetivo) + 150 = 2288 de presupuesto en la dona
+    assert_select "#dona-restantes", text: /2.288/
+  end
+
   it "sin perfil completo redirige a completar perfil" do
     sign_in_as users(:two)
 

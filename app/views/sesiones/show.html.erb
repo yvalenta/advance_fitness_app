@@ -36,6 +36,16 @@
       <% end %>
     </header>
 
+    <%# Mensaje de fase del ciclo (14.16): solo con consentimiento vigente —
+        sin él la fase es :desconocida y el mensaje es nil. Los números de la
+        sesión ya vienen compuestos desde el controller. %>
+    <% if @ajuste_ciclo["mensaje"] %>
+      <div class="flex items-start gap-2 rounded-xl bg-ocean/10 px-3 py-2.5">
+        <%= render "shared/icono", nombre: :actividad, clase: "mt-0.5 size-4 shrink-0 text-ocean" %>
+        <p class="text-xs leading-snug text-ocean"><%= @ajuste_ciclo["mensaje"] %></p>
+      </div>
+    <% end %>
+
     <% @ejercicios_dia.each_with_index do |ejercicio, indice| %>
       <%= render "sesiones/ejercicio", ejercicio: ejercicio, indice: indice,
             total: @ejercicios_dia.size, catalogo: @catalogo %>

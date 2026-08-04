@@ -33,7 +33,12 @@ class GenerarPlanJob < ApplicationJob
       # del plan vigente ("Va en la semana 3 de 4…") y la adherencia por
       # semana del ciclo (contexto_ciclo / por_semana dentro del resumen).
       catalogo: Ejercicios::CatalogoParaPrompt.para,
-      adherencia: ResumenAdherencia.para(plan.user, plan: plan.user.plan_aprobado)
+      adherencia: ResumenAdherencia.para(plan.user, plan: plan.user.plan_aprobado),
+      # Fase 14.16: la fase del ciclo viaja al proveedor de IA SOLO con el
+      # consentimiento de segundo nivel (ciclo_menstrual_ia — distinto del de
+      # registro; el texto que la miembro aceptó nombra al proveedor externo).
+      # El job decide, no el PORO: GeneradorPlanIa recibe el dato ya filtrado.
+      ciclo: fase_ciclo_consentida(plan.user)
     )
 
     # Anti-alucinación (Fase 6.5): ids inexistentes se rescatan o se limpian
@@ -53,4 +58,15 @@ class GenerarPlanJob < ApplicationJob
     raise if error.is_a?(ActiveRecord::ConnectionNotEstablished)
     plan&.fallar!(error.message)
   end
+
+  private
+
+    # nil sin consentimiento de IA o sin datos (:desconocida) — el bloque del
+    # prompt simplemente no existe. El prompt no se persiste ni se loguea.
+    def fase_ciclo_consentida(user)
+      return unless Consentimiento.vigente?(user, "ciclo_menstrual_ia")
+
+      fase = Ciclo::Fase.para(user)
+      fase == :desconocida ? nil : fase.to_s
+    end
 end

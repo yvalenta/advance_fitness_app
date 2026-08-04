@@ -6,7 +6,7 @@
 <%# para ubicar el día destino. %>
 <%# Fase 14.9: el id y las URLs llevan la semana del mesociclo — el registro %>
 <%# y la fecha del seguimiento se resuelven por semana (Rutina::Calendario). %>
-<%# locals: (plan:, dia:, indice:, semana: 1, con_seguimiento: false, editable: false, editando_por_defecto: false, registro: nil, fecha: nil, anteriores: {}, premium: nil) %>
+<%# locals: (plan:, dia:, indice:, semana: 1, con_seguimiento: false, editable: false, editando_por_defecto: false, registro: nil, fecha: nil, anteriores: {}, premium: nil, mensaje_ciclo: nil) %>
 <% semana = local_assigns.fetch(:semana, 1) %>
 <% con_seguimiento = local_assigns.fetch(:con_seguimiento, false) %>
 <% editable = local_assigns.fetch(:editable, false) %>
@@ -36,6 +36,15 @@
       <% if con_seguimiento && !futuro %>
         <span class="ml-auto shrink-0 text-xs text-steel-3"><%= l fecha, format: "%d %b" %></span>
       <% end %>
+    </div>
+  <% end %>
+
+  <% if mensaje_ciclo %>
+    <%# Fase del ciclo (14.16): informa sin alterar los valores editables %>
+    <div class="flex items-start gap-2 rounded-xl bg-ocean/10 px-3 py-2.5"
+         data-modo-edicion-target="lectura" <%= "hidden" if editando_por_defecto %>>
+      <%= render "shared/icono", nombre: :actividad, clase: "mt-0.5 size-4 shrink-0 text-ocean" %>
+      <p class="text-xs leading-snug text-ocean"><%= mensaje_ciclo %></p>
     </div>
   <% end %>
 

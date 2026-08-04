@@ -38,12 +38,18 @@
   <% end %>
 
   <% dias.each_with_index do |dia, indice| %>
+    <%# Mensaje de fase del ciclo (14.16): SOLO en el panel de HOY — una query
+        máximo por render, y el mensaje pertenece al día que se entrena. Los
+        valores del panel se quedan en base/mesociclo (este panel se puede
+        EDITAR y un ajuste temporal de fase no debe hornearse al materializar);
+        los números compuestos viven en el modo sesión. %>
+    <% mensaje_ciclo = (Ciclo::Ajuste.para(Ciclo::Fase.para(usuario, fechas[indice]))["mensaje"] if con_seguimiento && fechas[indice] == Date.current) %>
     <div data-tabs-target="panel" hidden>
       <%= render "planes_personalizados/dia_editor", plan: plan, dia: dia, indice: indice, semana: numero,
             con_seguimiento: con_seguimiento, editable: editable, editando_por_defecto: editando_por_defecto,
             registro: (registros[fechas[indice]] if con_seguimiento),
             fecha: (fechas[indice] if con_seguimiento), anteriores: anteriores,
-            premium: usuario&.premium? %>
+            premium: usuario&.premium?, mensaje_ciclo: mensaje_ciclo %>
     </div>
   <% end %>
 </div>

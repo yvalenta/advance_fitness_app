@@ -26,10 +26,16 @@
            grasas: [ @registro_hoy&.grasas_g.to_i, metas_macros["grasas_g"] ] }
        end %>
 
+    <% kcal_ciclo = @ajuste_ciclo["kcal_delta"].to_i %>
     <div class="animate-fade-up">
-      <%= render "shared/dona_calorias", consumidas: consumidas, objetivo: @objetivo.objetivo_kcal,
+      <%= render "shared/dona_calorias", consumidas: consumidas, objetivo: @objetivo.objetivo_kcal + kcal_ciclo,
                  quemadas: quemadas, macros: macros %>
     </div>
+    <% if kcal_ciclo.positive? %>
+      <p class="mt-2 px-1 text-xs text-ocean">
+        Tu presupuesto de hoy incluye +<%= kcal_ciclo %> kcal por tu fase del ciclo — es normal que el hambre suba estos días.
+      </p>
+    <% end %>
 
     <div class="animate-fade-up fade-delay-1 mt-3 flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-1 text-xs text-steel-5">
       <p>

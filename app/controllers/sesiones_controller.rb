@@ -14,7 +14,14 @@ class SesionesController < ApplicationController
     end
 
     authorize @plan, :show?
-    @dia = dia_para(@fecha)
+    # Composición ciclo × mesociclo (Fase 14.16): la sesión es donde la
+    # prescripción se CONSUME, así que aquí los números van efectivos — la
+    # semana del mesociclo de la fecha, compuesta con la fase del ciclo
+    # (Rutina::Resolutor.componer clampea el factor a 0.7..1.25; la fase solo
+    # baja carga). Sin consentimiento la fase es :desconocida → identidad.
+    @ajuste_ciclo = Ciclo::Ajuste.para(Ciclo::Fase.para(Current.user, @fecha))
+    dias_efectivos = Rutina::Resolutor.dias(@plan.rutina, numero_semana(@fecha), extra: @ajuste_ciclo)
+    @dia = dia_para(@fecha, dias_efectivos)
     @ejercicios_dia = @dia ? Array(@dia["ejercicios"]) : []
     @catalogo = Ejercicio.where(id: @ejercicios_dia.filter_map { |ej| ej["ejercicio_id"] })
                          .index_by(&:id)
@@ -29,14 +36,21 @@ class SesionesController < ApplicationController
       Date.current
     end
 
+    # Semana del mesociclo a la que pertenece la fecha (API 14.7: enteros sin
+    # clamp); fuera de rango cae a la semana en curso — para un plan v1 eso
+    # es siempre la 1.
+    def numero_semana(fecha)
+      numero = Rutina::Calendario.semana_de(@plan, fecha)
+      numero.is_a?(Integer) && numero.between?(1, @plan.semanas.size) ? numero : @plan.semana_actual
+    end
+
     # La rutina trae los días por nombre ("lunes"…"domingo"); la fecha pedida
     # se ubica por su offset desde el lunes (DIAS_OFFSET + beginning_of_week).
-    # Si el plan trae version: 2 se toma la rutina base igual (plan.dias lee
-    # rutina["dias"]); la resolución por semana del mesociclo llega en la
-    # integración. Devuelve nil si la fecha no tiene día programado (descanso).
-    def dia_para(fecha)
+    # Recibe los días YA efectivos (semana + ciclo). Devuelve nil si la fecha
+    # no tiene día programado (descanso).
+    def dia_para(fecha, dias)
       offset = (fecha - fecha.beginning_of_week).to_i
-      @plan.dias.find { |dia| PlanPersonalizado::DIAS_OFFSET[sin_acentos(dia["dia"])] == offset }
+      dias.find { |dia| PlanPersonalizado::DIAS_OFFSET[sin_acentos(dia["dia"])] == offset }
     end
 
     def sin_acentos(nombre)

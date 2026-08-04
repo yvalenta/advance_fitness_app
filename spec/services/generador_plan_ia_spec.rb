@@ -36,6 +36,34 @@ RSpec.describe GeneradorPlanIa, type: :model do
     expect(prompt).not_to match(/Medidas antropométricas/)
   end
 
+  # Fase 14.16: bloque del ciclo — llega ya filtrado por el job (consentimiento
+  # de segundo nivel); el PORO solo lo redacta, con la regla de nunca subir.
+  it "con fase del ciclo el prompt la nombra y prohíbe subir carga por ella" do
+    prompt = GeneradorPlanIa.construir_prompt(
+      edad: 30, sexo: "F", talla_cm: 165.0, peso_kg: 60.0, somatotipo: nil,
+      nivel_actividad: 1.6, meta: "x", objetivo_kcal: 2000, tdee_kcal: 1800,
+      ciclo: "lutea"
+    )
+
+    expect(prompt).to include("fase lútea")
+    expect(prompt).to include("nunca subirla")
+  end
+
+  it "sin fase (o desconocida) el prompt no menciona el ciclo" do
+    sin = GeneradorPlanIa.construir_prompt(
+      edad: 30, sexo: "F", talla_cm: 165.0, peso_kg: 60.0, somatotipo: nil,
+      nivel_actividad: 1.6, meta: "x", objetivo_kcal: 2000, tdee_kcal: 1800
+    )
+    desconocida = GeneradorPlanIa.construir_prompt(
+      edad: 30, sexo: "F", talla_cm: 165.0, peso_kg: 60.0, somatotipo: nil,
+      nivel_actividad: 1.6, meta: "x", objetivo_kcal: 2000, tdee_kcal: 1800,
+      ciclo: "desconocida"
+    )
+
+    expect(sin).not_to match(/[Cc]iclo menstrual/)
+    expect(desconocida).not_to match(/[Cc]iclo menstrual/)
+  end
+
   # Fase 6.5: catálogo cerrado de ejercicios en el prompt
   it "el prompt incluye el catálogo permitido y el system exige ids exactos" do
     prompt = GeneradorPlanIa.construir_prompt(

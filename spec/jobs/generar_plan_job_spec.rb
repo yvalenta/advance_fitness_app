@@ -129,4 +129,33 @@ RSpec.describe GenerarPlanJob, type: :job do
     expect(plan.reload.fallido?).to be_truthy
     expect(plan.error_generacion).to match(/suscripción/i)
   end
+
+  # Fase 14.16: la fase del ciclo viaja al proveedor SOLO con el consentimiento
+  # de segundo nivel (ciclo_menstrual_ia). El de registro no basta.
+  describe "fase del ciclo en el perfil de la IA" do
+    before do
+      Suscripcion.create!(user: @user, plan: planes(:personalizado), estado: "activa", fecha_inicio: Date.current)
+      @user.consentimientos.create!(tipo: "ciclo_menstrual", accion: "otorgado", version_texto: "ciclo-v1")
+      CicloMenstrual.create!(user: @user, creado_por: @user, fecha_inicio: Date.current)
+    end
+
+    it "viaja con el consentimiento de IA vigente" do
+      @user.consentimientos.create!(tipo: "ciclo_menstrual_ia", accion: "otorgado", version_texto: "ciclo-ia-v1")
+      plan = plan_generando
+      perfil_visto = nil
+
+      con_ia_stub(->(perfil) { perfil_visto = perfil; resultado }) { GenerarPlanJob.perform_now(plan.id) }
+
+      expect(perfil_visto[:ciclo]).to eq("menstrual")
+    end
+
+    it "NO viaja con solo el consentimiento de registro" do
+      plan = plan_generando
+      perfil_visto = nil
+
+      con_ia_stub(->(perfil) { perfil_visto = perfil; resultado }) { GenerarPlanJob.perform_now(plan.id) }
+
+      expect(perfil_visto[:ciclo]).to be_nil
+    end
+  end
 end

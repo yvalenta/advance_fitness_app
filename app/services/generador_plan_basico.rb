@@ -27,10 +27,22 @@ module GeneradorPlanBasico
     [ "Pierna y core",                  { pierna: 2, gluteo: 1, core: 1 } ]
   ].freeze
 
+  # Énfasis del perfil femenino (Fase 14.16, Bloque D del plan): en cada
+  # split, el día de pierna prioriza glúteo — la preferencia de entrenamiento
+  # mayoritaria del público femenino del gimnasio. Es un DEFAULT del plan
+  # sugerido, no un candado: la miembro lo edita como cualquier plan por
+  # reglas. El volumen total del día no cambia (mismos 4-5 ejercicios).
+  ENFASIS_F = {
+    "Pierna y glúteo" => [ "Glúteo y pierna", { gluteo: 2, pierna: 1, core: 1 } ],
+    "Pierna y core"   => [ "Glúteo, pierna y core", { gluteo: 2, pierna: 1, core: 1 } ],
+    "Cuerpo completo A" => [ "Cuerpo completo A", { pierna: 1, gluteo: 1, espalda: 1, core: 1 } ]
+  }.freeze
+
   def self.para(user, objetivo: nil)
     objetivo ||= user.objetivo_activo if user.respond_to?(:objetivo_activo) && user.persisted?
     biblioteca = PlantillaEjercicio.ordenadas.group_by(&:musculo)
     plantilla_semana = segun_objetivo(objetivo&.tipo)
+    plantilla_semana = con_enfasis_femenino(plantilla_semana) if user.respond_to?(:sexo) && user.sexo == "F"
 
     dias = DIAS.each_with_index.map do |dia, indice|
       enfoque, receta = plantilla_semana[indice % plantilla_semana.size]
@@ -51,6 +63,10 @@ module GeneradorPlanBasico
     when "deficit" then FULLBODY_AB
     else TORSO_PIERNA
     end
+  end
+
+  def self.con_enfasis_femenino(plantilla_semana)
+    plantilla_semana.map { |enfoque, receta| ENFASIS_F.fetch(enfoque, [ enfoque, receta ]) }
   end
 
   def self.dia_desde(dia, enfoque, receta, biblioteca, offset:)

@@ -102,4 +102,61 @@ RSpec.describe "Sesiones", type: :request do
     get sesion_path
     expect(response).to have_http_status(:redirect)
   end
+
+  # Composición ciclo × mesociclo (Fase 14.16): la sesión sirve los números
+  # EFECTIVOS — el ajuste de la semana compuesto con el de la fase del ciclo.
+  describe "composición con la fase del ciclo" do
+    let(:miembra) { users(:one) }
+
+    def consentir_y_registrar_ciclo!(fecha_inicio: Date.current)
+      miembra.consentimientos.create!(tipo: "ciclo_menstrual", accion: "otorgado",
+                                      version_texto: "ciclo-v1")
+      CicloMenstrual.create!(user: miembra, creado_por: miembra, fecha_inicio: fecha_inicio)
+    end
+
+    it "en fase menstrual baja peso y series con el clamp compuesto, y muestra el mensaje" do
+      crear_plan!(miembra, rutina: rutina)
+      consentir_y_registrar_ciclo!(fecha_inicio: lunes) # el lunes cursa fase menstrual
+      sign_in_as miembra
+
+      get sesion_path(lunes.iso8601)
+
+      # menstrual: peso ×0.85 (60 → 51.0, a medios kilos) y series 3−1 = 2
+      expect(response.body).to include('"peso_sugerido_kg":51.0')
+      expect(response.body).to include('"series":2')
+      expect(response.body).to include("baja un poco la carga")
+    end
+
+    it "sin consentimiento la fase es desconocida: números base y sin mensaje" do
+      crear_plan!(miembra, rutina: rutina)
+      CicloMenstrual.create!(user: miembra, creado_por: miembra, fecha_inicio: lunes)
+      sign_in_as miembra
+
+      get sesion_path(lunes.iso8601)
+
+      expect(response.body).to include('"peso_sugerido_kg":60')
+      expect(response.body).to include('"series":3')
+      expect(response.body).not_to include("baja un poco la carga")
+    end
+
+    it "compone con la semana del mesociclo respetando el piso 0.7 del factor" do
+      rutina_v2 = rutina.merge(
+        "version" => 2,
+        "mesociclo" => { "nombre" => "Meso", "semanas_total" => 1,
+                         "inicio" => lunes.iso8601, "progresion" => "lineal" },
+        "semanas" => [ { "numero" => 1, "etiqueta" => "Descarga", "descarga" => true,
+                         "ajuste" => { "series_delta" => 0, "peso_factor" => 0.8, "reps_delta" => 0 },
+                         "dias" => nil } ]
+      )
+      crear_plan!(miembra, rutina: rutina_v2)
+      consentir_y_registrar_ciclo!(fecha_inicio: lunes)
+      sign_in_as miembra
+
+      get sesion_path(lunes.iso8601)
+
+      # 0.8 × 0.85 = 0.68 → clamp 0.7 (Rutina::Resolutor::PESO_FACTOR_COMPUESTO)
+      # 60 × 0.7 = 42.0
+      expect(response.body).to include('"peso_sugerido_kg":42.0')
+    end
+  end
 end

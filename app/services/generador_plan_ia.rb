@@ -83,7 +83,24 @@ module GeneradorPlanIa
       - Nivel de actividad (factor TDEE): #{perfil[:nivel_actividad]}
       - Meta: #{perfil[:meta]} · Objetivo diario: #{perfil[:objetivo_kcal]} kcal (TDEE #{perfil[:tdee_kcal]} kcal)
     PROMPT
-    base + antropometria(perfil[:medicion]) + adherencia(perfil[:adherencia]) + catalogo(perfil[:catalogo])
+    base + antropometria(perfil[:medicion]) + adherencia(perfil[:adherencia]) +
+      ciclo(perfil[:ciclo]) + catalogo(perfil[:catalogo])
+  end
+
+  # Fase del ciclo menstrual (14.16): llega SOLO si el job verificó el
+  # consentimiento de segundo nivel (ciclo_menstrual_ia). Guía cualitativa —
+  # la composición numérica dura la hace Rutina::Resolutor en la sesión, y la
+  # regla "la fase jamás sube carga" también rige aquí.
+  FASES_CICLO = { "menstrual" => "menstrual", "folicular" => "folicular",
+                  "ovulacion" => "ovulatoria", "lutea" => "lútea" }.freeze
+
+  def self.ciclo(fase)
+    nombre = FASES_CICLO[fase.to_s]
+    return "" if nombre.blank?
+
+    "\nCiclo menstrual (dato compartido con consentimiento): hoy cursa la fase #{nombre}. " \
+      "Modula el arranque del mesociclo con criterio conservador para esa fase — " \
+      "la fase puede bajar la intensidad inicial, nunca subirla.\n"
   end
 
   # Catálogo cerrado de ejercicios (Fase 6.5): la IA solo puede elegir de aquí.
