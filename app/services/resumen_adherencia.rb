@@ -59,7 +59,11 @@ module ResumenAdherencia
       hechos, total = conteo_bi_formato(registro)
       next if total.zero?
 
+      # Rutina::Calendario devuelve enteros SIN clamp (≤0 antes del inicio,
+      # >total después del fin — API de 14.7): todo lo que caiga fuera de
+      # 1..total es fuera_de_ciclo, no una semana fantasma.
       numero = calendario.semana_de(plan, registro.fecha)
+      numero = nil unless numero.is_a?(Integer) && numero.between?(1, metadatos.size)
       destino = numero ? buckets[numero] : fuera
       destino[:hechos] += hechos
       destino[:total] += total
@@ -120,20 +124,18 @@ module ResumenAdherencia
     hash[clave].nil? ? hash[clave.to_s] : hash[clave]
   end
 
-  # ── Resolución contract-first (14.10) ────────────────────────────────────
-  # Rutina::Calendario y los helpers del plan (semanas / semana_actual) los
-  # integra la etapa del calendario de mesociclos; mientras no existan en
-  # este árbol responde el placeholder (descartado en la integración).
-  def self.calendario
-    defined?(Rutina::Calendario) ? Rutina::Calendario : Rutina::CalendarioPlaceholder
-  end
+  # ── Resolución sobre la API real de 14.7 (placeholder descartado) ────────
+  def self.calendario = Rutina::Calendario
 
-  def self.semanas_del(plan)
-    plan.respond_to?(:semanas) ? plan.semanas : Rutina::CalendarioPlaceholder.semanas(plan)
-  end
+  def self.semanas_del(plan) = plan.semanas
 
+  # `semana_actual` clampea 1..total a propósito (es lo que la UI quiere
+  # mostrar); el "ya terminó" del contexto narrativo sale de
+  # `mesociclo_completado?` — integración 14.7+14.10.
   def self.semana_actual_del(plan)
-    plan.respond_to?(:semana_actual) ? plan.semana_actual : Rutina::CalendarioPlaceholder.semana_actual(plan)
+    return nil if plan.mesociclo_completado?
+
+    plan.semana_actual
   end
 
   def self.contar(conteos, estado, posicion:)

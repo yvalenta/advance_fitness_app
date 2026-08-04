@@ -325,21 +325,34 @@ class PlanPersonalizado < ApplicationRecord
       end
     end
 
-    # Lectura tolerante (Fase 14.7): un plan v1 (sin "version") se ve EN
-    # MEMORIA como un mesociclo de 1 semana identidad; desde la lectura jamás
-    # se escribe. El inicio sintético es el lunes de la semana de creación —
-    # el mismo fallback que usa Rutina::Calendario.
+    # Lectura tolerante (Fase 14.7): un plan v1 se ve EN MEMORIA como un
+    # mesociclo de 1 semana identidad; desde la lectura jamás se escribe.
+    # "Declara v2" usa el MISMO predicado que Ejercicios::ValidadorRutina
+    # (version, mesociclo o semanas presentes — integración 14.7+14.8): una
+    # rutina escrita a mano desde el editor JSON del staff con "semanas" pero
+    # sin "version" también es v2, y las piezas que falten se completan en
+    # memoria con los mismos defaults. El inicio sintético es el lunes de la
+    # semana de creación — el mismo fallback que usa Rutina::Calendario.
     def rutina_normalizada
-      return rutina if rutina.is_a?(Hash) && rutina["version"].to_i >= VERSION_MESOCICLO
-
       base = rutina.is_a?(Hash) ? rutina : {}
+      semanas_declaradas = base["semanas"].is_a?(Array) ? base["semanas"] : []
+      declarada_v2 = base["version"].to_i >= VERSION_MESOCICLO ||
+                     base["mesociclo"].is_a?(Hash) || semanas_declaradas.any?
+
+      unless declarada_v2
+        semanas_declaradas = [ { "numero" => 1, "etiqueta" => "Semana 1", "descarga" => false,
+                                 "ajuste" => Rutina::Resolutor::AJUSTE_IDENTIDAD.dup, "dias" => nil } ]
+      end
+
+      mesociclo = base["mesociclo"].is_a?(Hash) ? base["mesociclo"] : {}
       base.merge(
         "version" => VERSION_MESOCICLO,
-        "mesociclo" => { "nombre" => "Mesociclo", "semanas_total" => 1,
-                         "inicio" => (created_at || Time.current).to_date.beginning_of_week.iso8601,
-                         "progresion" => "lineal" },
-        "semanas" => [ { "numero" => 1, "etiqueta" => "Semana 1", "descarga" => false,
-                        "ajuste" => Rutina::Resolutor::AJUSTE_IDENTIDAD.dup, "dias" => nil } ]
+        "mesociclo" => {
+          "nombre" => "Mesociclo", "semanas_total" => semanas_declaradas.size,
+          "inicio" => (created_at || Time.current).to_date.beginning_of_week.iso8601,
+          "progresion" => "lineal"
+        }.merge(mesociclo.compact),
+        "semanas" => semanas_declaradas
       )
     end
 

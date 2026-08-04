@@ -28,7 +28,12 @@ module HistorialEntrenamiento
 
     metadatos = semanas_del(plan)
     detalles_en_rango(user, semanas)
-      .group_by { |d| calendario.semana_de(plan, d.registro_entrenamiento.fecha) }
+      .group_by { |d|
+        # Enteros sin clamp (API 14.7): fuera de 1..total = fuera del ciclo,
+        # excluido — misma normalización que ResumenAdherencia.
+        numero = calendario.semana_de(plan, d.registro_entrenamiento.fecha)
+        numero.is_a?(Integer) && numero.between?(1, metadatos.size) ? numero : nil
+      }
       .except(nil).sort.map do |numero, del_grupo|
         meta = ResumenAdherencia.meta_de(metadatos, numero) || {}
         { semana: numero,
