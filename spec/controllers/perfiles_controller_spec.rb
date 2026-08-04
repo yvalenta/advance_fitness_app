@@ -25,6 +25,21 @@ RSpec.describe "Perfiles", type: :request do
     expect(users(:one).reload.nombre).to eq("Uno Actualizado")
   end
 
+  # Fase 16.4: cabecera con stats — y mirar el perfil NO siembra filas del
+  # motor de juego (find_or_initialize, patrón dashboard).
+  it "muestra los stats del miembro sin crear PerfilJuego" do
+    users(:one).registros_entrenamiento.create!(
+      fecha: Date.current, ejercicios: { "version" => 2, "items" => { "aaaaaaaaaa" => { "hecho" => true } } }
+    )
+    sign_in_as users(:one)
+
+    expect { get edit_perfil_path }.not_to change(PerfilJuego, :count)
+
+    expect(response.body).to include("Entrenamientos")
+    expect(response.body).to include("Mejor racha")
+    expect(response.body).to include("Récords")
+  end
+
   # Fase 16 (Nota 21): la preferencia de tema es del usuario y el SERVIDOR
   # renderiza el data-theme en el body — el redirect ya vuelve pintado.
   describe "preferencia de tema" do

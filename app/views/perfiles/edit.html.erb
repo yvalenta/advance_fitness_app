@@ -6,6 +6,19 @@
       descripcion: "Estos datos alimentan el cálculo de tu gasto calórico (Mifflin-St Jeor)." %>
 
 <div class="mx-auto -mt-8 w-full max-w-2xl px-4 pb-12">
+  <%# Fila de stats (Fase 16.4, referencia Pulse): lo que el miembro ha
+      construido, arriba de sus datos. El controller trae los números. %>
+  <div class="animate-fade-up mb-4 grid grid-cols-3 gap-2">
+    <% [ [ @total_entrenamientos, "Entrenamientos" ],
+         [ @perfil_juego.racha_mejor.to_i, "Mejor racha" ],
+         [ @records_total, "Récords" ] ].each do |numero, etiqueta| %>
+      <div class="rounded-2xl border border-base-300 bg-base-100 px-2 py-3 text-center shadow-sm">
+        <p class="font-display text-2xl font-bold"><%= numero %></p>
+        <p class="text-[10px] font-bold uppercase tracking-wider text-steel-5"><%= etiqueta %></p>
+      </div>
+    <% end %>
+  </div>
+
   <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
     <div class="card-body">
       <% if @user.errors.any? %>

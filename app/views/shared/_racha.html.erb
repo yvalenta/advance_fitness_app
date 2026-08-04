@@ -2,7 +2,7 @@
     PerfilJuego del miembro — proyección de solo lectura del motor de juego
     (Fase 14.12). `perfil` puede venir sin persistir (find_or_initialize):
     los defaults de columna (racha 0) pintan el estado apagado. %>
-<%# locals: (perfil:) %>
+<%# locals: (perfil:, dias: nil) %>
 <% encendida = perfil.racha_actual.to_i.positive? %>
 <div class="card card-hover border border-base-300 bg-base-100 shadow-sm">
   <div class="card-body gap-1.5">
@@ -15,6 +15,22 @@
     <span class="font-display text-4xl font-bold tracking-tight <%= "text-volt-d" if encendida %>">
       <%= perfil.racha_actual.to_i %><span class="ml-1 text-base font-semibold text-steel-5">días</span>
     </span>
+
+    <%# Tira de la semana (Fase 16.4, referencia Pulse): un marcador por día
+        L–D; cumplido = check-in o ejercicio marcado (regla de Juego::Racha).
+        Solo la pinta el dashboard, que trae los datos — la vista no consulta. %>
+    <% if dias %>
+      <div class="mt-1 flex items-end justify-between gap-1" aria-hidden="true">
+        <% letras = %w[L M X J V S D] %>
+        <% dias.each_with_index do |dia, indice| %>
+          <div class="flex flex-1 flex-col items-center gap-1">
+            <span class="w-1.5 rounded-full <%= dia[:cumplido] ? "h-6 bg-volt" : "h-6 #{dia[:futuro] ? "bg-base-300/50" : "bg-base-300"}" %>"></span>
+            <span class="text-[9px] font-bold <%= dia[:fecha] == Date.current ? "text-volt-d" : "text-steel-5" %>"><%= letras[indice] %></span>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
     <p class="text-sm text-steel-5">
       <% if perfil.racha_mejor.to_i.positive? %>
         Mejor racha: <%= perfil.racha_mejor.to_i %> días

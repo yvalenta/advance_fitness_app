@@ -67,7 +67,7 @@
 
   <%# Racha + calorías: 2 columnas también en móvil (cards compactas). %>
   <div class="animate-fade-up fade-delay-1 grid grid-cols-2 gap-4">
-    <%= render "shared/racha", perfil: @perfil_juego %>
+    <%= render "shared/racha", perfil: @perfil_juego, dias: @dias_semana %>
     <%= link_to objetivo_path do %>
       <% if @objetivo %>
         <% restantes = @objetivo.kcal_restantes(@registro_hoy&.kcal_consumidas.to_i) %>

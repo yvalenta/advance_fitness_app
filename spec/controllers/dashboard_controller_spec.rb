@@ -122,6 +122,21 @@ RSpec.describe "Dashboard", type: :request do
     assert_select "a[href=?]", mi_plan_path, text: "Ver mi plan"
   end
 
+  # Fase 16.4: la tira de la semana marca los días que contaron para la racha
+  # (misma regla que Juego::Racha: check-in o ejercicio marcado).
+  it "la tira de la semana pinta el día entrenado y las letras L-D" do
+    miembro.accesos.delete_all # los fixtures traen check-ins de la semana
+    miembro.registros_entrenamiento.create!(
+      fecha: Date.current, ejercicios: { "version" => 2, "items" => { "aaaaaaaaaa" => { "hecho" => true } } }
+    )
+    sign_in_as miembro
+
+    get root_url
+
+    %w[L M X J V S D].each { |letra| expect(response.body).to include(">#{letra}</span>") }
+    expect(response.body.scan("h-6 bg-volt").size).to eq(1) # solo hoy cumplido
+  end
+
   # Red anti-N+1: el dashboard hace el MISMO número de queries con el panel
   # lleno (plan de varios días, registro del día, perfil de juego, objetivo)
   # que vacío — todo lo del día se resuelve en Ruby sobre los jsonb.
