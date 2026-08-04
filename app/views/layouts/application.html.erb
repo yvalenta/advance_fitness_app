@@ -14,6 +14,10 @@
     <%# Turbo 8 morphing (Fase de Calidad): los refreshes actualizan el DOM
         en sitio y conservan el scroll — sin "flash" de página completa. %>
     <%= turbo_refreshes_with method: :morph, scroll: :preserve %>
+    <%# View transitions (Fase 16.7): cross-fade nativo en visitas de página
+        completa donde el navegador lo soporte; los refreshes con morph no
+        pasan por aquí, así que no compiten. Progresivo: sin soporte, nada. %>
+    <meta name="view-transition" content="same-origin">
 
     <%= yield :head %>
 
