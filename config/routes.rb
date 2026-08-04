@@ -30,6 +30,14 @@ Rails.application.routes.draw do
   # Seguimiento de entrenamiento del miembro (Fase 5.10): upsert por fecha+ejercicio.
   resources :registros_entrenamiento, only: :create
 
+  # Ciclo menstrual (Fase 14.15) — dato de salud sensible, siempre en primera
+  # persona: no hay rutas de staff/admin para estos recursos y la card vive
+  # solo en /progreso. El consentimiento es un recurso singular: POST otorga
+  # (con opt-in separado de IA), DELETE revoca — y borra los ciclos salvo
+  # "conservar mis datos" (ver ConsentimientosCicloController).
+  resources :ciclos_menstruales, only: %i[ create destroy ]
+  resource :consentimiento_ciclo, only: %i[ create destroy ], controller: "consentimientos_ciclo"
+
   # Registro cuantitativo de series (SDD §18, feature premium): index carga
   # el dialog por fecha+ejercicio (query string, mismo patrón de :ayuda);
   # create/destroy responden turbo_stream. Rutas nombradas a mano (en vez de

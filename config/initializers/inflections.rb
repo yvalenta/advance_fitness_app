@@ -21,4 +21,8 @@ ActiveSupport::Inflector.inflections(:en) do |inflect|
   inflect.irregular "plantilla_comida", "plantillas_comida"
   inflect.irregular "plantilla_ejercicio", "plantillas_ejercicio"
   inflect.irregular "consentimiento", "consentimientos"
+  # Sin esta regla el inflector daría "ciclo_menstruals" (pluraliza la última
+  # palabra en inglés); el modelo CicloMenstrual necesita tabla y rutas
+  # "ciclos_menstruales".
+  inflect.irregular "ciclo_menstrual", "ciclos_menstruales"
 end

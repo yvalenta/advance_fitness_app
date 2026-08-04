@@ -30,6 +30,9 @@ class User < ApplicationRecord
   # ReadOnlyRecord, por eso `delete_all` — al borrar el user, el rastro
   # de sus consentimientos se va con él (dato personal, RGPD-friendly).
   has_many :consentimientos, dependent: :delete_all
+  # Dato de salud sensible (Fase 14.15): se va con la cuenta. `delete_all`
+  # también libera la FK de creado_por (siempre es la propia usuaria).
+  has_many :ciclos_menstruales, dependent: :delete_all
 
   normalizes :email_address, with: ->(e) { e.strip.downcase }
 
