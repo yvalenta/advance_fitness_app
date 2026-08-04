@@ -36,6 +36,9 @@ class User < ApplicationRecord
   has_many :logros_obtenidos, dependent: :destroy
   # Récords personales (Fase 14.13): histórico que solo escribe el detector.
   has_many :records_personales, dependent: :delete_all
+  # Dato de salud sensible (Fase 14.15): se va con la cuenta. `delete_all`
+  # también libera la FK de creado_por (siempre es la propia usuaria).
+  has_many :ciclos_menstruales, dependent: :delete_all
 
   normalizes :email_address, with: ->(e) { e.strip.downcase }
 

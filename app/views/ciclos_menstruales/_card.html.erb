@@ -1,0 +1,125 @@
+<%# locals: (usuario:) %>
+<%# Privacidad primero (Fase 14.15): esta card SOLO existe para la propia
+    usuaria. El guard de abajo es defensivo — aunque alguien la renderice
+    desde otra vista (p. ej. un panel de staff con el user equivocado), sin
+    Current.user == usuario no sale ni un byte. Jamás va en parciales
+    shared/* (admin/users/show los reutiliza con @progreso ajeno). %>
+<% if Current.user && Current.user == usuario %>
+  <% if Consentimiento.vigente?(usuario, "ciclo_menstrual") %>
+    <%
+      fase = Ciclo::Fase.para(usuario)
+      ajuste = Ciclo::Ajuste.para(fase)
+      proxima = Ciclo::Fase.proxima_menstruacion(usuario)
+      dia = Ciclo::Fase.dia_del_ciclo(usuario)
+      ciclos = usuario.ciclos_menstruales.recientes.limit(3)
+      nombre_fase = { menstrual: "Menstrual", folicular: "Folicular", ovulacion: "Ovulación",
+                      lutea: "Lútea", desconocida: "Aún sin estimar" }[fase]
+    %>
+    <div class="card mt-4 border border-base-300 bg-base-100 shadow-sm" id="mi_ciclo">
+      <div class="card-body gap-3">
+        <h2 class="card-title text-base">
+          <span class="flex size-7 items-center justify-center rounded-lg bg-pulse/15 text-pulse">
+            <%= render "shared/icono", nombre: :calendario, clase: "size-4" %>
+          </span>
+          Mi ciclo
+          <span class="badge badge-ghost badge-sm ml-auto" title="Solo tú puedes ver esta card">
+            <%= render "shared/icono", nombre: :candado, clase: "size-3" %>&nbsp;Privado
+          </span>
+        </h2>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="badge badge-lg bg-pulse/15 font-semibold text-pulse">Fase: <%= nombre_fase %></span>
+          <% if dia && fase != :desconocida %>
+            <span class="text-sm text-steel-3">Día <%= dia %> de tu ciclo</span>
+          <% end %>
+        </div>
+        <% if ajuste["mensaje"] %>
+          <p class="text-sm text-steel-5"><%= ajuste["mensaje"] %></p>
+        <% else %>
+          <p class="text-sm text-steel-5">Registra el inicio de tu próximo ciclo para volver a estimar tu fase.</p>
+        <% end %>
+        <% if proxima && fase != :desconocida %>
+          <p class="text-sm text-steel-3">
+            Próxima menstruación estimada:
+            <span class="font-semibold text-steel-5"><%= l proxima, format: :long %></span>
+            <% if proxima < Date.current %>(con unos días de retraso — tranquila, es una estimación)<% end %>
+          </p>
+        <% end %>
+
+        <%# ── Registrar inicio de ciclo (form inline) ──────────────────── %>
+        <%= form_with url: ciclos_menstruales_path, class: "flex flex-wrap items-end gap-3 rounded-xl bg-base-200/60 p-3" do |form| %>
+          <label class="form-control">
+            <span class="label-text mb-1 text-xs font-semibold">Primer día</span>
+            <%= form.date_field "ciclo_menstrual[fecha_inicio]", value: Date.current, max: Date.current,
+                  required: true, class: "input input-bordered input-sm" %>
+          </label>
+          <label class="form-control">
+            <span class="label-text mb-1 text-xs font-semibold">Días de sangrado (opcional)</span>
+            <%= form.number_field "ciclo_menstrual[duracion_sangrado_dias]", min: 1, max: 15,
+                  class: "input input-bordered input-sm w-24" %>
+          </label>
+          <%= form.submit "Registrar inicio de ciclo", class: "btn btn-primary btn-sm font-bold" %>
+        <% end %>
+
+        <%# ── Últimos 3 ciclos, con eliminar ───────────────────────────── %>
+        <% if ciclos.any? %>
+          <ul class="flex flex-col divide-y divide-base-200 text-sm">
+            <% ciclos.each do |ciclo| %>
+              <li class="flex items-center justify-between gap-2 py-1.5">
+                <span class="text-steel-5">
+                  <%= l ciclo.fecha_inicio, format: :long %>
+                  <% if ciclo.duracion_sangrado_dias %>
+                    <span class="text-xs text-steel-3">· <%= ciclo.duracion_sangrado_dias %> días de sangrado</span>
+                  <% end %>
+                </span>
+                <%= button_to ciclo_menstrual_path(ciclo), method: :delete, class: "btn btn-ghost btn-xs",
+                      title: "Eliminar este registro" do %>
+                  <%= render "shared/icono", nombre: :papelera, clase: "size-3.5" %>
+                <% end %>
+              </li>
+            <% end %>
+          </ul>
+        <% end %>
+
+        <%# ── IA opcional + revocación, plegados para no estorbar ──────── %>
+        <details class="mt-1 text-sm">
+          <summary class="cursor-pointer text-xs font-semibold text-steel-3">Privacidad y opciones</summary>
+          <div class="mt-3 flex flex-col gap-3">
+            <p class="text-xs text-steel-3">
+              Solo tú ves estos datos: no aparecen en ningún panel de entrenadores ni administradores.
+              Tu fase se calcula al momento y nunca se guarda.
+            </p>
+            <% if Consentimiento.vigente?(usuario, "ciclo_menstrual_ia") %>
+              <%= form_with url: consentimiento_ciclo_path(ambito: "ia"), method: :delete, class: "flex items-center gap-2" do |form| %>
+                <%= form.submit "Dejar de usar mi fase en mi plan", class: "btn btn-ghost btn-xs" %>
+                <span class="text-xs text-steel-3">Hoy tu fase puede usarse para personalizar tu plan (IA externa).</span>
+              <% end %>
+            <% else %>
+              <%= form_with url: consentimiento_ciclo_path(ambito: "ia"), class: "flex items-center gap-2" do |form| %>
+                <%= form.submit "Usar mi fase para personalizar mi plan", class: "btn btn-ghost btn-xs" %>
+                <span class="text-xs text-steel-3">Opcional. El análisis lo hace un proveedor de IA externo.</span>
+              <% end %>
+            <% end %>
+            <%= form_with url: consentimiento_ciclo_path, method: :delete, class: "flex flex-wrap items-center gap-3" do |form| %>
+              <label class="flex cursor-pointer items-center gap-2 text-xs text-steel-3">
+                <%= form.check_box :conservar_datos, { checked: false }, "1", "0" %>
+                Conservar mis datos (solo revocar el consentimiento)
+              </label>
+              <%= form.submit "Revocar consentimiento", class: "btn btn-outline btn-error btn-xs",
+                    data: { turbo_confirm: "Si no marcas \"conservar mis datos\", tus registros de ciclo se borrarán definitivamente. ¿Continuar?" } %>
+            <% end %>
+          </div>
+        </details>
+      </div>
+    </div>
+  <% elsif usuario.sexo == "F" %>
+    <%= render "ciclos_menstruales/invitacion" %>
+  <% else %>
+    <%# Sin sexo declarado (o M): la invitación no se impone — queda tras un
+        link discreto para quien la necesite. %>
+    <details class="mt-4">
+      <summary class="cursor-pointer text-xs font-semibold text-steel-3">¿Llevas tu ciclo menstrual? Actívalo aquí</summary>
+      <div class="mt-2"><%= render "ciclos_menstruales/invitacion" %></div>
+    </details>
+  <% end %>
+<% end %>

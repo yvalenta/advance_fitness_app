@@ -30,4 +30,6 @@ ActiveSupport::Inflector.inflections(:en) do |inflect|
   # Récords personales (Fase 14.13): mismo motivo — el inflector inglés
   # daría "record_personals" y Zeitwerk no resolvería el modelo.
   inflect.irregular "record_personal", "records_personales"
+  # Ciclo menstrual (Fase 14.15): ídem — el inflector daría "ciclo_menstruals".
+  inflect.irregular "ciclo_menstrual", "ciclos_menstruales"
 end

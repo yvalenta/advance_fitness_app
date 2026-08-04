@@ -146,6 +146,22 @@ RSpec.describe "Aislamiento cross-tenant en policies", type: :model do
     expect_aislado(DetalleEntrenamientoPolicy, record_af: det_af, record_mp: det_mp)
   end
 
+  it "CicloMenstrualPolicy — MÁS cerrado que el aislamiento por tenant: el admin del MISMO tenant obtiene scope VACÍO" do
+    # Aquí no aplica `expect_aislado`: ese helper asume que el staff ve los
+    # registros de su tenant, y este scope no tiene (ni debe tener) rama de
+    # staff — el ciclo menstrual es un dato de salud sensible que se aísla
+    # por PERSONA. Si alguien agrega `user.staff?` o `del_tenant` a
+    # CicloMenstrualPolicy::Scope, este ejemplo falla a propósito.
+    miembro_af.consentimientos.create!(tipo: "ciclo_menstrual", accion: "otorgado",
+                                       version_texto: "ciclo-v1")
+    ciclo = CicloMenstrual.create!(user: miembro_af, creado_por: miembro_af,
+                                   fecha_inicio: Date.current)
+
+    expect(CicloMenstrualPolicy::Scope.new(admin_af, CicloMenstrual).resolve).to be_empty
+    expect(CicloMenstrualPolicy::Scope.new(miembro_af, CicloMenstrual).resolve)
+      .to contain_exactly(ciclo)
+  end
+
   it "ConsentimientoPolicy — estrictamente personal: cada quien ve SOLO los suyos" do
     # El scope es más cerrado que el resto (ni el staff ve los ajenos), así
     # que el aislamiento se prueba con consentimientos de los propios admins.

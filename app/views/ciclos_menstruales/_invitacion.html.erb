@@ -1,0 +1,37 @@
+<%# Texto de consentimiento VERSIONADO (ciclo-v1, Fase 14.15): si este texto
+    cambia de fondo, se sube la versión en CicloMenstrual::VERSION_TEXTO —
+    cada fila de consentimiento registra qué versión aceptó la usuaria. %>
+<div class="card border border-base-300 bg-base-100 shadow-sm" id="invitacion_ciclo">
+  <div class="card-body gap-3">
+    <h2 class="card-title text-base">
+      <span class="flex size-7 items-center justify-center rounded-lg bg-pulse/15 text-pulse">
+        <%= render "shared/icono", nombre: :calendario, clase: "size-4" %>
+      </span>
+      Tu ciclo, si tú quieres
+    </h2>
+    <p class="text-sm text-steel-5">
+      Si registras el inicio de tu menstruación, te estimamos la fase de tu ciclo y te sugerimos
+      ajustes amables de entrenamiento (nunca más carga, solo menos cuando ayuda). Es totalmente
+      opcional y puedes desactivarlo cuando quieras.
+    </p>
+    <ul class="flex list-disc flex-col gap-1 pl-5 text-xs text-steel-3">
+      <li><span class="font-semibold text-steel-5">Qué se guarda:</span> solo las fechas de inicio y, si quieres, cuántos días dura tu sangrado y una nota.</li>
+      <li><span class="font-semibold text-steel-5">Quién lo ve:</span> solamente tú. Ni entrenadores ni administradores pueden ver estos datos — no aparecen en ningún panel del staff.</li>
+      <li><span class="font-semibold text-steel-5">Tu fase no se guarda:</span> se calcula al momento a partir de tus fechas.</li>
+      <li><span class="font-semibold text-steel-5">Puedes revocar cuando quieras:</span> al hacerlo, tus registros se borran definitivamente (o se conservan, si tú lo pides).</li>
+    </ul>
+    <%= form_with url: consentimiento_ciclo_path, class: "flex flex-col gap-3" do |form| %>
+      <label class="flex cursor-pointer items-start gap-2 text-xs text-steel-3">
+        <%= form.check_box "consentimiento_ciclo[acepta_ia]", { checked: false, class: "checkbox checkbox-xs mt-0.5" }, "1", "0" %>
+        <span>
+          Opcional: quiero que mi fase se use para personalizar mi plan de entrenamiento.
+          Ese análisis lo realiza un proveedor de IA externo; puedo retirar este permiso por separado.
+        </span>
+      </label>
+      <div class="flex flex-wrap items-center gap-3">
+        <%= form.submit "Acepto y activo Mi ciclo", class: "btn btn-primary btn-sm font-bold" %>
+        <span class="text-[11px] text-steel-3">Consentimiento versión ciclo-v1 · quedará registrado con fecha</span>
+      </div>
+    <% end %>
+  </div>
+</div>
