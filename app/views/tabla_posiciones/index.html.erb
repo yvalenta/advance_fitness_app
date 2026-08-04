@@ -1,0 +1,35 @@
+<%# Tabla de posiciones (Fase 14.14). Dos estados: participante (podio +
+    lista + fila propia) o invitación opt-in sobre una lista BORROSA sin un
+    solo dato real — reciprocidad: nadie mira sin dejarse ver. %>
+<% content_for :title, "Tabla de posiciones — #{Negocio.nombre}" %>
+
+<%= render "shared/encabezado", eyebrow: "Comunidad", titulo: "Tabla de posiciones",
+      descripcion: "La constancia de los miembros de #{Negocio.nombre}, en puntos." %>
+
+<div class="mx-auto -mt-8 w-full max-w-3xl px-4 pb-12">
+  <% if @participo %>
+    <%= render "podio", top: @top, mi_perfil: @mi_perfil %>
+
+    <% resto = @top.drop(3) %>
+    <% if resto.any? %>
+      <div class="mt-6 flex flex-col gap-2">
+        <% resto.each_with_index do |perfil, indice| %>
+          <%= render "fila", perfil: perfil, posicion: indice + 4,
+                propia: perfil.id == @mi_perfil.id %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <% unless @en_top %>
+      <%# Fuera del top 50: la fila propia queda fija abajo con la posición
+          real (bottom-20 en móvil: por encima de la tab bar). %>
+      <div class="sticky bottom-20 z-10 mt-4 md:bottom-4">
+        <%= render "fila", perfil: @mi_perfil, posicion: @mi_posicion, propia: true %>
+      </div>
+    <% end %>
+
+    <%= render "ajustes", perfil: @mi_perfil %>
+  <% else %>
+    <%= render "opt_in" %>
+  <% end %>
+</div>

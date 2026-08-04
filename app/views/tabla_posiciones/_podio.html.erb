@@ -1,0 +1,32 @@
+<%# Podio clásico 2º-1º-3º con alturas escalonadas: volt para el oro,
+    steel para la plata, ámbar para el bronce. %>
+<%# locals: (top:, mi_perfil:) %>
+<% columnas = [
+     { perfil: top[1], puesto: 2, pedestal: "h-16 bg-steel-7",      cifra: "text-steel-1",  numero: "text-white/70" },
+     { perfil: top[0], puesto: 1, pedestal: "h-24 bg-volt",         cifra: "text-volt",     numero: "text-steel-9" },
+     { perfil: top[2], puesto: 3, pedestal: "h-12 bg-amber-700/80", cifra: "text-amber-500", numero: "text-white/70" }
+   ] %>
+<div class="grid grid-cols-3 items-end gap-3">
+  <% columnas.each do |columna| %>
+    <% if (perfil = columna[:perfil]) %>
+      <% propia = perfil.id == mi_perfil.id %>
+      <div class="flex min-w-0 flex-col items-center gap-1.5">
+        <%= render "shared/avatar", user: perfil.user,
+              clase: columna[:puesto] == 1 ? "size-16 text-xl" : "size-12 text-base" %>
+        <p class="max-w-full truncate text-sm font-semibold <%= "text-volt" if propia %>">
+          <%= nombre_en_ranking(perfil) %><%= " (tú)" if propia %>
+        </p>
+        <p class="font-display text-lg font-bold leading-none <%= columna[:cifra] %>">
+          <%= number_with_delimiter(perfil.puntos_total, delimiter: ".") %>
+          <span class="text-[10px] font-medium text-steel-3">pts</span>
+        </p>
+        <div class="flex w-full items-start justify-center rounded-t-xl pt-2 <%= columna[:pedestal] %> <%= "ring-2 ring-volt" if propia %>">
+          <span class="font-display text-xl font-bold <%= columna[:numero] %>"><%= columna[:puesto] %></span>
+        </div>
+      </div>
+    <% else %>
+      <%# Menos de 3 participantes: pedestal vacío para no romper la geometría %>
+      <div class="h-10 self-end rounded-t-xl border-2 border-dashed border-base-300"></div>
+    <% end %>
+  <% end %>
+</div>

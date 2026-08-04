@@ -1,0 +1,15 @@
+<%# Ajustes del participante: editar apodo (mismo endpoint del opt-in, que ya
+    no re-otorga consentimiento) y salir de la tabla (revoca + oculta). %>
+<%# locals: (perfil:) %>
+<div class="mt-8 rounded-xl border border-base-300 bg-base-100 p-4">
+  <p class="text-sm font-semibold">Tu participación</p>
+  <p class="mt-1 text-xs text-steel-3">Aparece tu apodo, no tu correo. Puedes salir cuando quieras.</p>
+  <%= form_with url: ranking_participacion_path, scope: :perfil_juego, method: :post,
+        class: "mt-3 flex items-center gap-2" do |formulario| %>
+    <%= formulario.text_field :apodo, value: perfil.apodo, maxlength: 24,
+          placeholder: "Tu apodo", class: "input input-bordered input-sm flex-1" %>
+    <%= formulario.submit "Guardar apodo", class: "btn btn-sm" %>
+  <% end %>
+  <%= button_to "Salir de la tabla", ranking_participacion_path, method: :delete,
+        class: "btn btn-ghost btn-xs mt-3 text-error" %>
+</div>
