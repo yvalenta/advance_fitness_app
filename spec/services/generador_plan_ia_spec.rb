@@ -93,6 +93,61 @@ RSpec.describe GeneradorPlanIa, type: :model do
     expect { GeneradorPlanIa.parsear("no soy json") }.to raise_error(JSON::ParserError)
   end
 
+  # ── Fase 14.8: mesociclo v2 ──────────────────────────────────────────────
+
+  it "el system prompt pide el mesociclo v2 con semanas de SOLO metadatos" do
+    prompt = GeneradorPlanIa::SYSTEM_PROMPT
+
+    expect(prompt).to include('"mesociclo"')
+    expect(prompt).to include('"semanas"')
+    expect(prompt).to include("EXACTAMENTE 4 entradas")
+    expect(prompt).to include("JAMÁS materialices")
+    expect(prompt).to include("SIEMPRE es de descarga")
+    expect(prompt).to include('"peso_factor" máximo 0.9')
+    # El uid es identidad interna (Fase 14.6): la IA no debe conocerlo
+    expect(prompt).not_to match(/\buid\b/)
+  end
+
+  it "parsear acepta la respuesta v2 completa sin tocarla" do
+    rutina = {
+      "version" => 2,
+      "mesociclo" => { "nombre" => "Fuerza base", "semanas_total" => 4, "inicio" => nil, "progresion" => "lineal" },
+      "dias" => [ { "dia" => "lunes", "enfoque" => "Empuje", "ejercicios" => [ { "nombre" => "Press" } ] } ],
+      "semanas" => [
+        { "numero" => 1, "etiqueta" => "Arranque", "descarga" => false,
+          "ajuste" => { "series_delta" => 0, "peso_factor" => 1.0, "reps_delta" => 0 } },
+        { "numero" => 2, "etiqueta" => "Carga", "descarga" => false,
+          "ajuste" => { "series_delta" => 1, "peso_factor" => 1.08, "reps_delta" => 0 } },
+        { "numero" => 3, "etiqueta" => "Pico", "descarga" => false,
+          "ajuste" => { "series_delta" => 1, "peso_factor" => 1.12, "reps_delta" => -1 } },
+        { "numero" => 4, "etiqueta" => "Descarga", "descarga" => true,
+          "ajuste" => { "series_delta" => -1, "peso_factor" => 0.8, "reps_delta" => 0 } }
+      ]
+    }
+    texto = JSON.generate({ "rutina" => rutina, "plan_nutricional" => { "comidas" => [] } })
+
+    resultado = GeneradorPlanIa.parsear(texto)
+
+    expect(resultado[:rutina]).to eq(rutina)
+  end
+
+  it "parsear sintetiza la progresión por defecto si la IA respondió solo la base v1" do
+    texto = JSON.generate({
+      "rutina" => { "dias" => [ { "dia" => "lunes", "ejercicios" => [ { "nombre" => "Press" } ] } ] },
+      "plan_nutricional" => { "comidas" => [] }
+    })
+
+    rutina = GeneradorPlanIa.parsear(texto)[:rutina]
+
+    expect(rutina["version"]).to eq(2)
+    expect(rutina["mesociclo"]).to include("semanas_total" => 4, "progresion" => "lineal")
+    expect(rutina["semanas"].map { |s| s["etiqueta"] }).to eq(%w[Adaptación Acumulación Intensificación Descarga])
+    expect(rutina["semanas"].map { |s| s["ajuste"]["peso_factor"] }).to eq([ 1.0, 1.05, 1.1, 0.85 ])
+    expect(rutina["semanas"].last["descarga"]).to be(true)
+    # La base queda intacta: la síntesis solo agrega metadatos
+    expect(rutina["dias"][0]["ejercicios"][0]["nombre"]).to eq("Press")
+  end
+
   it "el proveedor se elige por IA_PROVEEDOR con gemini por defecto" do
     con_proveedor(nil) { expect(GeneradorPlanIa.proveedor).to eq(Ia::ProveedorGemini) }
     con_proveedor("gemini") { expect(GeneradorPlanIa.proveedor).to eq(Ia::ProveedorGemini) }

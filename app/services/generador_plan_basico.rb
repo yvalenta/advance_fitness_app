@@ -1,9 +1,10 @@
 # Plan de entrenamiento sugerido incluido con la membresía (SDD §03/§11,
 # Fases 5.9/5.11). Sin IA: arma una rutina de fuerza de 6 días (lunes–sábado,
-# domingo descanso, la semana se repite durante el mes de la membresía) desde
-# las plantillas de ejercicio, con reglas deterministas según el objetivo del
-# miembro. PORO puro: recibe el User (+ objetivo) y devuelve el hash `rutina`
-# con la misma forma que el plan de la IA.
+# domingo descanso) desde las plantillas de ejercicio, con reglas
+# deterministas según el objetivo del miembro. Desde la Fase 14.8 la semana
+# base forma un mesociclo v2 de 4 semanas con progresión lineal y descarga
+# final. Recibe el User (+ objetivo) y devuelve el hash `rutina` con la misma
+# forma que el plan de la IA.
 module GeneradorPlanBasico
   DIAS = %w[lunes martes miercoles jueves viernes sabado].freeze
 
@@ -37,7 +38,11 @@ module GeneradorPlanBasico
       # variar la semana (p. ej. Empuje del lunes ≠ Empuje del jueves).
       dia_desde(dia, enfoque, receta, biblioteca, offset: indice / plantilla_semana.size)
     end
-    { "dias" => dias }
+    # Mesociclo v2 (Fase 14.8): la semana base + la progresión lineal
+    # determinista de 4 semanas (1.00/1.05/1.10/0.85, la última descarga).
+    progresion = Ejercicios::ValidadorRutina.progresion_defecto
+    { "version" => 2, "mesociclo" => progresion["mesociclo"],
+      "dias" => dias, "semanas" => progresion["semanas"] }
   end
 
   def self.segun_objetivo(tipo)
