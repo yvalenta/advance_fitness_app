@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_22_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_03_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -148,9 +148,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_000000) do
     t.date "fecha_inicio", null: false
     t.date "fecha_vencimiento", null: false
     t.jsonb "horario_acceso"
+    t.bigint "tenant_id"
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["estado"], name: "index_membresias_on_estado"
+    t.index ["tenant_id", "fecha_vencimiento"], name: "index_membresias_on_tenant_id_and_fecha_vencimiento"
     t.index ["user_id"], name: "index_membresias_on_user_id", unique: true
   end
 
@@ -189,10 +191,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_000000) do
     t.date "periodo_fin", null: false
     t.date "periodo_inicio", null: false
     t.bigint "registrado_por_id", null: false
+    t.bigint "tenant_id"
     t.datetime "updated_at", null: false
     t.index ["anulado_por_id"], name: "index_pagos_on_anulado_por_id"
     t.index ["membresia_id"], name: "index_pagos_on_membresia_id"
     t.index ["registrado_por_id"], name: "index_pagos_on_registrado_por_id"
+    t.index ["tenant_id", "fecha_pago", "id"], name: "index_pagos_on_tenant_id_and_fecha_pago_and_id"
   end
 
   create_table "planes", force: :cascade do |t|
@@ -301,10 +305,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_000000) do
     t.date "fecha_inicio", null: false
     t.bigint "membresia_id"
     t.bigint "plan_id", null: false
+    t.bigint "tenant_id"
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["membresia_id"], name: "index_suscripciones_on_membresia_id"
     t.index ["plan_id"], name: "index_suscripciones_on_plan_id"
+    t.index ["tenant_id", "created_at"], name: "index_suscripciones_on_tenant_id_and_created_at"
     t.index ["user_id"], name: "index_suscripciones_on_user_id"
     t.index ["user_id"], name: "index_suscripciones_una_activa_por_user", unique: true, where: "((estado)::text = 'activa'::text)"
   end
@@ -353,10 +359,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_000000) do
   add_foreign_key "feedback_ia", "registros_entrenamiento", on_delete: :cascade
   add_foreign_key "mediciones", "users"
   add_foreign_key "mediciones", "users", column: "tomada_por_id"
+  add_foreign_key "membresias", "tenants"
   add_foreign_key "membresias", "users"
   add_foreign_key "novedades", "tenants"
   add_foreign_key "objetivos_nutricionales", "users"
   add_foreign_key "pagos", "membresias"
+  add_foreign_key "pagos", "tenants"
   add_foreign_key "pagos", "users", column: "anulado_por_id"
   add_foreign_key "pagos", "users", column: "registrado_por_id"
   add_foreign_key "planes_personalizados", "users"
@@ -371,6 +379,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_22_000000) do
   add_foreign_key "sessions", "users"
   add_foreign_key "suscripciones", "membresias"
   add_foreign_key "suscripciones", "planes"
+  add_foreign_key "suscripciones", "tenants"
   add_foreign_key "suscripciones", "users"
   add_foreign_key "users", "tenants"
 end

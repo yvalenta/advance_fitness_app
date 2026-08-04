@@ -1,5 +1,7 @@
+# `tenant` explícito por la misma razón que en membresias.yml (SDD §16.7).
 inicial_one:
   membresia: activa_one
+  tenant: advance_fitness
   monto: 80000
   fecha_pago: <%= Date.current - 10 %>
   periodo_inicio: <%= Date.current - 10 %>

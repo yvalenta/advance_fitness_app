@@ -1,4 +1,8 @@
 class Pago < ApplicationRecord
+  # `tenant_id` propio: era el peor caso del join (membresia → user), dos
+  # saltos sobre el historial financiero — el ADR que motiva §16.7.
+  include TenantDesnormalizado
+
   METODOS = %w[efectivo transferencia tarjeta].freeze
   # Monto mínimo razonable en COP (Fase 5.11): evita registros por error
   MONTO_MINIMO = 1_000
@@ -6,6 +10,8 @@ class Pago < ApplicationRecord
   belongs_to :membresia
   belongs_to :registrado_por, class_name: "User"
   belongs_to :anulado_por, class_name: "User", optional: true
+  # Desde la membresía, que ya trae su `tenant_id` coherente con su dueño.
+  hereda_tenant_de :membresia
 
   validates :metodo, inclusion: { in: METODOS }
   validates :monto, numericality: { greater_than: MONTO_MINIMO,
