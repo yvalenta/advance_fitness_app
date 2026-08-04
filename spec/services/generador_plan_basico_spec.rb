@@ -34,7 +34,8 @@ RSpec.describe GeneradorPlanBasico, type: :model do
 
     expect(rutina["dias"].size).to eq(6)
     ejercicio = rutina["dias"].first["ejercicios"].first
-    expect(ejercicio.keys.sort).to eq(%w[descanso_seg nombre repeticiones series])
+    # Fase 14.6: + uid — la identidad estable por entrada para el seguimiento
+    expect(ejercicio.keys.sort).to eq(%w[descanso_seg nombre repeticiones series uid])
     expect(ejercicio["nombre"].present?).to be_truthy
   end
 
@@ -49,6 +50,17 @@ RSpec.describe GeneradorPlanBasico, type: :model do
     con_id = rutina["dias"].flat_map { |d| d["ejercicios"] }.select { |e| e["ejercicio_id"] }
     expect(con_id.any?).to be_truthy
     expect(con_id.first["ejercicio_id"]).to eq(ejercicio.id)
+  end
+
+  # Fase 14.6: identidad estable por ENTRADA — única aunque la misma plantilla
+  # se repita en la semana.
+  it "cada ejercicio del plan por reglas nace con uid único" do
+    rutina = GeneradorPlanBasico.para(users(:one), objetivo: objetivo("superavit"))
+    uids = rutina["dias"].flat_map { |d| d["ejercicios"] }.map { |e| e["uid"] }
+
+    expect(uids.any?).to be_truthy
+    expect(uids).to all(match(/\A[a-zA-Z0-9]{10}\z/))
+    expect(uids.uniq.size).to eq(uids.size)
   end
 
   it "la semana rota ejercicios entre repeticiones del mismo enfoque" do

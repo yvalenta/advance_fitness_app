@@ -59,8 +59,11 @@ module GeneradorPlanBasico
   end
 
   def self.ejercicio_hash(plantilla)
+    # uid (Fase 14.6): identidad estable por entrada — el seguimiento se ancla
+    # a él, no a la posición en el array.
     { "nombre" => plantilla.nombre, "series" => plantilla.series || 3,
       "repeticiones" => plantilla.repeticiones, "descanso_seg" => plantilla.descanso_seg || 60,
-      "ejercicio_id" => plantilla.ejercicio_id }.compact
+      "ejercicio_id" => plantilla.ejercicio_id,
+      "uid" => SecureRandom.alphanumeric(10) }.compact
   end
 end

@@ -242,4 +242,56 @@ RSpec.describe PlanPersonalizado, type: :model do
     plan = plan_con_rutina
     expect { plan.aplicar_sesion!(0, "gluteo", []) }.to raise_error(ActiveRecord::RecordNotFound)
   end
+
+  # ── uid estable por entrada de la rutina (Fase 14.6) ───────────────────
+  # El seguimiento se ancla al uid, no a la posición: cada ruta de alta debe
+  # estrenarlo y ninguna edición debe poder borrarlo.
+  def uid_formato = /\A[a-zA-Z0-9]{10}\z/
+
+  it "agregar_ejercicio! estrena uid (alta manual del editor)" do
+    plan = plan_con_rutina
+    plan.agregar_ejercicio!(1, { "nombre" => "Remo" })
+
+    expect(plan.reload.ejercicios_de(1).last["uid"]).to match(uid_formato)
+  end
+
+  it "dos entradas del mismo ejercicio llevan uids distintos (identidad por ENTRADA)" do
+    plan = plan_con_rutina
+    2.times { plan.agregar_ejercicio!(0, { "nombre" => "Press banca" }) }
+
+    uids = plan.reload.ejercicios_de(0).last(2).map { |e| e["uid"] }
+    expect(uids.uniq.size).to eq(2)
+  end
+
+  it "aplicar_sesion! estrena uid en cada ejercicio de la plantilla" do
+    plan = plan_con_rutina
+    plan.aplicar_sesion!(0, "pecho", [ plantillas_ejercicio(:press_banca) ])
+
+    expect(plan.reload.ejercicios_de(0)).to all(satisfy { |e| e["uid"].to_s.match?(uid_formato) })
+  end
+
+  it "el plan sugerido por reglas nace con uid único en cada ejercicio" do
+    ObjetivoNutricional.fijar_para(users(:one), tipo: "superavit", peso_kg: 70)
+    plan = PlanPersonalizado.asegurar_sugerido!(users(:one))
+
+    uids = plan.dias.flat_map { |dia| dia["ejercicios"] }.map { |e| e["uid"] }
+    expect(uids.any?).to be_truthy
+    expect(uids).to all(match(uid_formato))
+    expect(uids.uniq.size).to eq(uids.size)
+  end
+
+  it "actualizar_ejercicio! preserva el uid aunque el autosave lo reenvíe o lo mande vacío" do
+    plan = plan_con_rutina
+    plan.agregar_ejercicio!(0, { "nombre" => "Fondos" })
+    indice = plan.reload.ejercicios_de(0).size - 1
+    uid = plan.ejercicios_de(0).last["uid"]
+
+    plan.actualizar_ejercicio!(0, indice, { "series" => "5", "uid" => uid }) # autosave reenvía todo
+    expect(plan.reload.ejercicios_de(0).last["uid"]).to eq(uid)
+
+    plan.actualizar_ejercicio!(0, indice, { "series" => "4", "uid" => "" }) # blank jamás lo borra
+    ejercicio = plan.reload.ejercicios_de(0).last
+    expect(ejercicio["uid"]).to eq(uid)
+    expect(ejercicio["series"]).to eq(4)
+  end
 end

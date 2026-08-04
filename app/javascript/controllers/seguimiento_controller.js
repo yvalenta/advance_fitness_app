@@ -10,7 +10,13 @@ export default class extends Controller {
 
   marcar(event) {
     const fila = event.target.closest("[data-indice]")
+    // Fase 14.6: el ancla real es el uid estable del contenedor del ejercicio;
+    // indice/nombre siguen viajando como metadato histórico. Si el atributo
+    // aún no está en el DOM (plan viejo sin uid), va vacío y el servidor cae
+    // al anclaje posicional.
+    const uid = fila.dataset.uid || event.target.closest("[data-uid]")?.dataset.uid || ""
     this.enviar(event.target, {
+      uid,
       indice: fila.dataset.indice,
       nombre: fila.dataset.nombre,
       hecho: event.target.checked
