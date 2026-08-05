@@ -63,14 +63,56 @@ for HOST in $KAMAL_HOSTS; do
     echo "post-deploy: $CONTAINER no respondió en /up tras 30s (probable cuelgue en db:prepare), reiniciando..."
     ssh "${SSH_USER}@${HOST}" "docker restart ${CONTAINER}"
     sleep 10
-    CODIGO=$(ssh "${SSH_USER}@${HOST}" \
-      "docker exec ${CONTAINER} curl -s -o /dev/null -w '%{http_code}' http://localhost:80/up" 2>/dev/null || echo "000")
-    if [ "$CODIGO" = "200" ]; then
-      echo "post-deploy: recuperado tras el reinicio."
-    else
-      echo "post-deploy: sigue sin responder tras el reinicio, revisar manualmente."
+    # Tras el reinicio el entrypoint vuelve a correr db:prepare, así que se
+    # le da la misma ventana de espera que al arranque original antes de
+    # darlo por perdido.
+    RECUPERADO=""
+    i=0
+    while [ "$i" -lt 10 ]; do
+      CODIGO=$(ssh "${SSH_USER}@${HOST}" \
+        "docker exec ${CONTAINER} curl -s -o /dev/null -w '%{http_code}' http://localhost:80/up" 2>/dev/null || echo "000")
+      if [ "$CODIGO" = "200" ]; then
+        RECUPERADO="1"
+        break
+      fi
+      i=$((i + 1))
+      sleep 3
+    done
+    if [ -z "$RECUPERADO" ]; then
+      echo "post-deploy: ERROR: $CONTAINER sigue sin responder tras el reinicio, revisar manualmente."
+      exit 1
     fi
+    echo "post-deploy: recuperado tras el reinicio."
   else
     echo "post-deploy: /up OK, nada que reiniciar."
   fi
 done
+
+# Todo lo anterior verifica /up desde ADENTRO del contenedor; en la Release
+# 1.6.0 (agosto 2026) eso dio 200 mientras el dominio público devolvía 502
+# durante la ventana del reboot. Esta verificación final consulta la URL que
+# ve la gente, con margen de ~60s para el arranque en frío (db:prepare), y
+# marca el deploy como fallido si nunca llega a 200.
+URL_PUBLICA="https://advance-fitness-app.ynt.codes/up"
+echo "post-deploy: verificando $URL_PUBLICA desde afuera..."
+PUBLICO_OK=""
+CODIGO="000"
+i=0
+while [ "$i" -lt 12 ]; do
+  # A diferencia de los ssh de arriba, aquí curl imprime "000" él mismo si
+  # no logra conectar, así que basta un || true para sobrevivir a set -e.
+  CODIGO=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$URL_PUBLICA" || true)
+  CODIGO=${CODIGO:-000}
+  if [ "$CODIGO" = "200" ]; then
+    PUBLICO_OK="1"
+    break
+  fi
+  i=$((i + 1))
+  sleep 5
+done
+
+if [ -z "$PUBLICO_OK" ]; then
+  echo "post-deploy: ERROR: $URL_PUBLICA no respondió 200 tras ~60s (último código: $CODIGO), revisar manualmente."
+  exit 1
+fi
+echo "post-deploy: $URL_PUBLICA responde 200, deploy verificado de extremo a extremo."
