@@ -22,5 +22,9 @@
   <body class="min-h-screen bg-base-100 font-sans antialiased" data-theme="advance">
     <%= render "shared/toast" if defined?(flash) %>
     <%= yield %>
+
+    <%# Analitica: solo si CF_ANALYTICS_TOKEN esta puesto y solo en produccion.
+        Va al final del body para no competir con el render. %>
+    <%= beacon_analitica %>
   </body>
 </html>

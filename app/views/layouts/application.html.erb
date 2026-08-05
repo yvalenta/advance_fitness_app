@@ -106,5 +106,9 @@
       </div>
       <div class="modal-backdrop"></div>
     </dialog>
+
+    <%# Analitica: solo si CF_ANALYTICS_TOKEN esta puesto y solo en produccion.
+        Va al final del body para no competir con el render. %>
+    <%= beacon_analitica %>
   </body>
 </html>

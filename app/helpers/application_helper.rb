@@ -80,6 +80,37 @@ module ApplicationHelper
     end
   end
 
+  # Beacon de Cloudflare Web Analytics — SOLO esta app, y solo si se configuró.
+  #
+  # POR QUÉ ES MANUAL Y NO AUTOMÁTICO. Cloudflare puede inyectar este script en
+  # toda la zona con un clic, y así estaba: el 2026-08-04 se midieron los ocho
+  # hostnames de `ynt.codes` y el beacon aparecía en los ocho — incluido el
+  # verificador de sobres de NomiCheck, cuya página afirma no enviar nada a
+  # ningún servidor. Una inyección de zona no distingue entre una app con
+  # usuarios y una página cuyo único activo es que se le pueda creer.
+  #
+  # Acá sí tiene sentido medir: hay usuarios, hay páginas lentas y hay a quién
+  # decírselo. Por eso vive en este layout y no en la zona.
+  #
+  # SIN TOKEN NO SE RENDERIZA NADA, y ese es el interruptor: para apagarlo se
+  # quita la variable de entorno, no se edita una vista. `local_env` no aplica —
+  # en desarrollo mediría el tráfico de nadie y ensuciaría los datos reales.
+  #
+  # Si algún día se activa una CSP (hoy `content_security_policy.rb` está entero
+  # comentado), este host tiene que entrar en `script-src` o el navegador lo
+  # bloquea y las analíticas quedan en cero sin avisar.
+  def beacon_analitica
+    token = ENV["CF_ANALYTICS_TOKEN"]
+    return if token.blank? || !Rails.env.production?
+
+    tag.script(
+      "",
+      src: "https://static.cloudflareinsights.com/beacon.min.js",
+      defer: true,
+      data: { "cf-beacon": { token: token }.to_json }
+    )
+  end
+
   # Link del navbar con estado activo
   def nav_link(texto, ruta)
     activo = current_page?(ruta)
