@@ -96,10 +96,20 @@ jobs:
         with:
           bundler-cache: true
 
+      # Los request specs renderizan el layout completo y propshaft exige el
+      # CSS de Tailwind ya compilado en app/assets/builds (en dev lo genera
+      # el contenedor; aquí hay que construirlo explícitamente).
+      - name: Build Tailwind CSS
+        run: RAILS_ENV=test bin/rails tailwindcss:build
+
       - name: Run tests
         env:
           RAILS_ENV: test
           TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/advance_fitness_app_test
+          # Llaves dummy: los specs de Notificaciones::EnviadorPush solo
+          # exigen presencia (WebPush va mockeado, jamás se envía nada).
+          VAPID_PUBLIC_KEY: llave-pub-ci
+          VAPID_PRIVATE_KEY: llave-priv-ci
           # RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
           # REDIS_URL: redis://localhost:6379/0
         run: bin/rails db:test:prepare && bundle exec rspec
