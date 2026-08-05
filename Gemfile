@@ -41,6 +41,9 @@ gem "thruster", require: false
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 gem "image_processing", "~> 2.0"
+# Backend vips para image_processing 2.x (ya no es dependencia dura del gem);
+# Rails 8.1.3.1 lo exige en el boot al cargar el procesador de variantes.
+gem "ruby-vips", "~> 2.0"
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
