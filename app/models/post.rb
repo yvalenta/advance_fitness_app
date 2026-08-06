@@ -1,5 +1,10 @@
 class Post < ApplicationRecord
+  include TenantDesnormalizado
+
   belongs_to :autor, class_name: "User"
+  # Aislado por tenant_id directo (SDD §16.6, Fase 18f): hereda el tenant del
+  # autor y rechaza cualquier fila incoherente.
+  hereda_tenant_de :autor
   has_rich_text :contenido
   has_one_attached :portada
 

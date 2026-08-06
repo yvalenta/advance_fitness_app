@@ -3,7 +3,8 @@ class Admin::PostsController < ApplicationController
 
   def index
     authorize Post, :admin_index?
-    @posts = Post.order(created_at: :desc)
+    # policy_scope: el staff solo administra los posts de SU tenant (Fase 18f).
+    @posts = policy_scope(Post).order(created_at: :desc)
   end
 
   def new
@@ -46,7 +47,8 @@ class Admin::PostsController < ApplicationController
 
   private
     def cargar_post
-      @post = Post.find(params[:id])
+      # Dentro del scope: un post de otro tenant es 404 (Fase 18f).
+      @post = policy_scope(Post).find(params[:id])
       authorize @post
     end
 

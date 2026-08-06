@@ -1,11 +1,12 @@
 class BlogController < ApplicationController
   def index
     authorize Post
-    @posts = Post.publicados
+    # policy_scope: solo posts del tenant propio (Fase 18f).
+    @posts = policy_scope(Post).publicados
   end
 
   def show
-    @post = Post.find_by!(slug: params[:id])
+    @post = policy_scope(Post).find_by!(slug: params[:id])
     authorize @post
     # ETag condicional (Fase de Calidad): si el post no cambió, el navegador
     # recibe 304 y el servidor se ahorra el re-render.

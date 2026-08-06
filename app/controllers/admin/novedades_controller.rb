@@ -3,7 +3,8 @@ class Admin::NovedadesController < ApplicationController
 
   def index
     authorize Novedad, :admin_index?
-    @novedades = Novedad.order(fecha_evento: :desc, created_at: :desc)
+    # policy_scope: el staff solo administra las novedades de SU tenant (Fase 18f).
+    @novedades = policy_scope(Novedad).order(fecha_evento: :desc, created_at: :desc)
   end
 
   def new
@@ -12,7 +13,9 @@ class Admin::NovedadesController < ApplicationController
   end
 
   def create
-    @novedad = Novedad.new(novedad_params)
+    # tenant explícito del staff que crea: sin él la novedad nacía global
+    # (tenant_id nil) y se filtraba a los demás tenants (Fase 18f).
+    @novedad = Novedad.new(novedad_params.merge(tenant_id: Current.user.tenant_id))
     authorize @novedad
 
     if @novedad.save
@@ -40,7 +43,9 @@ class Admin::NovedadesController < ApplicationController
 
   private
     def cargar_novedad
-      @novedad = Novedad.find(params[:id])
+      # Buscar dentro del scope: editar por id una novedad de otro tenant es
+      # 404, no un authorize que dependa de que la policy mire el tenant.
+      @novedad = policy_scope(Novedad).find(params[:id])
       authorize @novedad
     end
 
