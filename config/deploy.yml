@@ -8,7 +8,7 @@ image: advance_fitness_app
 servers:
   web:
     hosts:
-      - 192.168.40.253
+      - 18.191.129.33
     # Sin puertos públicos: el servidor ya se expone con un túnel nombrado de
     # Cloudflare (docker-lab/docker-compose.yml, contenedor "cloudflared") que
     # apunta a http://rails-app:80 en la red docker "docker-lab_proxy-network".
@@ -102,7 +102,7 @@ builder:
   # Build en el propio servidor (x86_64) en vez de en esta Mac (arm64): evita
   # emulación QEMU lenta y usa el builder buildx que ya estaba provisionado
   # ahí (kamal-local-registry), junto al registry local en localhost:5555.
-  remote: ssh://ynt@192.168.40.253
+  remote: ssh://ynt@18.191.129.33
 
 # Usuario no-root con acceso al grupo docker en el servidor.
 ssh:

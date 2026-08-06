@@ -4,8 +4,10 @@ Guía del proceso real de despliegue a producción, usado desde la Fase 5.17.
 
 ## Arquitectura
 
-- **Servidor:** homelab Ubuntu, `192.168.40.253`, usuario `ynt` (grupo `docker`, sin sudo sin contraseña). Su WiFi solo soporta **2.4GHz** — si se despliega desde una Mac conectada a 5GHz, cambiar de red primero o la IP no ruteará.
-- **Orquestador:** Kamal 2 + Thruster, build **remoto** en el propio servidor (`builder.remote: ssh://ynt@192.168.40.253`, arch `amd64`) para evitar emulación QEMU lenta desde una Mac `arm64`.
+- **Servidor:** AWS Lightsail Ubuntu 24.04, `18.191.129.33` (us-east-2, misma región que el pooler de Supabase), usuario `ynt` (grupo `docker`). Migrado desde el homelab el 2026-08-05.
+  - **La IP es estática desde el 2026-08-06** (`ynt-lightsail-ip`, adjunta — no cobra mientras esté adjunta): no cambia con stop/start. Si algún día cambiara, la fila `produccion · host ssh` del auditor de `nomicheck_ops` sale roja y nombra este archivo.
+  - **Fallback frío:** el homelab (`192.168.40.253`, WiFi solo 2.4GHz) conserva el mismo stack con su `cloudflared-main` **detenido**. Failover manual: `ssh ynt@192.168.40.253 "docker start cloudflared-main"` (y detener el de Lightsail para no repartir tráfico entre versiones distintas — ese round-robin ya causó el bug del tenant perdido).
+- **Orquestador:** Kamal 2 + Thruster, build **remoto** en el propio servidor (`builder.remote: ssh://ynt@18.191.129.33`, arch `amd64`) para evitar emulación QEMU lenta desde una Mac `arm64`.
 - **Registro de imágenes:** `localhost:5555` — registro local temporal en la Mac que ejecuta `bin/kamal`, con túnel SSH inverso para que el builder remoto y el servidor lo alcancen (patrón oficial de Kamal para build remoto).
 - **Red / exposición pública:** sin puertos públicos ni `kamal-proxy` (`servers.web.proxy: false`). El contenedor se une a la red Docker `docker-lab_proxy-network` con `network-alias: rails-app`. Un túnel nombrado de Cloudflare (`docker-lab-cloudflared-1`, definido en `/home/ynt/docker-lab/docker-compose.yml`) apunta a `http://rails-app:80` en esa red y sirve `https://advance-fitness-app.ynt.codes`. Cloudflare termina el SSL.
 - **Base de datos:** PostgreSQL en Supabase (pooler `aws-1-us-east-2.pooler.supabase.com`), vía `DATABASE_URL` en `.kamal/secrets`. Es la **misma base** que se usa en dev cuando `.env` define `DEV_DATABASE_URL`.
@@ -17,8 +19,8 @@ Guía del proceso real de despliegue a producción, usado desde la Fase 5.17.
 ## Prerrequisitos en la máquina que despliega
 
 1. Docker instalado y corriendo (Kamal lo usa para orquestar el build remoto y el registro local).
-2. Acceso SSH al servidor: `ssh ynt@192.168.40.253` (llave ya configurada).
-3. Conectado a la red WiFi de 2.4GHz del homelab (o a una red desde la que esa IP rutee).
+2. Acceso SSH al servidor: `ssh ynt@18.191.129.33` (llave ya configurada).
+3. Cualquier red con salida a internet (la restricción de WiFi 2.4GHz aplicaba al homelab y solo importa para el fallback).
 4. `.kamal/secrets` presente y correcto en local (`RAILS_MASTER_KEY`, `DATABASE_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GEMINI_API_KEY`, `IA_PROVEEDOR`).
 5. Quality gate en verde antes de desplegar (ver siguiente sección).
 
@@ -42,7 +44,7 @@ Desde la raíz del proyecto, en la Mac (fuera de `dip`, Kamal corre en el host):
 bin/kamal deploy
 ```
 
-Esto: construye la imagen Docker en el servidor remoto (build `amd64`), la sube al registro local (`localhost:5555` vía túnel SSH), la descarga en `192.168.40.253`, corre `db:prepare`/migraciones, arranca el contenedor nuevo unido a `docker-lab_proxy-network` con alias `rails-app`, y apaga el contenedor anterior sin downtime (bridging de assets fingerprinted vía `asset_path`).
+Esto: construye la imagen Docker en el servidor remoto (build `amd64`), la sube al registro local (`localhost:5555` vía túnel SSH), la descarga en `18.191.129.33`, corre `db:prepare`/migraciones, arranca el contenedor nuevo unido a `docker-lab_proxy-network` con alias `rails-app`, y apaga el contenedor anterior sin downtime (bridging de assets fingerprinted vía `asset_path`).
 
 ### 3. Setup inicial (solo si el servidor es nuevo o se reprovisiona desde cero)
 
@@ -88,12 +90,12 @@ Puede pasar que `bin/kamal deploy` termine "Finished... successful" y el contene
 
 Diagnóstico rápido:
 ```bash
-ssh ynt@192.168.40.253 "docker inspect <container> --format '{{json .NetworkSettings.Networks}}'"
+ssh ynt@18.191.129.33 "docker inspect <container> --format '{{json .NetworkSettings.Networks}}'"
 ```
 Si `docker-lab_proxy-network` aparece con `"Aliases": null` (y sí lo tiene la red `kamal`), es este bug.
 
 Arreglo inmediato (no requiere redeploy):
 ```bash
-ssh ynt@192.168.40.253 "docker network disconnect docker-lab_proxy-network <container> && docker network connect --alias rails-app docker-lab_proxy-network <container>"
+ssh ynt@18.191.129.33 "docker network disconnect docker-lab_proxy-network <container> && docker network connect --alias rails-app docker-lab_proxy-network <container>"
 ```
 Verificar con `curl -I https://advance-fitness-app.ynt.codes/up` (debe dar 200).
