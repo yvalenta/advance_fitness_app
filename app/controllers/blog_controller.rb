@@ -1,4 +1,5 @@
 class BlogController < ApplicationController
+  before_action { exigir_feature("blog") }  # Fase 18d
   def index
     authorize Post
     # policy_scope: solo posts del tenant propio (Fase 18f).

@@ -38,13 +38,19 @@
 
   <fieldset class="border-t border-base-200 pt-4">
     <legend class="mb-3 text-sm font-bold">Módulos</legend>
-    <label class="label cursor-pointer justify-start gap-3 rounded-lg border border-base-300 px-3 py-2">
-      <%= form.fields_for :features_habilitadas, Struct.new(:membresias).new(tenant.membresias_habilitadas?) do |f| %>
-        <%= f.check_box :membresias, class: "checkbox checkbox-primary" %>
+    <%# Todas las llaves de Fase 18d; el admin del tenant tiene su propio
+        panel (admin/funcionalidades) con estos mismos toggles. %>
+    <div class="grid gap-2 sm:grid-cols-2">
+      <% Admin::FuncionalidadesController::FEATURES.each do |clave, (nombre, _descripcion)| %>
+        <label class="label cursor-pointer justify-start gap-3 rounded-lg border border-base-300 px-3 py-2">
+          <input type="hidden" name="tenant[features_habilitadas][<%= clave %>]" value="0">
+          <input type="checkbox" name="tenant[features_habilitadas][<%= clave %>]" value="1"
+                 class="checkbox checkbox-primary" <%= "checked" if tenant.feature?(clave) %>>
+          <span class="text-sm"><%= nombre %></span>
+        </label>
       <% end %>
-      <span class="text-sm">Habilitar módulo de <strong>membresías</strong> (check-ins, pagos mensuales)</span>
-    </label>
-    <p class="mt-1 text-xs text-steel-3">Los entrenadores e influencers no lo necesitan normalmente.</p>
+    </div>
+    <p class="mt-1 text-xs text-steel-3">Membresías: los entrenadores e influencers no la necesitan normalmente.</p>
   </fieldset>
 
   <fieldset class="grid gap-4 border-t border-base-200 pt-4 sm:grid-cols-3">

@@ -65,9 +65,11 @@
     </div>
   </div>
 
-  <%# Racha + calorías: 2 columnas también en móvil (cards compactas). %>
-  <div class="animate-fade-up fade-delay-1 grid grid-cols-2 gap-4">
-    <%= render "shared/racha", perfil: @perfil_juego, dias: @dias_semana %>
+  <%# Racha + calorías: 2 columnas también en móvil (cards compactas).
+      Cada card respeta la feature del tenant (Fase 18d). %>
+  <div class="animate-fade-up fade-delay-1 grid <%= feature_habilitada?("gamificacion") && feature_habilitada?("nutricion") ? "grid-cols-2" : "grid-cols-1" %> gap-4">
+    <%= render "shared/racha", perfil: @perfil_juego, dias: @dias_semana if feature_habilitada?("gamificacion") %>
+    <% if feature_habilitada?("nutricion") %>
     <%= link_to objetivo_path do %>
       <% if @objetivo %>
         <% restantes = @objetivo.kcal_restantes(@registro_hoy&.kcal_consumidas.to_i) %>
@@ -88,9 +90,11 @@
               acento: "bg-pulse/15 text-pulse" %>
       <% end %>
     <% end %>
+    <% end %>
   </div>
 
   <%# Membresía: card grande a lo ancho (se conserva de la versión anterior). %>
+  <% if feature_habilitada?("membresias") %>
   <div class="animate-fade-up fade-delay-2 card card-hover border border-base-300 bg-base-100 shadow-sm">
     <div class="card-body gap-1.5">
       <div class="flex items-start justify-between">
@@ -123,6 +127,7 @@
       <% end %>
     </div>
   </div>
+  <% end %>
 
   <%# Accesos: progreso semanal y el explorador del catálogo (Fase 14.5). %>
   <div class="animate-fade-up fade-delay-3 grid gap-4 sm:grid-cols-2">

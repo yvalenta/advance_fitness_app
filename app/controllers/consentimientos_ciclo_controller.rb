@@ -10,6 +10,7 @@
 # marque "conservar mis datos", borra sus ciclos físicamente en la misma
 # transacción (CicloMenstrual.revocar!).
 class ConsentimientosCicloController < ApplicationController
+  before_action { exigir_feature("ciclo") }  # Fase 18d
   def create
     autorizar_consentimiento_propio
 

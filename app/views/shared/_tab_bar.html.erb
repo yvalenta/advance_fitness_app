@@ -4,13 +4,14 @@
 <%# en claro y sobre midnight (con borde sutil) en oscuro. Solo usuarios %>
 <%# de tenant — el layout ya filtra. Targets táctiles ≥44px. %>
 <%
+  # Nutrición solo si el tenant la tiene encendida (Fase 18d).
   destinos = [
     [ "Hoy", root_path, :rayo ],
     [ "Plan", mi_plan_path, :actividad ],
-    [ "Nutrición", objetivo_path, :fuego ],
+    ([ "Nutrición", objetivo_path, :fuego ] if feature_habilitada?("nutricion")),
     [ "Progreso", progreso_path, :tendencia_alta ],
     [ "Perfil", edit_perfil_path, :usuarios ]
-  ]
+  ].compact
 %>
 <nav class="tab-bar-inferior fixed inset-x-0 bottom-0 z-40 px-3 pb-2 md:hidden"
      aria-label="Navegación principal">

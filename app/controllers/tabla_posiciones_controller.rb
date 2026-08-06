@@ -11,6 +11,7 @@
 # El ledger (`registros_puntos`) NUNCA se toca desde aquí: esta vista solo
 # lee la proyección `perfiles_juego` que mantiene el motor de juego (14.12).
 class TablaPosicionesController < ApplicationController
+  before_action { exigir_feature("gamificacion") }  # Fase 18d
   LIMITE = 50
   VERSION_TEXTO_CONSENTIMIENTO = "ranking-v1"
 

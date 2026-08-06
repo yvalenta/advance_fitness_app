@@ -1,4 +1,5 @@
 class Admin::PostsController < ApplicationController
+  before_action { exigir_feature("blog") }  # Fase 18d
   before_action :cargar_post, only: %i[ edit update destroy publicar ]
 
   def index

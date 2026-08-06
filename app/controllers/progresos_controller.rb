@@ -14,6 +14,8 @@ class ProgresosController < ApplicationController
     # consentimiento vigente; la card conserva su guard defensivo de
     # privacidad (Current.user == usuario) intacto.
     def datos_ciclo
+      # Feature del tenant apagada (Fase 18d) → la card no existe.
+      return if Current.tenant && !Current.tenant.feature?("ciclo")
       return unless Consentimiento.vigente?(Current.user, "ciclo_menstrual")
 
       fase = Ciclo::Fase.para(Current.user)

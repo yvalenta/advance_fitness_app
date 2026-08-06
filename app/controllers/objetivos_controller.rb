@@ -1,4 +1,5 @@
 class ObjetivosController < ApplicationController
+  before_action { exigir_feature("nutricion") }  # Fase 18d
   before_action :exigir_perfil_completo, only: %i[create]
 
   def show

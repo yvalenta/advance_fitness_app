@@ -36,4 +36,18 @@ RSpec.describe Tenant, type: :model do
     expect(influencer_on.membresias_habilitadas?).to be true
     expect(gimnasio_off.membresias_habilitadas?).to be false
   end
+
+  # Fase 18d: feature? — solo un false explícito apaga; membresías delega en
+  # su regla por tipo de entidad.
+  it "feature? enciende por default y apaga solo con false explícito" do
+    entrenador = Tenant.new(features_habilitadas: {}, tipo_entidad: "entrenador")
+    expect(entrenador.feature?("blog")).to be true
+    expect(entrenador.feature?(:novedades)).to be true
+    expect(entrenador.feature?("membresias")).to be false
+
+    apagado = Tenant.new(features_habilitadas: { "blog" => false }, tipo_entidad: "gimnasio")
+    expect(apagado.feature?("blog")).to be false
+    expect(apagado.feature?("gamificacion")).to be true
+    expect(apagado.feature?("membresias")).to be true
+  end
 end

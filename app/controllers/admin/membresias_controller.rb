@@ -1,4 +1,5 @@
 class Admin::MembresiasController < ApplicationController
+  before_action { exigir_feature("membresias") }  # Fase 18d
   def index
     authorize Membresia
     @q = params[:q].to_s.strip

@@ -62,7 +62,7 @@ class Superadmin::TenantsController < ApplicationController
                               :precio_mensualidad, :precio_personalizado, :duracion_dias, :logo,
                               :admin_nombre, :admin_email,
                               paleta_colores: %i[ volt primary accent ],
-                              features_habilitadas: %i[ membresias ] ])
+                              features_habilitadas: Tenant::FEATURES.map(&:to_sym) ])
     end
 
     # Membresías se apagan por defecto si el tenant no es gimnasio y el form
@@ -73,7 +73,9 @@ class Superadmin::TenantsController < ApplicationController
       atributos = tenant_params.to_h.except(:admin_nombre, :admin_email)
 
       atributos[:paleta_colores] = atributos.fetch(:paleta_colores, {}).compact_blank
-      atributos[:features_habilitadas] = { "membresias" => atributos.dig(:features_habilitadas, :membresias) == "1" }
+      # Todas las llaves de Fase 18d explícitas (checkbox + hidden 0 en el form).
+      marcadas = atributos.fetch(:features_habilitadas, {})
+      atributos[:features_habilitadas] = Tenant::FEATURES.index_with { |clave| marcadas[clave] == "1" }
 
       atributos.slice(:precio_mensualidad, :precio_personalizado, :duracion_dias).each_key do |campo|
         atributos[campo] = atributos[campo].presence

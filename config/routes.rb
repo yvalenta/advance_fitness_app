@@ -121,6 +121,9 @@ Rails.application.routes.draw do
       post :publicar, on: :member
     end
     resources :novedades, only: %i[ index new create edit update destroy ]
+    # Panel de funcionalidades del tenant (Fase 18d): el admin enciende y
+    # apaga módulos (blog, novedades, nutrición, ciclo, gamificación…).
+    resource :funcionalidades, only: %i[ show update ], controller: "funcionalidades"
   end
 
   # Portal comercial (SDD §16.6): superadmin gestiona los tenants en

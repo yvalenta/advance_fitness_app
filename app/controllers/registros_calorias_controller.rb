@@ -1,4 +1,5 @@
 class RegistrosCaloriasController < ApplicationController
+  before_action { exigir_feature("nutricion") }  # Fase 18d
   def create
     authorize RegistroCaloria, :create?
     datos = params.expect(registro_caloria: [ :kcal_consumidas, :detalle, :fecha,

@@ -1,4 +1,5 @@
 class Admin::RenovacionesController < ApplicationController
+  before_action { exigir_feature("membresias") }  # Fase 18d
   def create
     membresia = Membresia.find(params[:membresia_id])
     authorize membresia, :renovar?

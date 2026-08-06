@@ -2,6 +2,7 @@
 # todo pasa por Current.user y por policy_scope — no existe ruta, parámetro
 # ni vista para que el staff registre o lea ciclos ajenos.
 class CiclosMenstrualesController < ApplicationController
+  before_action { exigir_feature("ciclo") }  # Fase 18d
   def create
     @ciclo = Current.user.ciclos_menstruales.new(ciclo_params.merge(creado_por: Current.user))
     authorize @ciclo # propio + consentimiento vigente (CicloMenstrualPolicy)

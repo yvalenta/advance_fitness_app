@@ -40,6 +40,16 @@ class ApplicationController < ActionController::Base
   end
 
   private
+    # Gate de features por tenant (Fase 18d): esconder el link no basta — la
+    # ruta también se cierra. Sin tenant (portal comercial) no se gatea nada.
+    # Como before_action que redirige, corta la cadena ANTES del authorize
+    # sin despertar a verify_authorized (after_action cancelado con el halt).
+    def exigir_feature(clave)
+      return if Current.tenant.nil? || Current.tenant.feature?(clave)
+
+      redirect_to root_path, alert: "Esta función no está habilitada en tu gimnasio."
+    end
+
     def pundit_user
       Current.user
     end

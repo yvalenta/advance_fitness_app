@@ -102,13 +102,15 @@
       </div>
     </details>
 
-    <%= link_to objetivo_path, class: "flex min-h-13 items-center gap-3 rounded-2xl border border-base-300 bg-base-100 px-4 py-3 shadow-sm transition-colors hover:border-volt-d/40" do %>
-      <span class="flex size-8 items-center justify-center rounded-xl bg-volt/15 text-volt-d">
-        <%= render "shared/icono", nombre: :fuego, clase: "size-4" %>
-      </span>
-      <span class="flex-1 text-sm font-semibold">Mi objetivo</span>
-      <span class="text-xs text-steel-5"><%= @user.objetivo_activo&.nombre || "Sin fijar" %></span>
-      <span class="text-steel-3">›</span>
+    <% if feature_habilitada?("nutricion") %>
+      <%= link_to objetivo_path, class: "flex min-h-13 items-center gap-3 rounded-2xl border border-base-300 bg-base-100 px-4 py-3 shadow-sm transition-colors hover:border-volt-d/40" do %>
+        <span class="flex size-8 items-center justify-center rounded-xl bg-volt/15 text-volt-d">
+          <%= render "shared/icono", nombre: :fuego, clase: "size-4" %>
+        </span>
+        <span class="flex-1 text-sm font-semibold">Mi objetivo</span>
+        <span class="text-xs text-steel-5"><%= @user.objetivo_activo&.nombre || "Sin fijar" %></span>
+        <span class="text-steel-3">›</span>
+      <% end %>
     <% end %>
 
     <% unless @user.premium? %>
@@ -238,20 +240,22 @@
   <%# ── PRIVACIDAD ─────────────────────────────────────────────────────── %>
   <p class="eyebrow mb-2 mt-6 px-1 text-steel-3">Privacidad</p>
   <div class="animate-fade-up fade-delay-2 flex flex-col gap-2">
-    <%= link_to ranking_path, class: "flex min-h-13 items-center gap-3 rounded-2xl border border-base-300 bg-base-100 px-4 py-3 shadow-sm transition-colors hover:border-volt-d/40" do %>
-      <span class="flex size-8 items-center justify-center rounded-xl bg-volt/15 text-volt-d">
-        <%= render "shared/icono", nombre: :tendencia_alta, clase: "size-4" %>
-      </span>
-      <span class="flex-1 text-sm font-semibold">Tabla de posiciones</span>
-      <% if @perfil_juego.visible_en_tabla? %>
-        <span class="badge badge-sm border-0 bg-volt font-bold text-steel-9">Participando</span>
-      <% else %>
-        <span class="text-xs text-steel-5">No participas</span>
+    <% if feature_habilitada?("gamificacion") %>
+      <%= link_to ranking_path, class: "flex min-h-13 items-center gap-3 rounded-2xl border border-base-300 bg-base-100 px-4 py-3 shadow-sm transition-colors hover:border-volt-d/40" do %>
+        <span class="flex size-8 items-center justify-center rounded-xl bg-volt/15 text-volt-d">
+          <%= render "shared/icono", nombre: :tendencia_alta, clase: "size-4" %>
+        </span>
+        <span class="flex-1 text-sm font-semibold">Tabla de posiciones</span>
+        <% if @perfil_juego.visible_en_tabla? %>
+          <span class="badge badge-sm border-0 bg-volt font-bold text-steel-9">Participando</span>
+        <% else %>
+          <span class="text-xs text-steel-5">No participas</span>
+        <% end %>
+        <span class="text-steel-3">›</span>
       <% end %>
-      <span class="text-steel-3">›</span>
     <% end %>
 
-    <% if @user.sexo == "F" %>
+    <% if @user.sexo == "F" && feature_habilitada?("ciclo") %>
       <%= link_to progreso_path(anchor: "mi_ciclo"), class: "flex min-h-13 items-center gap-3 rounded-2xl border border-base-300 bg-base-100 px-4 py-3 shadow-sm transition-colors hover:border-volt-d/40" do %>
         <span class="flex size-8 items-center justify-center rounded-xl bg-pulse/15 text-pulse">
           <%= render "shared/icono", nombre: :calendario, clase: "size-4" %>

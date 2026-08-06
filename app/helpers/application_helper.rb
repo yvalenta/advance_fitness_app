@@ -4,6 +4,12 @@ module ApplicationHelper
     number_to_currency(monto, unit: "$", precision: 0, delimiter: ".", format: "%u%n")
   end
 
+  # Gate de features en vistas (Fase 18d): sin tenant (portal) todo visible.
+  # El cierre de rutas vive en ApplicationController#exigir_feature.
+  def feature_habilitada?(clave)
+    Current.tenant.nil? || Current.tenant.feature?(clave)
+  end
+
   def badge_estado(estado)
     clase = {
       "activa" => "badge-success",

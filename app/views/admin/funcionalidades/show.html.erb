@@ -1,0 +1,28 @@
+<%# Panel de funcionalidades del tenant (Fase 18d): un toggle por módulo.
+    Apagar esconde links y cierra rutas; jamás borra datos. %>
+<% content_for :title, "Funcionalidades — #{Negocio.nombre}" %>
+
+<%= render "shared/encabezado",
+      titulo: "Funcionalidades",
+      descripcion: "Enciende o apaga módulos de tu gimnasio. Apagar no borra nada: al reencender todo vuelve." %>
+
+<div class="mx-auto -mt-8 w-full max-w-2xl px-4 pb-12">
+  <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
+    <div class="card-body">
+      <%= form_with url: admin_funcionalidades_path, method: :patch, class: "flex flex-col gap-1" do %>
+        <% Admin::FuncionalidadesController::FEATURES.each do |clave, (nombre, descripcion)| %>
+          <label class="flex cursor-pointer items-center justify-between gap-4 rounded-xl p-3 transition-colors hover:bg-base-200">
+            <span class="flex flex-col">
+              <span class="font-semibold"><%= nombre %></span>
+              <span class="text-xs text-steel-3"><%= descripcion %></span>
+            </span>
+            <input type="hidden" name="funcionalidades[<%= clave %>]" value="0">
+            <input type="checkbox" name="funcionalidades[<%= clave %>]" value="1"
+                   class="toggle toggle-primary" <%= "checked" if @tenant.feature?(clave) %>>
+          </label>
+        <% end %>
+        <%= submit_tag "Guardar cambios", class: "btn btn-primary mt-3 w-full font-bold sm:w-auto" %>
+      <% end %>
+    </div>
+  </div>
+</div>

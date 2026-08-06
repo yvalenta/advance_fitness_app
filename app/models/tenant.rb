@@ -7,6 +7,11 @@ class Tenant < ApplicationRecord
   TIPOS = %w[gimnasio entrenador influencer].freeze
   SUBDOMINIOS_RESERVADOS = %w[comercial app www api advance-fitness-app admin join unete].freeze
 
+  # Features apagables por tenant (Fase 18d) sobre el jsonb existente.
+  # Default: encendido para todo excepto membresías, que conserva su default
+  # por tipo de entidad. Apagar esconde y bloquea rutas — JAMÁS borra datos.
+  FEATURES = %w[membresias blog novedades nutricion ciclo gamificacion].freeze
+
   has_many :users, dependent: :restrict_with_error
   has_many :posts, dependent: :destroy
   has_many :novedades, dependent: :destroy
@@ -33,6 +38,16 @@ class Tenant < ApplicationRecord
     else
       gimnasio?
     end
+  end
+
+  # ¿La feature está encendida para este tenant? Solo un false explícito en
+  # el jsonb apaga; la clave ausente es el default (encendido, salvo
+  # membresías que delega en su regla por tipo de entidad).
+  def feature?(clave)
+    clave = clave.to_s
+    return membresias_habilitadas? if clave == "membresias"
+
+    features_habilitadas[clave] != false
   end
 
   private

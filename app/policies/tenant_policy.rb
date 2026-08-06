@@ -8,4 +8,8 @@ class TenantPolicy < ApplicationPolicy
   def create? = user.superadmin?
   def update? = user.superadmin?
   def destroy? = false
+
+  # Panel Admin → Funcionalidades (Fase 18d): el admin del tenant enciende y
+  # apaga features de SU tenant; nada más de la gestión de tenants se abre.
+  def funcionalidades? = user.admin? && user.tenant_id == record.id
 end

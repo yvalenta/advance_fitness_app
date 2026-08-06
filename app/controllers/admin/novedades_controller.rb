@@ -1,4 +1,5 @@
 class Admin::NovedadesController < ApplicationController
+  before_action { exigir_feature("novedades") }  # Fase 18d
   before_action :cargar_novedad, only: %i[ edit update destroy ]
 
   def index
