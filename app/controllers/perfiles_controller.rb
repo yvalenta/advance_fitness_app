@@ -10,7 +10,15 @@ class PerfilesController < ApplicationController
     authorize @user, :update?
 
     if @user.update(perfil_params)
-      destino = @user.perfil_nutricional_completo? ? objetivo_path : edit_perfil_path
+      # destino por whitelist (Fase 18c): el mini-perfil de objetivos/new
+      # devuelve al flujo de fijar objetivo; jamás un path abierto del param.
+      destino = if !@user.perfil_nutricional_completo?
+        edit_perfil_path
+      elsif params[:destino] == "nuevo_objetivo"
+        new_objetivo_path
+      else
+        objetivo_path
+      end
       redirect_to destino, notice: "Perfil actualizado."
     else
       cargar_stats # el render :edit también pinta la cabecera de stats

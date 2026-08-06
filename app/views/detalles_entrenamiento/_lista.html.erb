@@ -1,4 +1,4 @@
-<%# locals: (registro:, ejercicio:, detalles:, series_plan: nil, repeticiones_plan: nil) %>
+<%# locals: (registro:, ejercicio:, detalles:, previa: nil, series_plan: nil, repeticiones_plan: nil) %>
 <%# Lista de series registradas + formulario para agregar una nueva. Target %>
 <%# de los turbo_stream.replace de create/destroy — el id es estable por %>
 <%# ejercicio, así que sobrevive a cualquiera de las dos acciones. %>
@@ -49,13 +49,19 @@
 
     <div data-registro-series-form-target="camposManual"
          class="<%= "hidden" if series_plan.present? && repeticiones_plan.present? %> grid grid-cols-[1fr_1fr_1fr_auto] items-end gap-2">
+      <%# Prellenado con la serie previa (Fase 18a): el peso/reps de la última
+          serie —de hoy o de la sesión pasada— ya vienen puestos; digitar es
+          solo para cambiar. También beneficia a "Cumplido tal cual", que
+          registra con el peso de este campo. %>
       <label class="input input-sm input-bordered flex items-center gap-1">
         <span class="text-xs font-bold text-steel-3">Reps</span>
-        <%= f.number_field :repeticiones, min: 1, class: "w-full text-right", "aria-label": "Repeticiones" %>
+        <%= f.number_field :repeticiones, min: 1, value: previa&.repeticiones,
+              class: "w-full text-right", "aria-label": "Repeticiones" %>
       </label>
       <label class="input input-sm input-bordered flex items-center gap-1">
         <span class="text-xs font-bold text-steel-3">kg</span>
-        <%= f.number_field :peso_kg, min: 0, step: 0.5, class: "w-full text-right", "aria-label": "Peso (kg, vacío = corporal)" %>
+        <%= f.number_field :peso_kg, min: 0, step: 0.5, value: previa&.peso_kg,
+              class: "w-full text-right", "aria-label": "Peso (kg, vacío = corporal)" %>
       </label>
       <label class="input input-sm input-bordered flex items-center gap-1">
         <span class="text-xs font-bold text-steel-3">RPE</span>

@@ -40,11 +40,58 @@ RSpec.describe "Objetivos", type: :request do
     assert_select "#dona-restantes", text: /2.288/
   end
 
-  it "sin perfil completo redirige a completar perfil" do
+  # Fase 18c: el perfil incompleto ya no expulsa al hub de cuenta — la misma
+  # página pide inline los 4 datos del TDEE y devuelve al flujo del objetivo.
+  it "sin perfil completo muestra el mini-perfil inline en vez de expulsar" do
     sign_in_as users(:two)
 
     get new_objetivo_path
+
+    expect(response).to have_http_status(:success)
+    expect(response.body).to include("Cuéntanos lo básico")
+    expect(response.body).to include('value="nuevo_objetivo"')
+  end
+
+  it "crear el objetivo sin perfil completo sigue bloqueado" do
+    sign_in_as users(:two)
+
+    post objetivo_path, params: { objetivo_nutricional: { tipo: "deficit", peso_kg: 70 } }
     expect(response).to redirect_to(edit_perfil_path)
+  end
+
+  it "completar el mini-perfil devuelve a fijar el objetivo" do
+    sign_in_as users(:two)
+
+    patch perfil_path, params: { destino: "nuevo_objetivo",
+                                 user: { nombre: "Usuario Dos", fecha_nacimiento: "1995-05-05",
+                                         sexo: "F", talla_cm: 165, nivel_actividad: 1.4 } }
+
+    expect(response).to redirect_to(new_objetivo_path)
+    expect(users(:two).reload.perfil_nutricional_completo?).to be true
+  end
+
+  # Fase 18b: con plan aprobado con comidas, el consumo del día se registra
+  # en un tap con el total del plan (kcal + macros).
+  it "ofrece 'Cumplí mi plan de hoy' con las kcal del plan aprobado" do
+    ObjetivoNutricional.fijar_para(users(:one), tipo: "deficit", peso_kg: 70)
+    PlanPersonalizado.create!(
+      user: users(:one), generado_por: "entrenador", estado: "aprobado",
+      aprobado_por: users(:entrenador),
+      rutina: { "dias" => [ { "dia" => "lunes", "enfoque" => "pecho", "ejercicios" => [] } ] },
+      plan_nutricional: { "kcal_diarias" => 1950, "comidas" => [
+        { "nombre" => "Avena", "kcal" => 950, "proteinas_g" => 40, "tipo" => "desayuno" },
+        { "nombre" => "Pollo con arroz", "kcal" => 1000, "proteinas_g" => 55, "tipo" => "almuerzo" }
+      ] })
+    sign_in_as users(:one)
+
+    get objetivo_path
+    expect(response.body).to include("Cumplí mi plan de hoy")
+    expect(response.body).to include('value="1950"')
+
+    post registros_calorias_path, params: { registro_caloria: { kcal_consumidas: 1950, proteinas_g: 95 } }
+    registro = users(:one).registros_calorias.find_by(fecha: Date.current)
+    expect(registro.kcal_consumidas).to eq(1950)
+    expect(registro.proteinas_g).to eq(95)
   end
 
   it "sin objetivo la página invita a fijarlo" do

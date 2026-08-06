@@ -1,0 +1,60 @@
+<%# Mini-perfil nutricional (Fase 18c): objetivos/new con perfil incompleto
+    ya no expulsa al hub de cuenta — pide aquí SOLO los 4 datos del TDEE
+    (Mifflin-St Jeor) con controles de tap, y vuelve al objetivo al guardar
+    (destino por whitelist en PerfilesController#update). %>
+<% content_for :title, "Fijar objetivo — #{Negocio.nombre}" %>
+
+<%= render "shared/encabezado",
+      eyebrow: "Nutrición",
+      titulo: "Cuéntanos lo básico",
+      descripcion: "Cuatro datos y calculamos tu objetivo de calorías. Solo se piden una vez." %>
+
+<div class="mx-auto -mt-8 w-full max-w-2xl px-4 pb-12">
+  <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
+    <div class="card-body">
+      <%= form_with model: Current.user, url: perfil_path, method: :patch, class: "flex flex-col gap-6" do |form| %>
+        <input type="hidden" name="destino" value="nuevo_objetivo">
+
+        <fieldset>
+          <legend class="mb-3 text-sm font-bold">Sexo (para la fórmula calórica)</legend>
+          <div class="grid grid-cols-2 gap-3">
+            <% [ [ "M", "Hombre" ], [ "F", "Mujer" ] ].each do |valor, nombre| %>
+              <label class="group card-hover flex cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-base-300 p-4 font-display font-bold transition-colors hover:border-steel-1 has-checked:border-volt-d has-checked:bg-volt/10">
+                <%= form.radio_button :sexo, valor, required: true, class: "sr-only" %>
+                <%= nombre %>
+              </label>
+            <% end %>
+          </div>
+        </fieldset>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="form-control">
+            <span class="label-text mb-1 text-xs font-semibold">Fecha de nacimiento</span>
+            <%= form.date_field :fecha_nacimiento, required: true, max: Date.current,
+                  class: "input input-bordered w-full" %>
+          </label>
+          <label class="form-control">
+            <span class="label-text mb-1 text-xs font-semibold">Talla (cm)</span>
+            <%= form.number_field :talla_cm, step: 0.5, min: 100, max: 250, required: true,
+                  placeholder: "170", class: "input input-bordered w-full" %>
+          </label>
+        </div>
+
+        <fieldset>
+          <legend class="mb-3 text-sm font-bold">¿Qué tanto te mueves en la semana?</legend>
+          <div class="flex flex-col gap-2">
+            <% User::NIVELES_ACTIVIDAD.each do |factor, nombre| %>
+              <label class="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-base-300 p-3 text-sm transition-colors hover:border-steel-1 has-checked:border-volt-d has-checked:bg-volt/10">
+                <%= form.radio_button :nivel_actividad, factor, required: true,
+                      checked: Current.user.nivel_actividad&.to_f == factor, class: "radio radio-sm radio-primary" %>
+                <span class="font-medium"><%= nombre %></span>
+              </label>
+            <% end %>
+          </div>
+        </fieldset>
+
+        <%= form.submit "Continuar", class: "btn btn-primary btn-wide font-bold" %>
+      <% end %>
+    </div>
+  </div>
+</div>

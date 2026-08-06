@@ -1,5 +1,5 @@
 class ObjetivosController < ApplicationController
-  before_action :exigir_perfil_completo, only: %i[new create]
+  before_action :exigir_perfil_completo, only: %i[create]
 
   def show
     @objetivo = Current.user.objetivo_activo
@@ -14,6 +14,10 @@ class ObjetivosController < ApplicationController
 
   def new
     authorize ObjetivoNutricional, :create?
+    # Perfil incompleto ya no expulsa al hub de cuenta (Fase 18c): se piden
+    # inline SOLO los datos del TDEE y al guardar se vuelve aquí.
+    return render :perfil_minimo unless Current.user.perfil_nutricional_completo?
+
     @objetivo = ObjetivoNutricional.new(peso_kg: Current.user.objetivo_activo&.peso_kg)
   end
 

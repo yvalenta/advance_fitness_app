@@ -70,6 +70,27 @@
             </span>
             Registrar consumo de hoy
           </h2>
+          <%# "Cumplí mi plan de hoy" (Fase 18b): si el plan aprobado trae
+              comidas con kcal, un solo tap registra el total del plan
+              (kcal + macros) como consumo del día — digitar queda para
+              corregir, no como camino principal. POST normal al mismo
+              endpoint del registro manual; reenviar reemplaza el total. %>
+          <% kcal_plan = comidas_plan.sum { |comida| comida["kcal"].to_i } %>
+          <% if kcal_plan.positive? %>
+            <%= form_with url: registros_calorias_path do %>
+              <input type="hidden" name="registro_caloria[kcal_consumidas]" value="<%= kcal_plan %>">
+              <% metas_macros.each do |campo, gramos| %>
+                <% if gramos.positive? %>
+                  <input type="hidden" name="registro_caloria[<%= campo %>]" value="<%= gramos %>">
+                <% end %>
+              <% end %>
+              <button type="submit" class="btn btn-primary w-full gap-2 font-bold">
+                <%= render "shared/icono", nombre: :check, clase: "size-4" %>
+                Cumplí mi plan de hoy (<%= number_with_delimiter(kcal_plan, delimiter: ".") %> kcal)
+              </button>
+            <% end %>
+            <div class="divider my-1 text-xs text-steel-3">o registra otro total</div>
+          <% end %>
           <%= form_with model: RegistroCaloria.new, url: registros_calorias_path, class: "flex items-end gap-3" do |form| %>
             <label class="form-control flex-1">
               <span class="label-text mb-1 text-xs font-semibold">Calorías consumidas (total del día)</span>

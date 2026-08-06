@@ -112,6 +112,20 @@ RSpec.describe "DetallesEntrenamiento", type: :request do
     expect(response.body).to include(ejercicio.nombre)
   end
 
+  # Fase 18a: el formulario precarga reps/kg con la última serie del mismo
+  # ejercicio — de hoy si ya registró, o de la sesión anterior.
+  it "el dialog precarga reps y peso de la sesión anterior del mismo ejercicio" do
+    sign_in_as users(:one)
+    premium!(users(:one))
+    pasado = users(:one).registros_entrenamiento.create!(fecha: Date.current - 2)
+    pasado.detalles.create!(ejercicio: ejercicio, serie: 1, repeticiones: 8, peso_kg: 62.5)
+
+    get detalles_entrenamiento_path, params: { fecha: Date.current.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre }
+
+    expect(response.body).to include('value="8"')
+    expect(response.body).to include('value="62.5"')
+  end
+
   describe "récords personales en el create (Fase 14.13)" do
     before do
       sign_in_as users(:one)

@@ -11,6 +11,7 @@ class DetallesEntrenamientoController < ApplicationController
   def index
     authorize @registro, policy_class: DetalleEntrenamientoPolicy
     @detalles = @ejercicio ? @registro.detalles.where(ejercicio: @ejercicio).order(:serie) : []
+    @previa = serie_previa if @ejercicio
     @series_plan = params[:series_plan]
     @repeticiones_plan = params[:repeticiones_plan]
   end
@@ -94,7 +95,16 @@ class DetallesEntrenamientoController < ApplicationController
       turbo_stream.replace("detalles_ejercicio_#{@ejercicio.id}",
                            partial: "detalles_entrenamiento/lista",
                            locals: { registro: @registro, ejercicio: @ejercicio, detalles: @detalles,
+                                     previa: serie_previa,
                                      series_plan: params[:series_plan], repeticiones_plan: params[:repeticiones_plan] })
+    end
+
+    # Prellenado del formulario (Fase 18a): la última serie de HOY si existe
+    # (repetir el peso recién usado) o, si no, la de la sesión anterior del
+    # mismo ejercicio — el miembro no redigita lo que la app ya sabe.
+    def serie_previa
+      @detalles.last || DetalleEntrenamiento.ultimos_por_ejercicio(
+        Current.user, [ @ejercicio.id ], antes_de: @registro.fecha)[@ejercicio.id]
     end
 
     # La celebración va como SEGUNDO stream, appendeado DENTRO del mismo
