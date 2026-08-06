@@ -11,16 +11,16 @@ class MedicionesController < ApplicationController
     authorize Current.user.mediciones.new, :create?
     fecha = fecha_valida(params.dig(:medicion, :fecha))
     if fecha > Date.current
-      return redirect_to progreso_path, alert: "No puedes registrar un peso futuro."
+      return redirect_back_or_to progreso_path, alert: "No puedes registrar un peso futuro."
     end
 
     @medicion = Current.user.mediciones.find_or_initialize_by(fecha: fecha)
     @medicion.assign_attributes(medicion_params.merge(tomada_por: Current.user))
 
     if @medicion.save
-      redirect_to progreso_path, notice: "Peso registrado."
+      redirect_back_or_to progreso_path, notice: "Peso registrado."
     else
-      redirect_to progreso_path, alert: @medicion.errors.full_messages.to_sentence
+      redirect_back_or_to progreso_path, alert: @medicion.errors.full_messages.to_sentence
     end
   end
 

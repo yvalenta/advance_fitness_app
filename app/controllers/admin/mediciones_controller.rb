@@ -24,7 +24,9 @@ class Admin::MedicionesController < ApplicationController
     authorize @medicion
 
     if @medicion.save
-      redirect_to admin_user_mediciones_path(@miembro), notice: guardar_y_notificar
+      # redirect_back (Fase 18m): el peso rápido del popup de check-in vuelve
+      # al check-in y el morph actualiza en sitio — sin teletransporte.
+      redirect_back_or_to admin_user_mediciones_path(@miembro), notice: guardar_y_notificar
     else
       render :new, status: :unprocessable_entity
     end
