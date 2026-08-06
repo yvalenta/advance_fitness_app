@@ -10,7 +10,7 @@ class Admin::FuncionalidadesController < ApplicationController
     "gamificacion" => [ "Rachas y ranking", "Puntos, logros y tabla de posiciones opt-in." ],
     "ciclo" => [ "Ciclo menstrual", "Registro del ciclo con consentimiento y ajustes por fase." ],
     "blog" => [ "Blog", "Artículos del gimnasio para los miembros." ],
-    "novedades" => [ "Novedades y comunidad", "Anuncios del staff y muro de logros de los miembros." ]
+    "novedades" => [ "Comunidad", "Anuncios del staff (novedades) y muro de logros de los miembros." ]
   }.freeze
 
   def show

@@ -4,7 +4,7 @@ require "rails_helper"
 # navbar sin la vista pública — /novedades reventaba con MissingExactTemplate.
 # Fase 18f: además, el listado pasa por policy_scope — solo el tenant propio.
 RSpec.describe "Novedades públicas", type: :request do
-  it "un miembro ve solo las novedades publicadas" do
+  it "un miembro ve solo las novedades publicadas, bajo el título Comunidad" do
     publicada = Novedad.create!(titulo: "Clase de yoga", contenido: "Sábado 9am",
                                 publicado: true, tenant: tenants(:advance_fitness))
     Novedad.create!(titulo: "Borrador interno", contenido: "x", tenant: tenants(:advance_fitness))
@@ -13,8 +13,26 @@ RSpec.describe "Novedades públicas", type: :request do
     get novedades_path
 
     expect(response).to have_http_status(:success)
+    # Fase 18j: la página del miembro se llama Comunidad (la ruta no cambia)
+    expect(response.body).to include("Comunidad — ")
     expect(response.body).to include(publicada.titulo)
     expect(response.body).not_to include("Borrador interno")
+  end
+
+  # Fase 18j: el inicio ofrece el menú Comunidad (muro, ranking, blog) — en
+  # móvil es el único camino del miembro hacia estas páginas.
+  it "el inicio muestra el menú Comunidad respetando las features" do
+    sign_in_as users(:one)
+
+    get root_path
+    expect(response.body).to include("Comunidad")
+    expect(response.body).to include("Tabla de posiciones")
+
+    tenants(:advance_fitness).update!(features_habilitadas: {
+      "membresias" => true, "novedades" => false, "gamificacion" => false, "blog" => false
+    })
+    get root_path
+    expect(response.body).not_to include("Tabla de posiciones")
   end
 
   it "no muestra novedades de otro tenant aunque estén publicadas" do

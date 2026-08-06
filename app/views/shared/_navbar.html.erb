@@ -9,13 +9,14 @@
   # Links por feature del tenant (Fase 18d): lo apagado no se enlaza.
   membresias_on = feature_habilitada?("membresias")
 
+  # Blog y Novedades ya no van planos: viven en el dropdown "Comunidad"
+  # (Fase 18j), junto a la tabla de posiciones.
   cuenta = Current.user.global? ? [] : [
     ([ "Nutrición", objetivo_path, :fuego ] if feature_habilitada?("nutricion")),
     [ "Progreso", progreso_path, :tendencia_alta ],
-    [ "Mi plan", mi_plan_path, :actividad ],
-    ([ "Blog", blog_path, :lapiz ] if feature_habilitada?("blog")),
-    ([ "Novedades", novedades_path, :calendario ] if feature_habilitada?("novedades"))
+    [ "Mi plan", mi_plan_path, :actividad ]
   ].compact
+  comunidad = menu_comunidad
   gestion = []
   if Current.user.superadmin?
     gestion << [ "Tenants", superadmin_tenants_path, :usuarios ]
@@ -60,6 +61,26 @@
     <%# ── Desktop: miembro plano + dropdown Gestión ── %>
     <nav class="hidden flex-1 items-center gap-1 md:flex">
       <% cuenta.each { |texto, ruta, _| %><%= nav_link texto, ruta %><% } %>
+
+      <% if comunidad.any? %>
+        <div class="dropdown">
+          <div tabindex="0" role="button"
+               class="flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white">
+            Comunidad
+            <svg class="size-3.5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <ul tabindex="0" class="dropdown-content menu z-50 mt-3 w-56 gap-0.5 rounded-2xl border border-base-300 bg-base-100 p-2 shadow-xl">
+            <% comunidad.each do |texto, ruta, icono| %>
+              <li>
+                <%= link_to ruta, class: "gap-3 #{"menu-active" if current_page?(ruta)}" do %>
+                  <%= render "shared/icono", nombre: icono, clase: "size-4 text-steel-3" %>
+                  <%= texto %>
+                <% end %>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
 
       <% if gestion.any? %>
         <div class="dropdown">

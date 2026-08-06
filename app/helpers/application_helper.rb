@@ -10,6 +10,19 @@ module ApplicationHelper
     Current.tenant.nil? || Current.tenant.feature?(clave)
   end
 
+  # Destinos del menú "Comunidad" (Fase 18j): muro, ranking y blog en un solo
+  # desplegable — navbar en desktop y hero del inicio en móvil (la tab bar
+  # solo trae 5 destinos y la hamburguesa es de staff). Filtrado por features.
+  def menu_comunidad
+    return [] if Current.user.nil? || Current.user.global?
+
+    items = []
+    items << [ "Comunidad", novedades_path, :usuarios ] if feature_habilitada?("novedades")
+    items << [ "Tabla de posiciones", ranking_path, :tendencia_alta ] if feature_habilitada?("gamificacion")
+    items << [ "Blog", blog_path, :lapiz ] if feature_habilitada?("blog")
+    items
+  end
+
   def badge_estado(estado)
     clase = {
       "activa" => "badge-success",

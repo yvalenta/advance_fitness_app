@@ -4,9 +4,34 @@
 <div class="gradient-hero relative overflow-hidden">
   <div class="trama-puntos absolute inset-0"></div>
   <div class="relative mx-auto w-full max-w-6xl px-4 pb-20 pt-8">
-    <div class="animate-fade-up inline-flex items-center gap-2 rounded-full border border-volt/40 px-4 py-1.5">
-      <span class="inline-block size-2 rounded-full bg-volt pulse-volt"></span>
-      <span class="eyebrow text-volt">Hoy</span>
+    <div class="flex items-start justify-between gap-3">
+      <div class="animate-fade-up inline-flex items-center gap-2 rounded-full border border-volt/40 px-4 py-1.5">
+        <span class="inline-block size-2 rounded-full bg-volt pulse-volt"></span>
+        <span class="eyebrow text-volt">Hoy</span>
+      </div>
+      <%# Menú Comunidad (Fase 18j): el acceso del miembro al muro, ranking y
+          blog desde el inicio — en móvil era el único camino (la tab bar
+          tiene 5 destinos y la hamburguesa es de staff). %>
+      <% if (comunidad = menu_comunidad).any? %>
+        <div class="dropdown dropdown-end animate-fade-up">
+          <div tabindex="0" role="button"
+               class="btn btn-sm gap-1.5 rounded-full border border-white/20 bg-white/10 font-bold text-white backdrop-blur-sm hover:bg-white/20">
+            <%= render "shared/icono", nombre: :usuarios, clase: "size-4" %>
+            Comunidad
+            <svg class="size-3 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <ul tabindex="0" class="dropdown-content menu z-50 mt-2 w-56 gap-0.5 rounded-2xl border border-base-300 bg-base-100 p-2 shadow-xl">
+            <% comunidad.each do |texto, ruta, icono| %>
+              <li>
+                <%= link_to ruta, class: "gap-3" do %>
+                  <%= render "shared/icono", nombre: icono, clase: "size-4 text-steel-3" %>
+                  <span class="text-sm font-medium"><%= texto %></span>
+                <% end %>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
     </div>
     <h1 class="animate-fade-up fade-delay-1 mt-4 font-display text-3xl font-bold leading-tight text-white sm:text-4xl">
       Hola, <span class="text-volt"><%= nombre_visible(Current.user).split.first %></span> 💪

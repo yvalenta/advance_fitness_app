@@ -4,10 +4,10 @@
     Fase 18e: además de los anuncios del staff, la página es el muro de la
     comunidad — celebraciones automáticas de PRs/logros de miembros con
     opt-in (consentimiento auditable `logros_comunidad`). %>
-<% content_for :title, "Novedades — #{Negocio.nombre}" %>
+<% content_for :title, "Comunidad — #{Negocio.nombre}" %>
 
-<%= render "shared/encabezado", titulo: "Novedades",
-      descripcion: "Anuncios del gimnasio y logros de la comunidad." %>
+<%= render "shared/encabezado", eyebrow: "Comunidad", titulo: "Comunidad",
+      descripcion: "Anuncios del gimnasio y logros de los miembros." %>
 
 <div class="mx-auto -mt-8 flex w-full max-w-3xl flex-col gap-6 px-4 pb-12">
   <% if @novedades.any? %>
