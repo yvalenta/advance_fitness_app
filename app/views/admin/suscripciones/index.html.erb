@@ -28,24 +28,33 @@
         <% if @suscripciones.any? %>
           <div class="overflow-x-auto">
             <table class="table">
+              <%# Responsive (Fase 18g): en móvil la celda del miembro es la
+                  tarjeta completa (badges y fechas apiladas); las columnas
+                  sueltas existen solo de md: en adelante. %>
               <thead>
                 <tr class="text-xs uppercase tracking-wider text-steel-3">
-                  <th>Miembro</th><th>Plan</th><th>Estado</th><th>Inicio</th><th>Fin</th><th></th>
+                  <th>Miembro</th><th class="hidden md:table-cell">Plan</th><th class="hidden md:table-cell">Estado</th><th class="hidden md:table-cell">Inicio</th><th class="hidden md:table-cell">Fin</th><th></th>
                 </tr>
               </thead>
               <tbody>
                 <% @suscripciones.each do |suscripcion| %>
+                  <% badge_estado_suscripcion = { "activa" => "badge-success", "programada" => "badge-info", "cancelada" => "badge-ghost", "expirada" => "badge-error" }[suscripcion.estado] %>
                   <tr class="hover:bg-base-200">
                     <td>
                       <%= link_to admin_user_path(suscripcion.user), data: { turbo_frame: "_top" }, class: "flex items-center gap-3 hover:underline" do %>
                         <%= render "shared/avatar", user: suscripcion.user %>
-                        <div>
+                        <div class="min-w-0">
                           <p class="font-semibold"><%= nombre_visible(suscripcion.user) %></p>
-                          <p class="text-xs text-steel-3"><%= suscripcion.user.email_address %></p>
+                          <p class="truncate text-xs text-steel-3"><%= suscripcion.user.email_address %></p>
                         </div>
                       <% end %>
+                      <div class="mt-1.5 flex flex-wrap items-center gap-1 md:hidden">
+                        <span class="badge badge-sm <%= suscripcion.plan.personalizado? ? "badge-primary" : "badge-ghost" %>"><%= suscripcion.plan.nombre %></span>
+                        <span class="badge badge-sm <%= badge_estado_suscripcion %>"><%= suscripcion.estado %></span>
+                        <span class="text-xs text-steel-3"><%= l suscripcion.fecha_inicio, format: :short %><%= " → #{l suscripcion.fecha_fin, format: :short}" if suscripcion.fecha_fin %></span>
+                      </div>
                     </td>
-                    <td>
+                    <td class="hidden md:table-cell">
                       <span class="badge badge-sm <%= suscripcion.plan.personalizado? ? "badge-primary" : "badge-ghost" %>"><%= suscripcion.plan.nombre %></span>
                       <% if suscripcion.incluida_en_membresia? %>
                         <%= link_to edit_admin_membresia_path(suscripcion.membresia),
@@ -55,13 +64,13 @@
                         <% end %>
                       <% end %>
                     </td>
-                    <td>
-                      <span class="badge badge-sm <%= { "activa" => "badge-success", "programada" => "badge-info", "cancelada" => "badge-ghost", "expirada" => "badge-error" }[suscripcion.estado] %>">
+                    <td class="hidden md:table-cell">
+                      <span class="badge badge-sm <%= badge_estado_suscripcion %>">
                         <%= suscripcion.estado %>
                       </span>
                     </td>
-                    <td class="text-sm text-steel-5"><%= l suscripcion.fecha_inicio %></td>
-                    <td class="text-sm text-steel-5"><%= suscripcion.fecha_fin ? l(suscripcion.fecha_fin) : "—" %></td>
+                    <td class="hidden text-sm text-steel-5 md:table-cell"><%= l suscripcion.fecha_inicio %></td>
+                    <td class="hidden text-sm text-steel-5 md:table-cell"><%= suscripcion.fecha_fin ? l(suscripcion.fecha_fin) : "—" %></td>
                     <td class="text-right">
                       <div class="flex items-center justify-end gap-1">
                         <% if (plan = suscripcion.user.plan_actual) %>

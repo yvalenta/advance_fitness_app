@@ -83,19 +83,20 @@
       </h2>
       <div class="overflow-x-auto">
         <table class="table table-sm">
+          <%# Responsive (Fase 18g): período y quién registró, solo desde md:. %>
           <thead>
             <tr class="text-xs uppercase tracking-wider text-steel-3">
-              <th>Fecha</th><th>Período</th><th>Monto</th><th>Método</th><th>Registró</th>
+              <th>Fecha</th><th class="hidden md:table-cell">Período</th><th>Monto</th><th>Método</th><th class="hidden md:table-cell">Registró</th>
             </tr>
           </thead>
           <tbody>
             <% @membresia.pagos.order(fecha_pago: :desc).each do |pago| %>
               <tr class="hover:bg-base-200">
                 <td class="text-sm"><%= l pago.fecha_pago %></td>
-                <td class="text-xs text-steel-5"><%= l pago.periodo_inicio %> — <%= l pago.periodo_fin %></td>
+                <td class="hidden text-xs text-steel-5 md:table-cell"><%= l pago.periodo_inicio %> — <%= l pago.periodo_fin %></td>
                 <td class="font-display font-bold"><%= cop pago.monto %></td>
                 <td><span class="badge badge-sm badge-ghost"><%= pago.metodo %></span></td>
-                <td class="text-xs text-steel-3"><%= pago.registrado_por.nombre %></td>
+                <td class="hidden text-xs text-steel-3 md:table-cell"><%= pago.registrado_por.nombre %></td>
               </tr>
             <% end %>
           </tbody>

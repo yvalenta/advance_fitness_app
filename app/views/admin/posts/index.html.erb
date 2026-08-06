@@ -11,17 +11,27 @@
       <% if @posts.any? %>
         <div class="overflow-x-auto">
           <table class="table">
+            <%# Responsive (Fase 18g): estado apilado bajo el título en móvil. %>
             <thead>
               <tr class="text-xs uppercase tracking-wider text-steel-3">
-                <th>Título</th><th>Autor</th><th>Estado</th><th></th>
+                <th>Título</th><th class="hidden md:table-cell">Autor</th><th class="hidden md:table-cell">Estado</th><th></th>
               </tr>
             </thead>
             <tbody>
               <% @posts.each do |post| %>
                 <tr class="hover:bg-base-200">
-                  <td class="font-semibold"><%= post.titulo %></td>
-                  <td class="text-sm text-steel-5"><%= post.autor.nombre %></td>
                   <td>
+                    <p class="font-semibold"><%= post.titulo %></p>
+                    <div class="mt-1 md:hidden">
+                      <% if post.publicado? %>
+                        <span class="badge badge-sm badge-success">publicado</span>
+                      <% else %>
+                        <span class="badge badge-sm badge-ghost">borrador</span>
+                      <% end %>
+                    </div>
+                  </td>
+                  <td class="hidden text-sm text-steel-5 md:table-cell"><%= post.autor.nombre %></td>
+                  <td class="hidden md:table-cell">
                     <% if post.publicado? %>
                       <span class="badge badge-sm badge-success">publicado</span>
                     <% else %>

@@ -11,30 +11,42 @@
       <% if @tenants.any? %>
         <div class="overflow-x-auto">
           <table class="table">
+            <%# Responsive (Fase 18g): subdominio y badges apilados en móvil. %>
             <thead>
               <tr class="text-xs uppercase text-steel-3">
                 <th>Nombre</th>
-                <th>Subdominio</th>
-                <th>Tipo</th>
-                <th>Estado</th>
-                <th class="text-right">Usuarios</th>
+                <th class="hidden md:table-cell">Subdominio</th>
+                <th class="hidden md:table-cell">Tipo</th>
+                <th class="hidden md:table-cell">Estado</th>
+                <th class="hidden text-right md:table-cell">Usuarios</th>
                 <th class="text-right"></th>
               </tr>
             </thead>
             <tbody>
               <% @tenants.each do |tenant| %>
                 <tr>
-                  <td class="font-semibold"><%= tenant.nombre %></td>
-                  <td class="text-sm font-mono text-steel-5"><%= tenant.slug %>.ynt.codes</td>
-                  <td><span class="badge badge-ghost badge-sm"><%= tenant.tipo_entidad %></span></td>
                   <td>
+                    <p class="font-semibold"><%= tenant.nombre %></p>
+                    <div class="mt-1 flex flex-wrap items-center gap-1.5 md:hidden">
+                      <span class="font-mono text-xs text-steel-5"><%= tenant.slug %>.ynt.codes</span>
+                      <% if tenant.activo? %>
+                        <span class="badge badge-success badge-sm">activo</span>
+                      <% else %>
+                        <span class="badge badge-error badge-sm">inactivo</span>
+                      <% end %>
+                      <span class="text-xs text-steel-3"><%= tenant.users.size %> usuarios</span>
+                    </div>
+                  </td>
+                  <td class="hidden text-sm font-mono text-steel-5 md:table-cell"><%= tenant.slug %>.ynt.codes</td>
+                  <td class="hidden md:table-cell"><span class="badge badge-ghost badge-sm"><%= tenant.tipo_entidad %></span></td>
+                  <td class="hidden md:table-cell">
                     <% if tenant.activo? %>
                       <span class="badge badge-success badge-sm">activo</span>
                     <% else %>
                       <span class="badge badge-error badge-sm">inactivo</span>
                     <% end %>
                   </td>
-                  <td class="text-right text-sm"><%= tenant.users.size %></td>
+                  <td class="hidden text-right text-sm md:table-cell"><%= tenant.users.size %></td>
                   <td class="text-right">
                     <%= link_to "Editar", edit_superadmin_tenant_path(tenant), class: "btn btn-ghost btn-xs" %>
                   </td>

@@ -28,8 +28,9 @@
         <div class="overflow-x-auto">
           <table class="table">
             <thead>
+              <%# Responsive (Fase 18g): móvil = tarjeta en la primera celda. %>
               <tr class="text-xs uppercase tracking-wider text-steel-3">
-                <th>Miembro</th><th>Rol</th><th>Membresía</th><th>Ingreso</th><th></th>
+                <th>Miembro</th><th class="hidden md:table-cell">Rol</th><th class="hidden md:table-cell">Membresía</th><th class="hidden md:table-cell">Ingreso</th><th></th>
               </tr>
             </thead>
             <tbody>
@@ -38,21 +39,31 @@
                   <td>
                     <%= link_to admin_user_path(usuario), data: { turbo_frame: "_top" }, class: "flex items-center gap-3 hover:underline" do %>
                       <%= render "shared/avatar", user: usuario %>
-                      <div>
+                      <div class="min-w-0">
                         <p class="font-semibold"><%= usuario.nombre.presence || "—" %></p>
-                        <p class="text-xs text-steel-3"><%= usuario.email_address %></p>
+                        <p class="truncate text-xs text-steel-3"><%= usuario.email_address %></p>
                       </div>
                     <% end %>
+                    <div class="mt-1.5 flex flex-wrap items-center gap-1 md:hidden">
+                      <% unless usuario.rol == "miembro" %>
+                        <span class="badge badge-sm badge-ghost"><%= usuario.rol %></span>
+                      <% end %>
+                      <% if usuario.membresia %>
+                        <%= badge_estado(usuario.membresia.estado) %>
+                      <% else %>
+                        <span class="text-xs text-steel-3">sin membresía</span>
+                      <% end %>
+                    </div>
                   </td>
-                  <td><span class="badge badge-sm badge-ghost"><%= usuario.rol %></span></td>
-                  <td>
+                  <td class="hidden md:table-cell"><span class="badge badge-sm badge-ghost"><%= usuario.rol %></span></td>
+                  <td class="hidden md:table-cell">
                     <% if usuario.membresia %>
                       <%= badge_estado(usuario.membresia.estado) %>
                     <% else %>
                       <span class="text-xs text-steel-3">sin membresía</span>
                     <% end %>
                   </td>
-                  <td class="text-sm text-steel-5"><%= l usuario.fecha_ingreso %></td>
+                  <td class="hidden text-sm text-steel-5 md:table-cell"><%= l usuario.fecha_ingreso %></td>
                   <td class="text-right">
                     <div class="flex items-center justify-end gap-1">
                       <%= link_to admin_user_path(usuario), class: "btn btn-ghost btn-xs btn-square tooltip", "data-tip": "Ver perfil", data: { turbo_frame: "_top" } do %>

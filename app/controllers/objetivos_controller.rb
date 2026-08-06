@@ -19,7 +19,10 @@ class ObjetivosController < ApplicationController
     # inline SOLO los datos del TDEE y al guardar se vuelve aquí.
     return render :perfil_minimo unless Current.user.perfil_nutricional_completo?
 
-    @objetivo = ObjetivoNutricional.new(peso_kg: Current.user.objetivo_activo&.peso_kg)
+    # Peso precargado (Fase 18h, cierra el pendiente de la Nota de Fase 4):
+    # primero la última medición real, luego el snapshot del objetivo previo.
+    peso = Current.user.ultima_medicion&.peso_kg || Current.user.objetivo_activo&.peso_kg
+    @objetivo = ObjetivoNutricional.new(peso_kg: peso)
   end
 
   def create

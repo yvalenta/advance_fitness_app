@@ -12,20 +12,28 @@
       <% if @mediciones.any? %>
         <div class="overflow-x-auto">
           <table class="table table-sm">
+            <%# Responsive (Fase 18g): en móvil fecha + peso/IMC apilados. %>
             <thead>
               <tr class="text-xs uppercase tracking-wider text-steel-3">
-                <th>Fecha</th><th>Peso</th><th>IMC</th><th>Grasa</th><th>Cintura</th><th>Tomada por</th><th></th>
+                <th>Fecha</th><th class="hidden md:table-cell">Peso</th><th class="hidden md:table-cell">IMC</th><th class="hidden md:table-cell">Grasa</th><th class="hidden lg:table-cell">Cintura</th><th class="hidden lg:table-cell">Tomada por</th><th></th>
               </tr>
             </thead>
             <tbody>
               <% @mediciones.each do |medicion| %>
                 <tr class="hover:bg-base-200">
-                  <td class="font-medium"><%= l medicion.fecha %></td>
-                  <td><%= medicion.peso_kg %> kg</td>
-                  <td><%= medicion.imc || "—" %></td>
-                  <td><%= medicion.grasa_pct ? "#{medicion.grasa_pct}%" : "—" %></td>
-                  <td><%= medicion.cintura_cm ? "#{medicion.cintura_cm} cm" : "—" %></td>
-                  <td class="text-steel-3"><%= medicion.tomada_por ? nombre_visible(medicion.tomada_por) : "el miembro" %></td>
+                  <td>
+                    <p class="font-medium"><%= l medicion.fecha %></p>
+                    <p class="mt-0.5 text-xs text-steel-5 md:hidden">
+                      <strong class="font-display text-sm text-base-content"><%= medicion.peso_kg %> kg</strong>
+                      <% if medicion.imc %> · IMC <%= medicion.imc %><% end %>
+                      <% if medicion.grasa_pct %> · <%= medicion.grasa_pct %>% grasa<% end %>
+                    </p>
+                  </td>
+                  <td class="hidden md:table-cell"><%= medicion.peso_kg %> kg</td>
+                  <td class="hidden md:table-cell"><%= medicion.imc || "—" %></td>
+                  <td class="hidden md:table-cell"><%= medicion.grasa_pct ? "#{medicion.grasa_pct}%" : "—" %></td>
+                  <td class="hidden lg:table-cell"><%= medicion.cintura_cm ? "#{medicion.cintura_cm} cm" : "—" %></td>
+                  <td class="hidden text-steel-3 lg:table-cell"><%= medicion.tomada_por ? nombre_visible(medicion.tomada_por) : "el miembro" %></td>
                   <td class="text-right"><%= link_to "Editar", edit_admin_user_medicion_path(@miembro, medicion), class: "btn btn-ghost btn-xs" %></td>
                 </tr>
               <% end %>

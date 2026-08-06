@@ -11,17 +11,30 @@
       <% if @novedades.any? %>
         <div class="overflow-x-auto">
           <table class="table">
+            <%# Responsive (Fase 18g): fecha y estado apilados bajo el título en móvil. %>
             <thead>
               <tr class="text-xs uppercase tracking-wider text-steel-3">
-                <th>Título</th><th>Fecha del evento</th><th>Estado</th><th></th>
+                <th>Título</th><th class="hidden md:table-cell">Fecha del evento</th><th class="hidden md:table-cell">Estado</th><th></th>
               </tr>
             </thead>
             <tbody>
               <% @novedades.each do |novedad| %>
                 <tr class="hover:bg-base-200">
-                  <td class="font-semibold"><%= novedad.titulo %></td>
-                  <td class="text-sm text-steel-5"><%= novedad.fecha_evento ? l(novedad.fecha_evento) : "—" %></td>
                   <td>
+                    <p class="font-semibold"><%= novedad.titulo %></p>
+                    <div class="mt-1 flex flex-wrap items-center gap-1.5 md:hidden">
+                      <% if novedad.publicado? %>
+                        <span class="badge badge-sm badge-success">publicada</span>
+                      <% else %>
+                        <span class="badge badge-sm badge-ghost">borrador</span>
+                      <% end %>
+                      <% if novedad.fecha_evento %>
+                        <span class="text-xs text-steel-3"><%= l novedad.fecha_evento, format: :short %></span>
+                      <% end %>
+                    </div>
+                  </td>
+                  <td class="hidden text-sm text-steel-5 md:table-cell"><%= novedad.fecha_evento ? l(novedad.fecha_evento) : "—" %></td>
+                  <td class="hidden md:table-cell">
                     <% if novedad.publicado? %>
                       <span class="badge badge-sm badge-success">publicada</span>
                     <% else %>

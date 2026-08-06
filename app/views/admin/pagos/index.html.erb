@@ -27,25 +27,32 @@
         <% if @pagos.any? %>
           <div class="overflow-x-auto">
             <table class="table">
+              <%# Responsive (Fase 18g): en móvil manda la celda del miembro
+                  (fecha, monto y método apilados); el resto desde md:. %>
               <thead>
                 <tr class="text-xs uppercase tracking-wider text-steel-3">
-                  <th>Fecha</th><th>Miembro</th><th>Período</th><th>Monto</th><th>Método</th><th>Registró</th><th></th>
+                  <th class="hidden md:table-cell">Fecha</th><th>Miembro</th><th class="hidden lg:table-cell">Período</th><th class="hidden md:table-cell">Monto</th><th class="hidden md:table-cell">Método</th><th class="hidden lg:table-cell">Registró</th><th></th>
                 </tr>
               </thead>
               <tbody>
                 <% @pagos.each do |pago| %>
                   <tr class="<%= pago.anulado? ? "opacity-50" : "hover:bg-base-200" %>">
-                    <td class="text-sm"><%= l pago.fecha_pago %></td>
+                    <td class="hidden text-sm md:table-cell"><%= l pago.fecha_pago %></td>
                     <td>
                       <%= link_to admin_user_path(pago.membresia.user), data: { turbo_frame: "_top" }, class: "flex items-center gap-2 hover:underline" do %>
                         <%= render "shared/avatar", user: pago.membresia.user, clase: "size-7 text-[10px]" %>
                         <span class="font-medium"><%= nombre_visible(pago.membresia.user) %></span>
                       <% end %>
+                      <div class="mt-1.5 flex flex-wrap items-center gap-1.5 md:hidden">
+                        <span class="font-display text-sm font-bold <%= "line-through" if pago.anulado? %>"><%= cop pago.monto %></span>
+                        <span class="badge badge-sm badge-ghost"><%= pago.metodo %></span>
+                        <span class="text-xs text-steel-3"><%= l pago.fecha_pago, format: :short %></span>
+                      </div>
                     </td>
-                    <td class="text-xs text-steel-5"><%= l pago.periodo_inicio %> — <%= l pago.periodo_fin %></td>
-                    <td class="font-display font-bold <%= "line-through" if pago.anulado? %>"><%= cop pago.monto %></td>
-                    <td><span class="badge badge-sm badge-ghost"><%= pago.metodo %></span></td>
-                    <td class="text-xs text-steel-3"><%= pago.registrado_por.nombre %></td>
+                    <td class="hidden text-xs text-steel-5 lg:table-cell"><%= l pago.periodo_inicio %> — <%= l pago.periodo_fin %></td>
+                    <td class="hidden font-display font-bold md:table-cell <%= "line-through" if pago.anulado? %>"><%= cop pago.monto %></td>
+                    <td class="hidden md:table-cell"><span class="badge badge-sm badge-ghost"><%= pago.metodo %></span></td>
+                    <td class="hidden text-xs text-steel-3 lg:table-cell"><%= pago.registrado_por.nombre %></td>
                     <td class="text-right">
                       <% if pago.anulado? %>
                         <span class="badge badge-sm badge-error" title="Anulado el <%= l pago.anulado_en.to_date %> por <%= pago.anulado_por&.nombre %>">eliminado</span>

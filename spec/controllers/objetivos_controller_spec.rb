@@ -70,6 +70,18 @@ RSpec.describe "Objetivos", type: :request do
     expect(users(:two).reload.perfil_nutricional_completo?).to be true
   end
 
+  # Fase 18h: el peso del formulario de objetivo viene de la última medición
+  # real (cierra el pendiente de la Nota de Fase 4).
+  it "precarga el peso desde la última medición" do
+    Medicion.create!(user: users(:one), fecha: Date.current - 1, peso_kg: 72.5,
+                     tomada_por: users(:one))
+    sign_in_as users(:one)
+
+    get new_objetivo_path
+
+    expect(response.body).to include('value="72.5"')
+  end
+
   # Fase 18b: con plan aprobado con comidas, el consumo del día se registra
   # en un tap con el total del plan (kcal + macros).
   it "ofrece 'Cumplí mi plan de hoy' con las kcal del plan aprobado" do

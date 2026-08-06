@@ -69,9 +69,10 @@
         <% if @accesos.any? %>
           <div class="overflow-x-auto">
             <table class="table table-sm">
+              <%# Responsive (Fase 18g): badges apilados bajo el nombre en móvil. %>
               <thead>
                 <tr class="text-xs uppercase tracking-wider text-steel-3">
-                  <th>Miembro</th><th>Tipo</th><th>Horario</th><th>Fecha</th>
+                  <th>Miembro</th><th class="hidden md:table-cell">Tipo</th><th class="hidden md:table-cell">Horario</th><th>Fecha</th>
                 </tr>
               </thead>
               <tbody>
@@ -89,9 +90,17 @@
                         <%= render "shared/avatar", user: acceso.user, clase: "size-7 text-[10px]" %>
                         <span class="font-medium"><%= nombre_visible(acceso.user) %></span>
                       </div>
+                      <div class="mt-1 flex flex-wrap items-center gap-1 md:hidden">
+                        <%= badge_estado(acceso.tipo) %>
+                        <% if acceso.dentro_de_horario? %>
+                          <span class="badge badge-sm badge-success">en horario</span>
+                        <% else %>
+                          <span class="badge badge-sm badge-error">fuera de horario</span>
+                        <% end %>
+                      </div>
                     </td>
-                    <td class="whitespace-nowrap"><%= badge_estado(acceso.tipo) %></td>
-                    <td class="whitespace-nowrap">
+                    <td class="hidden whitespace-nowrap md:table-cell"><%= badge_estado(acceso.tipo) %></td>
+                    <td class="hidden whitespace-nowrap md:table-cell">
                       <% if acceso.dentro_de_horario? %>
                         <span class="badge badge-sm badge-success whitespace-nowrap">en horario</span>
                       <% else %>
