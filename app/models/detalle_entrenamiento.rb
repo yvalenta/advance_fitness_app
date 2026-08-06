@@ -45,11 +45,15 @@ class DetalleEntrenamiento < ApplicationRecord
   # puede venir como rango del plan ("8-10"): se toma el número menor como
   # valor conservador registrado.
   def self.registrar_cumplido!(registro:, ejercicio:, series:, repeticiones:, peso_kg:)
+    # Idempotente (Fase 18k, bug reportado con captura: 18 filas de un plan
+    # de 3): cada reenvío "cumplido" apilaba otras N series. Con series ya
+    # registradas no crea nada — corregir es quitar/añadir series a mano.
+    return [] if registro.detalles.where(ejercicio: ejercicio).exists?
+
     reps = repeticiones.to_s[/\d+/].to_i
     reps = 1 if reps < 1
-    siguiente = registro.detalles.where(ejercicio: ejercicio).maximum(:serie).to_i
     series.to_i.times.map do |i|
-      registro.detalles.create!(ejercicio: ejercicio, serie: siguiente + i + 1,
+      registro.detalles.create!(ejercicio: ejercicio, serie: i + 1,
                                 repeticiones: reps, peso_kg: peso_kg.presence)
     end
   end

@@ -185,6 +185,25 @@
 }
 
 @layer components {
+  /* Inputs homogéneos (Fase 18k, reporte del cliente): el foco de TODOS los
+     campos usa el anillo del acento (volt/primary respeta el acento personal
+     de la Nota 22f) en vez del outline gris por defecto que "cambiaba feo"
+     al seleccionar. Mismo layer que daisyUI y después en el orden: gana. */
+  .input:focus,
+  .input:focus-within,
+  .select:focus,
+  .textarea:focus {
+    outline: 2px solid var(--color-volt-d);
+    outline-offset: 1px;
+    border-color: var(--color-volt-d);
+  }
+
+  /* Números alineados y con cifras tabulares de la fuente de la app — nada
+     de monospace suelto por vista (Fase 18k). */
+  input[type="number"] {
+    font-variant-numeric: tabular-nums;
+  }
+
   /* Tab bar inferior (Fase 14.1): respeta el home-indicator/notch en PWA
      instalada (viewport-fit=cover en el meta viewport del layout). */
   .tab-bar-inferior {

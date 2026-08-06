@@ -5,16 +5,20 @@ class RegistrosCaloriasController < ApplicationController
     datos = params.expect(registro_caloria: [ :kcal_consumidas, :detalle, :fecha,
                                               :proteinas_g, :carbohidratos_g, :grasas_g ])
     fecha = fecha_valida(datos[:fecha])
-    return redirect_to objetivo_path, alert: "No puedes registrar un día futuro." if fecha > Date.current
+    return redirect_back_or_to objetivo_path, alert: "No puedes registrar un día futuro." if fecha > Date.current
 
     registro = RegistroCaloria.registrar(Current.user, kcal: datos[:kcal_consumidas], fecha: fecha,
                                          detalle: detalle_parseado(datos[:detalle]),
                                          **macros_recibidos(datos))
 
+    # redirect_back (Fase 18k, reporte del cliente): registrar desde el
+    # checklist de Mi plan teletransportaba a Nutrición. Volver a la MISMA
+    # página deja que el morph de Turbo 8 (layout) actualice en sitio con el
+    # scroll preservado — sensación SPA sin JS nuevo.
     if registro.persisted? && registro.errors.none?
-      redirect_to objetivo_path, notice: "Consumo de hoy registrado."
+      redirect_back_or_to objetivo_path, notice: "Consumo de hoy registrado."
     else
-      redirect_to objetivo_path, alert: registro.errors.full_messages.to_sentence
+      redirect_back_or_to objetivo_path, alert: registro.errors.full_messages.to_sentence
     end
   end
 

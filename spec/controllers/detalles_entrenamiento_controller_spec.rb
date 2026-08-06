@@ -178,6 +178,26 @@ RSpec.describe "DetallesEntrenamiento", type: :request do
       expect(users(:one).records_personales.vigentes.where(baseline: false).pluck(:tipo))
         .to contain_exactly("peso_max", "volumen_max")
     end
+
+    # Fase 18k (bug reportado con captura: 18 series de un plan de 3): el
+    # reenvío de "cumplido tal cual" no duplica, y con series registradas el
+    # dialog deja de ofrecer el atajo.
+    it "reenviar 'cumplido tal cual' no duplica las series" do
+      params_cumplido = { fecha: Date.current.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre,
+                          cumplido: "1", series_plan: 3, repeticiones_plan: "8-10", peso_kg: 15 }
+
+      expect {
+        post detalles_entrenamiento_path, params: params_cumplido
+      }.to change(DetalleEntrenamiento, :count).by(3)
+
+      expect {
+        post detalles_entrenamiento_path, params: params_cumplido
+      }.not_to change(DetalleEntrenamiento, :count)
+
+      get detalles_entrenamiento_path, params: { fecha: Date.current.iso8601, ejercicio_id: ejercicio.id,
+                                                 nombre: ejercicio.nombre, series_plan: 3, repeticiones_plan: "8-10" }
+      expect(response.body).not_to include("Cumplido tal cual")
+    end
   end
 
   describe "POST /detalles_entrenamiento/analizar" do

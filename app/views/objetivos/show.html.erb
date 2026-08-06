@@ -53,7 +53,7 @@
         <%= form_with url: objetivo_path, method: :patch, class: "mt-2 flex items-end gap-2" do |form| %>
           <input type="number" name="objetivo_nutricional[objetivo_kcal]" value="<%= @objetivo.objetivo_kcal %>"
                  min="1" step="10" required aria-label="Objetivo diario (kcal)"
-                 class="input input-bordered input-sm w-28 text-right font-mono">
+                 class="input input-bordered input-sm w-28 text-right font-semibold">
           <%= form.submit "Guardar", class: "btn btn-primary btn-sm font-bold" %>
         <% end %>
       </details>
@@ -124,7 +124,7 @@
                     <input type="hidden" name="registro_caloria[fecha]" value="<%= registro.fecha.iso8601 %>">
                     <input type="number" name="registro_caloria[kcal_consumidas]" value="<%= registro.kcal_consumidas %>"
                            min="0" step="10" required aria-label="Kcal del <%= l registro.fecha %>"
-                           class="input input-bordered input-xs w-24 text-right font-mono">
+                           class="input input-bordered input-xs w-24 text-right font-semibold">
                     <button type="submit" class="btn btn-ghost btn-xs" title="Guardar corrección">
                       <%= render "shared/icono", nombre: :check, clase: "size-3.5" %>
                     </button>

@@ -38,7 +38,11 @@
     <%= f.hidden_field :series_plan, value: series_plan %>
     <%= f.hidden_field :repeticiones_plan, value: repeticiones_plan %>
 
-    <% if series_plan.present? && repeticiones_plan.present? %>
+    <%# "Cumplido tal cual" solo mientras NO haya series registradas (Fase
+        18k): con series existentes el reenvío duplicaba el plan completo;
+        desde ahí se corrige serie a serie con el formulario manual. %>
+    <% cumplido_disponible = detalles.empty? && series_plan.present? && repeticiones_plan.present? %>
+    <% if cumplido_disponible %>
       <label class="flex items-center gap-2 rounded-lg bg-base-200 p-3 text-sm font-semibold">
         <%= f.check_box :cumplido, checked: true, data: { registro_series_form_target: "checkbox", action: "registro-series-form#alternar" } %>
         Cumplido tal cual (<%= series_plan %> × <%= repeticiones_plan %>)
@@ -48,7 +52,7 @@
     <% end %>
 
     <div data-registro-series-form-target="camposManual"
-         class="<%= "hidden" if series_plan.present? && repeticiones_plan.present? %> grid grid-cols-[1fr_1fr_1fr_auto] items-end gap-2">
+         class="<%= "hidden" if cumplido_disponible %> grid grid-cols-[1fr_1fr_1fr_auto] items-end gap-2">
       <%# Prellenado con la serie previa (Fase 18a): el peso/reps de la última
           serie —de hoy o de la sesión pasada— ya vienen puestos; digitar es
           solo para cambiar. También beneficia a "Cumplido tal cual", que
@@ -69,7 +73,7 @@
       </label>
       <%= f.submit "+", class: "btn btn-primary btn-sm" %>
     </div>
-    <% if series_plan.present? && repeticiones_plan.present? %>
+    <% if cumplido_disponible %>
       <%= f.submit "Registrar", data: { registro_series_form_target: "botonCumplido" }, class: "btn btn-primary btn-sm" %>
     <% end %>
   <% end %>

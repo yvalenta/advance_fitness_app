@@ -79,7 +79,7 @@
                 <input type="hidden" name="medicion[fecha]" value="<%= medicion.fecha.iso8601 %>">
                 <input type="number" name="medicion[peso_kg]" value="<%= medicion.peso_kg %>"
                        min="0" step="0.1" required aria-label="Peso del <%= l medicion.fecha %>"
-                       class="input input-bordered input-xs w-20 text-right font-mono">
+                       class="input input-bordered input-xs w-20 text-right font-semibold">
                 <span class="text-xs text-steel-3">kg</span>
                 <button type="submit" class="btn btn-ghost btn-xs" title="Guardar corrección">
                   <%= render "shared/icono", nombre: :check, clase: "size-3.5" %>
