@@ -102,9 +102,13 @@
       <% emojis_tipo = { "desayuno" => "☕", "almuerzo" => "🥗", "cena" => "🍲", "snack" => "🍌", "otros" => "🍽️" } %>
       <% agrupadas = comidas.group_by { |comida| PlantillaComida::TIPOS.include?(comida["tipo"]) ? comida["tipo"] : "otros" } %>
 
+      <%# Solo tipos CON comidas (Fase 18i, reporte del cliente con captura):
+          las tarjetas vacías ("Sin comidas de este tipo") eran puro scroll
+          sin información ni acción — un plan con tipos propios las mostraba
+          las cuatro vacías y todo en Otros. %>
       <div class="mt-3 grid gap-3 sm:grid-cols-2">
-        <% (PlantillaComida::TIPOS + (agrupadas.key?("otros") ? [ "otros" ] : [])).each do |tipo| %>
-          <% grupo = agrupadas.fetch(tipo, []) %>
+        <% (PlantillaComida::TIPOS + [ "otros" ]).select { |tipo| agrupadas.key?(tipo) }.each do |tipo| %>
+          <% grupo = agrupadas.fetch(tipo) %>
           <% recomendado = grupo.sum { |comida| comida["kcal"].to_i } %>
           <div class="flex flex-col gap-3 rounded-2xl border border-base-300 bg-base-200/50 p-3 <%= "sm:col-span-2" if tipo == "otros" %>">
             <div class="flex items-center gap-3">
@@ -117,10 +121,6 @@
                 </p>
               </div>
             </div>
-
-            <% if grupo.empty? %>
-              <p class="rounded-xl border border-dashed border-base-300 px-3 py-4 text-center text-xs text-steel-3">Sin comidas de este tipo en tu plan.</p>
-            <% end %>
 
             <% grupo.each do |comida| %>
               <% cp = comida["proteinas_g"].to_i * 4 %>
@@ -144,38 +144,48 @@
                     </span>
                   </div>
                 </label>
-                <p class="mt-1 text-sm text-steel-5 transition-opacity group-has-[:checked]:opacity-60"><%= comida["descripcion"] %></p>
 
-                <%# Mini-barra de macros de la comida %>
-                <div class="pt-3">
-                  <div class="flex h-1.5 w-full overflow-hidden rounded-full bg-base-200">
-                    <div class="bg-volt" style="width: <%= cpct.call(cp) %>%"></div>
-                    <div class="bg-accent" style="width: <%= cpct.call(cc) %>%"></div>
-                    <div class="bg-secondary" style="width: <%= cpct.call(cg) %>%"></div>
-                  </div>
-                  <div class="mt-1.5 flex gap-2 text-xs text-steel-5">
-                    <span class="inline-flex items-center gap-1"><span class="size-2 rounded-full bg-volt"></span>P <%= comida["proteinas_g"] %>g</span>
-                    <span class="inline-flex items-center gap-1"><span class="size-2 rounded-full bg-accent"></span>C <%= comida["carbohidratos_g"] %>g</span>
-                    <span class="inline-flex items-center gap-1"><span class="size-2 rounded-full bg-secondary"></span>G <%= comida["grasas_g"] %>g</span>
-                  </div>
-                </div>
+                <%# Detalle plegado (Fase 18i): la fila queda en nombre + kcal
+                    + check; descripción completa, macros y ajuste aparecen al
+                    tocar. Los targets del Stimulus siguen en el DOM aunque el
+                    details esté cerrado — el checklist no cambia. %>
+                <details class="group/detalle mt-1">
+                  <summary class="flex cursor-pointer list-none items-start justify-between gap-2 [&::-webkit-details-marker]:hidden">
+                    <p class="line-clamp-1 text-sm text-steel-5 transition-opacity group-has-[:checked]:opacity-60 group-open/detalle:line-clamp-none"><%= comida["descripcion"].presence || "Macros y ajuste" %></p>
+                    <span class="shrink-0 text-xs font-semibold text-steel-3 group-open/detalle:hidden">más ▾</span>
+                  </summary>
 
-                <% if propio %>
-                  <%# El miembro ajusta lo que realmente comió (kcal + nota). No muta el plan del coach. %>
-                  <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-base-200 pt-3">
-                    <label class="flex items-center gap-1.5 text-xs font-medium text-steel-5">
-                      Comí
-                      <input type="number" min="0" step="10" value="<%= comida["kcal"].to_i %>"
-                             data-plan-nutricional-target="kcal" data-action="input->plan-nutricional#actualizar"
-                             class="input input-bordered input-xs w-20 text-right font-mono">
-                      kcal
-                    </label>
-                    <input type="text" placeholder="¿Qué comiste / cambiaste? (opcional)" maxlength="120"
-                           data-plan-nutricional-target="nota" data-action="input->plan-nutricional#actualizar"
-                           class="input input-bordered input-xs min-w-0 flex-1">
-                    <p hidden class="w-full text-xs font-semibold" data-plan-nutricional-target="hint"></p>
+                  <%# Mini-barra de macros de la comida %>
+                  <div class="pt-3">
+                    <div class="flex h-1.5 w-full overflow-hidden rounded-full bg-base-200">
+                      <div class="bg-volt" style="width: <%= cpct.call(cp) %>%"></div>
+                      <div class="bg-accent" style="width: <%= cpct.call(cc) %>%"></div>
+                      <div class="bg-secondary" style="width: <%= cpct.call(cg) %>%"></div>
+                    </div>
+                    <div class="mt-1.5 flex gap-2 text-xs text-steel-5">
+                      <span class="inline-flex items-center gap-1"><span class="size-2 rounded-full bg-volt"></span>P <%= comida["proteinas_g"] %>g</span>
+                      <span class="inline-flex items-center gap-1"><span class="size-2 rounded-full bg-accent"></span>C <%= comida["carbohidratos_g"] %>g</span>
+                      <span class="inline-flex items-center gap-1"><span class="size-2 rounded-full bg-secondary"></span>G <%= comida["grasas_g"] %>g</span>
+                    </div>
                   </div>
-                <% end %>
+
+                  <% if propio %>
+                    <%# El miembro ajusta lo que realmente comió (kcal + nota). No muta el plan del coach. %>
+                    <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-base-200 pt-3">
+                      <label class="flex items-center gap-1.5 text-xs font-medium text-steel-5">
+                        Comí
+                        <input type="number" min="0" step="10" value="<%= comida["kcal"].to_i %>"
+                               data-plan-nutricional-target="kcal" data-action="input->plan-nutricional#actualizar"
+                               class="input input-bordered input-xs w-20 text-right font-mono">
+                        kcal
+                      </label>
+                      <input type="text" placeholder="¿Qué comiste / cambiaste? (opcional)" maxlength="120"
+                             data-plan-nutricional-target="nota" data-action="input->plan-nutricional#actualizar"
+                             class="input input-bordered input-xs min-w-0 flex-1">
+                      <p hidden class="w-full text-xs font-semibold" data-plan-nutricional-target="hint"></p>
+                    </div>
+                  <% end %>
+                </details>
               </div>
             <% end %>
           </div>

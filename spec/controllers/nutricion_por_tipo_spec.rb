@@ -28,10 +28,12 @@ RSpec.describe "NutricionPorTipo", type: :request do
     get mi_plan_path
 
     expect(response).to have_http_status(:success)
-    expect(response.body).to include("Desayuno", "Almuerzo", "Cena", "Snacks")
+    expect(response.body).to include("Desayuno", "Almuerzo", "Snacks")
     expect(response.body).to include("Recomendado: 450 kcal", "Recomendado: 700 kcal", "Recomendado: 200 kcal")
-    # La cena no tiene comidas pero su card del grid 2×2 aparece igual
-    expect(response.body).to include("Sin comidas de este tipo")
+    # Fase 18i (reporte del cliente): un tipo sin comidas ya NO pinta card —
+    # las tarjetas vacías eran scroll sin información ni acción.
+    expect(response.body).not_to include("Sin comidas de este tipo")
+    expect(response.body).not_to include("Cena</span>") # el badge de la card vacía
     # Sin comidas fuera de los cuatro tipos, no aparece el bucket Otros
     expect(response.body).not_to include("Otros")
     # El checkbox lleva tipo y macros para el registro del consumo (Fase 14.4)
