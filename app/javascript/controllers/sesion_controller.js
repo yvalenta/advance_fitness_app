@@ -10,7 +10,7 @@ export default class extends Controller {
   static targets = ["datos", "ejercicio", "siguiente", "descanso", "cuenta", "anillo",
                     "proximo", "progresoTexto", "progresoBarra", "resumen",
                     "duracion", "seriesHechas", "volumen", "botonHecho", "errorGuardado"]
-  static values = { registroUrl: String, salidaUrl: String }
+  static values = { registroUrl: String, detallesUrl: String, salidaUrl: String }
 
   connect() {
     this.datos = JSON.parse(this.datosTarget.textContent)
@@ -19,6 +19,7 @@ export default class extends Controller {
     this.hechas = this.ejercicios.map(() => 0)
     this.inicio = Date.now()
     this.circunferencia = 2 * Math.PI * 54 // r=54 del anillo SVG (viewBox 120)
+    this.restaurarRegistradas()
   }
 
   disconnect() { this.detenerTimer() }
@@ -28,10 +29,8 @@ export default class extends Controller {
     const chip = event.currentTarget
     if (chip.dataset.hecha) return
 
-    chip.dataset.hecha = "1"
-    chip.classList.remove("btn-outline")
-    chip.classList.add("btn-primary")
-    chip.textContent = `✓ ${chip.textContent.trim()}`
+    this.pintarHecha(chip)
+    this.registrarSerie(Number(chip.dataset.serie) + 1)
 
     this.hechas[this.actual] += 1
     if (this.hechas[this.actual] >= this.ejercicios[this.actual].series) {
@@ -39,6 +38,55 @@ export default class extends Controller {
     } else {
       this.iniciarDescanso(this.ejercicios[this.actual].descanso_seg)
     }
+  }
+
+  pintarHecha(chip) {
+    chip.dataset.hecha = "1"
+    chip.classList.remove("btn-outline")
+    chip.classList.add("btn-primary")
+    chip.textContent = `✓ ${chip.textContent.trim()}`
+  }
+
+  // Re-visita del mismo día (Fase 18l): los chips ya registrados en el
+  // servidor amanecen marcados — re-taparlos no duplica (el POST es
+  // idempotente por serie, y el chip marcado ni siquiera dispara).
+  restaurarRegistradas() {
+    this.ejercicios.forEach((ejercicio, i) => {
+      const registradas = ejercicio.series_registradas || 0
+      if (registradas <= 0) return
+
+      const chips = this.ejercicioTargets[i].querySelectorAll("[data-serie]")
+      chips.forEach((chip) => {
+        if (Number(chip.dataset.serie) < registradas) this.pintarHecha(chip)
+      })
+      this.hechas[i] = Math.min(registradas, ejercicio.series)
+      if (this.hechas[i] >= ejercicio.series) this.siguienteTargets[i].hidden = false
+    })
+  }
+
+  // Registro cuantitativo por serie (Fase 18l, solo premium — sin URL no
+  // envía): reps del plan (límite inferior del rango) y kg de la vez pasada
+  // o el sugerido de estreno. Best-effort: un fallo de red jamás interrumpe
+  // el entrenamiento — el índice único por serie evita duplicados.
+  registrarSerie(numeroSerie) {
+    if (!this.detallesUrlValue) return
+    const ejercicio = this.ejercicios[this.actual]
+    if (!ejercicio.ejercicio_id && !ejercicio.nombre) return
+
+    const cuerpo = {
+      fecha: this.datos.fecha, ejercicio_id: ejercicio.ejercicio_id, nombre: ejercicio.nombre,
+      serie: numeroSerie, repeticiones: parseInt(ejercicio.repeticiones, 10) || 1
+    }
+    if (ejercicio.peso_registro_kg > 0) cuerpo.peso_kg = ejercicio.peso_registro_kg
+
+    fetch(this.detallesUrlValue, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector("meta[name='csrf-token']")?.content
+      },
+      body: JSON.stringify(cuerpo)
+    }).catch(() => {})
   }
 
   // ── Cronómetro de descanso ──────────────────────────────────────────────
@@ -162,10 +210,11 @@ export default class extends Controller {
     if (pendiente) pendiente.classList.add("ring-2", "ring-volt", "ring-offset-2", "ring-offset-base-100")
   }
 
-  // Volumen = series hechas × reps (límite inferior del rango) × kg sugerido.
+  // Volumen = series hechas × reps (límite inferior del rango) × kg — el
+  // mismo kg que se registra (vez pasada o sugerido, Fase 18l).
   volumenKg() {
     return Math.round(this.ejercicios.reduce((suma, ejercicio, i) =>
-      suma + this.hechas[i] * (parseInt(ejercicio.repeticiones, 10) || 0) * (ejercicio.peso_sugerido_kg || 0), 0))
+      suma + this.hechas[i] * (parseInt(ejercicio.repeticiones, 10) || 0) * (ejercicio.peso_registro_kg || ejercicio.peso_sugerido_kg || 0), 0))
   }
 
   formatoDuracion(ms) {

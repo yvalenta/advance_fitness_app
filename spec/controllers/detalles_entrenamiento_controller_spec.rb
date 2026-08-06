@@ -198,6 +198,26 @@ RSpec.describe "DetallesEntrenamiento", type: :request do
                                                  nombre: ejercicio.nombre, series_plan: 3, repeticiones_plan: "8-10" }
       expect(response.body).not_to include("Cumplido tal cual")
     end
+
+    # Fase 18l: el modo sesión envía la serie explícita — reintentos y
+    # re-visitas del día no duplican.
+    it "la serie explícita del modo sesión es idempotente" do
+      params_serie = { fecha: Date.current.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre,
+                       serie: 1, repeticiones: 8, peso_kg: 42.5 }
+
+      expect {
+        post detalles_entrenamiento_path, params: params_serie
+        post detalles_entrenamiento_path, params: params_serie
+      }.to change(DetalleEntrenamiento, :count).by(1)
+
+      detalle = DetalleEntrenamiento.last
+      expect(detalle.serie).to eq(1)
+      expect(detalle.peso_kg).to eq(42.5)
+
+      post detalles_entrenamiento_path, params: params_serie.merge(serie: 2)
+      expect(users(:one).registros_entrenamiento.find_by(fecha: Date.current)
+        .detalles.order(:serie).pluck(:serie)).to eq([ 1, 2 ])
+    end
   end
 
   describe "POST /detalles_entrenamiento/analizar" do

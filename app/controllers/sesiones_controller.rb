@@ -61,22 +61,46 @@ class SesionesController < ApplicationController
     # tipo application/json): uid estable para el registro (cae al índice en
     # rutinas viejas sin uid) y series/descanso saneados para que la máquina
     # de estados nunca reciba 0 series ni descanso 0.
+    # Fase 18l (premium): cada ejercicio lleva además el kg con el que la
+    # sesión registra sus series (la vez pasada o, de estreno, el sugerido
+    # del plan) y cuántas series ya quedaron registradas hoy — para que una
+    # re-visita pinte los chips hechos y no duplique.
     def datos_sesion
+      premium = Current.user.premium?
+      ids = @catalogo.keys
+      anteriores = premium ? DetalleEntrenamiento.ultimos_por_ejercicio(Current.user, ids, antes_de: @fecha) : {}
+      registradas_hoy = premium ? series_registradas_hoy : {}
+
       {
         fecha: @fecha.iso8601,
         dia: @dia&.fetch("dia", nil),
         enfoque: @dia&.fetch("enfoque", nil),
         ejercicios: @ejercicios_dia.each_with_index.map do |ej, indice|
+          id = (ej["ejercicio_id"] if @catalogo.key?(ej["ejercicio_id"]))
+          series = [ ej["series"].to_i, 1 ].max
           { uid: ej["uid"].presence || indice.to_s,
             indice: indice,
             nombre: ej["nombre"].to_s,
-            series: [ ej["series"].to_i, 1 ].max,
+            series: series,
             repeticiones: ej["repeticiones"].to_s,
             descanso_seg: ej["descanso_seg"].to_i.positive? ? ej["descanso_seg"].to_i : 60,
             peso_sugerido_kg: ej["peso_sugerido_kg"].to_f,
             nota_tecnica: ej["nota_tecnica"].to_s,
-            ejercicio_id: (ej["ejercicio_id"] if @catalogo.key?(ej["ejercicio_id"])) }
+            ejercicio_id: id,
+            peso_registro_kg: peso_para_registrar(anteriores[id], ej),
+            series_registradas: [ registradas_hoy[id].to_i, series ].min }
         end
       }
+    end
+
+    # {ejercicio_id => series ya registradas HOY} — una query, solo premium.
+    def series_registradas_hoy
+      Current.user.registros_entrenamiento.find_by(fecha: @fecha)
+             &.detalles&.group(:ejercicio_id)&.count || {}
+    end
+
+    def peso_para_registrar(anterior, ej)
+      peso = anterior&.peso_kg || (ej["peso_sugerido_kg"].to_f if ej["peso_sugerido_kg"].to_f.positive?)
+      peso&.to_f
     end
 end

@@ -13,10 +13,6 @@
 <% editando_por_defecto = local_assigns.fetch(:editando_por_defecto, false) %>
 <% registro = local_assigns[:registro] %>
 <% fecha = local_assigns[:fecha] %>
-<%# Gate premium del botón Registrar: el del DUEÑO del plan, no el de quien
-    renderiza — en un broadcast Turbo no hay Current.user (nil.premium?
-    reventaba) y si renderiza el staff su premium no es el del miembro. %>
-<% premium = Current.user&.premium? if premium.nil? %>
 <%# {ejercicio_id => última serie registrada} — lo calcula el controller en
     UNA query (Fase 14.2); aquí está prohibido consultar (N+1 por fila). %>
 <% anteriores = local_assigns[:anteriores] || {} %>
@@ -127,14 +123,9 @@
               <p class="mt-1 text-xs leading-snug text-steel-3"><%= ejercicio["nota_tecnica"] %></p>
             <% end %>
           </button>
-          <% if con_seguimiento && !futuro && premium %>
-            <%# Registro de series reales (SDD §18, feature premium) %>
-            <button type="button" class="btn btn-ghost btn-xs shrink-0"
-                    data-action="click->registro-series#abrir"
-                    data-registro-series-url="<%= detalles_entrenamiento_path(fecha: fecha, ejercicio_id: ejercicio["ejercicio_id"], nombre: ejercicio["nombre"], series_plan: ejercicio["series"], repeticiones_plan: ejercicio["repeticiones"]) %>">
-              <%= render "shared/icono", nombre: :actividad, clase: "size-3.5" %> Registrar
-            </button>
-          <% end %>
+          <%# El botón "Registrar" salió de la tarjeta (Fase 18l, decisión del
+              cliente): las series reales se capturan en el modo sesión al
+              marcar cada chip — aquí queda solo el check de seguimiento. %>
           <% if con_seguimiento %>
             <%# Check circular a la derecha (patrón has-checked de _plan): el
                 input sigue siendo el mismo checkbox de seguimiento#marcar. %>

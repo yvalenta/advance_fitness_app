@@ -40,7 +40,7 @@
 <% end %>
 
 <div class="card border border-base-300 bg-base-100 shadow-md"
-     data-controller="<%= "mesociclo " if multisemana %>modo-edicion seguimiento ayuda-ejercicio registro-series autosave modal-ejercicios"
+     data-controller="<%= "mesociclo " if multisemana %>modo-edicion seguimiento ayuda-ejercicio autosave modal-ejercicios"
      <% if multisemana %>data-mesociclo-activa-value="<%= activa %>"<% end %>
      data-seguimiento-url-value="<%= registros_entrenamiento_path %>"
      data-autosave-clave="ejercicio"
@@ -145,7 +145,6 @@
     <%= render "planes_personalizados/modal_ejercicios", plantillas: plantillas %>
   <% end %>
   <%= render "ejercicios/dialogo_ayuda" %>
-  <% if con_seguimiento && usuario.premium? %>
-    <%= render "detalles_entrenamiento/dialogo" %>
-  <% end %>
+  <%# El dialog de registro de series salió de aquí (Fase 18l): las series
+      cuantitativas se capturan en el modo sesión al marcar cada chip. %>
 </div>

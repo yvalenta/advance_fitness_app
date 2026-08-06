@@ -25,6 +25,13 @@ class DetallesEntrenamientoController < ApplicationController
       # (misma marca de peso/volumen/reps en todas).
       detalle = DetalleEntrenamiento.registrar_cumplido!(registro: @registro, ejercicio: @ejercicio,
         series: params[:series_plan], repeticiones: params[:repeticiones_plan], peso_kg: params[:peso_kg]).first
+    elsif (numero_serie = params[:serie].to_i).positive?
+      # Modo sesión (Fase 18l): serie explícita e IDEMPOTENTE — el re-tap o
+      # la re-visita del día no duplica (el índice único por serie respalda).
+      detalle = @registro.detalles.find_by(ejercicio: @ejercicio, serie: numero_serie) ||
+                @registro.detalles.create!(ejercicio: @ejercicio, serie: numero_serie,
+                                           repeticiones: params[:repeticiones], peso_kg: params[:peso_kg].presence,
+                                           rpe: params[:rpe].presence)
     else
       siguiente_serie = @registro.detalles.where(ejercicio: @ejercicio).maximum(:serie).to_i + 1
       detalle = @registro.detalles.create!(ejercicio: @ejercicio, serie: siguiente_serie,

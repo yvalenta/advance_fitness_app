@@ -49,6 +49,49 @@ RSpec.describe "Sesiones", type: :request do
     expect(response.body).to include('"descanso_seg":60')
   end
 
+  # Fase 18l: la sesión captura las series cuantitativas al tap (premium).
+  describe "registro cuantitativo por serie" do
+    let(:ejercicio_catalogo) do
+      Ejercicio.create!(dataset_id: "sesion-0001", nombre: "Press banca", nombre_en: "Bench press",
+                        nombre_normalizado: "press banca", categoria: "fuerza", musculo: "pecho")
+    end
+    let(:rutina_con_id) do
+      { "dias" => [ { "dia" => "lunes", "enfoque" => "pecho", "ejercicios" => [
+        { "uid" => "abc123", "nombre" => "Press banca", "series" => 3, "repeticiones" => "8-10",
+          "descanso_seg" => 90, "peso_sugerido_kg" => 60, "ejercicio_id" => ejercicio_catalogo.id } ] } ] }
+    end
+
+    def premium!(user)
+      Suscripcion.create!(user: user, plan: planes(:personalizado), estado: "activa", fecha_inicio: Date.current)
+    end
+
+    it "premium recibe la URL de detalles, el kg de la vez pasada y las series ya registradas" do
+      crear_plan!(users(:one), rutina: rutina_con_id)
+      premium!(users(:one))
+      pasado = users(:one).registros_entrenamiento.create!(fecha: lunes - 7)
+      pasado.detalles.create!(ejercicio: ejercicio_catalogo, serie: 1, repeticiones: 8, peso_kg: 62.5)
+      hoy = users(:one).registros_entrenamiento.create!(fecha: lunes)
+      hoy.detalles.create!(ejercicio: ejercicio_catalogo, serie: 1, repeticiones: 8, peso_kg: 62.5)
+      sign_in_as users(:one)
+
+      get sesion_path(lunes.iso8601)
+
+      expect(response.body).to include("data-sesion-detalles-url-value=\"#{detalles_entrenamiento_path}\"")
+      expect(response.body).to include('"peso_registro_kg":62.5') # la vez pasada, no el sugerido
+      expect(response.body).to include('"series_registradas":1')  # re-visita: el chip amanece marcado
+    end
+
+    it "free no recibe la URL de detalles (chips solo visuales) y de estreno va el sugerido" do
+      crear_plan!(users(:one), rutina: rutina_con_id)
+      sign_in_as users(:one)
+
+      get sesion_path(lunes.iso8601)
+
+      expect(response.body).to include('data-sesion-detalles-url-value=""')
+      expect(response.body).to include('"series_registradas":0')
+    end
+  end
+
   it "sin plan publicado muestra el estado vacío con link a Mi plan" do
     sign_in_as users(:one)
 
