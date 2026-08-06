@@ -5,8 +5,9 @@
 # columna: es la última fila por (user, tipo).
 class Consentimiento < ApplicationRecord
   # tabla_posiciones bloquea el ranking del motor de juego (Fase 14.12);
-  # los de ciclo bloquean el futuro módulo de ciclo menstrual y su capa IA.
-  TIPOS = %w[tabla_posiciones ciclo_menstrual ciclo_menstrual_ia].freeze
+  # los de ciclo bloquean el futuro módulo de ciclo menstrual y su capa IA;
+  # logros_comunidad bloquea el muro de celebraciones de novedades (Fase 18e).
+  TIPOS = %w[tabla_posiciones ciclo_menstrual ciclo_menstrual_ia logros_comunidad].freeze
   ACCIONES = %w[otorgado revocado].freeze
 
   belongs_to :user
@@ -23,5 +24,17 @@ class Consentimiento < ApplicationRecord
   # `id` desempata filas creadas en el mismo instante (tests, doble clic).
   def self.vigente?(user, tipo)
     where(user: user, tipo: tipo).order(:created_at, :id).last&.accion == "otorgado"
+  end
+
+  # Versión en lote de `vigente?` (Fase 18e): de `user_ids`, los que tienen el
+  # tipo otorgado como ÚLTIMA fila — DISTINCT ON toma la más reciente por
+  # usuario en una sola query.
+  def self.usuarios_vigentes(tipo, user_ids)
+    return [] if user_ids.blank?
+
+    where(tipo: tipo, user_id: user_ids)
+      .select("DISTINCT ON (user_id) user_id, accion")
+      .order("user_id, created_at DESC, id DESC")
+      .filter_map { |fila| fila.user_id if fila.accion == "otorgado" }
   end
 end

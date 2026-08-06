@@ -133,7 +133,11 @@ Rails.application.routes.draw do
   end
 
   # Comunidad (Fase 8): lectura pública para todo miembro autenticado (SDD §09).
+  # Fase 18e: /novedades también es el muro de la comunidad — opt-in de
+  # celebrar los logros propios, con consentimiento auditable (patrón ranking).
   resources :novedades, only: :index
+  post "novedades/participacion", to: "novedades#participar", as: :novedades_participacion
+  delete "novedades/participacion", to: "novedades#retirarse"
   get "blog", to: "blog#index"
   get "blog/:id", to: "blog#show", as: :blog_post
 

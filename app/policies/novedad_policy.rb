@@ -1,5 +1,8 @@
 class NovedadPolicy < ApplicationPolicy
   def index? = true
+  # Opt-in del muro (Fase 18e): decisión personal de un miembro de tenant —
+  # superadmin/comercializador no tienen logros que compartir.
+  def participar? = !user.global?
   def admin_index? = user.staff?
   def create? = user.staff?
   def update? = user.staff?

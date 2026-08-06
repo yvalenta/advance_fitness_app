@@ -50,4 +50,19 @@ RSpec.describe Consentimiento, type: :model do
     expect(Consentimiento.vigente?(user, "ciclo_menstrual_ia")).to be false
     expect(Consentimiento.vigente?(user, "tabla_posiciones")).to be false
   end
+
+  # Fase 18e: la versión en lote respeta la MISMA semántica de vigente?
+  # (última fila por usuario decide).
+  it "usuarios_vigentes devuelve solo a quienes tienen la última fila otorgada" do
+    otro = users(:two)
+    registrar(tipo: "logros_comunidad", accion: "otorgado")
+    registrar(tipo: "logros_comunidad", accion: "revocado")
+
+    Consentimiento.create!(user: otro, tipo: "logros_comunidad", accion: "otorgado",
+                           version_texto: "v1")
+
+    vigentes = Consentimiento.usuarios_vigentes("logros_comunidad", [ user.id, otro.id ])
+    expect(vigentes).to eq [ otro.id ]
+    expect(Consentimiento.usuarios_vigentes("logros_comunidad", [])).to eq []
+  end
 end
