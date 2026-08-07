@@ -1,6 +1,6 @@
 <%# Campos de medición agrupados (Fase 5.9). Reutilizado por el alta de %>
 <%# medición del staff y por el alta de suscripción. locals: (form:) %>
-<div class="grid gap-3 sm:grid-cols-3">
+<div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
   <label class="form-control">
     <span class="label-text mb-1 text-xs font-semibold">Peso (kg) *</span>
     <%= form.number_field :peso_kg, step: 0.01, min: 0, required: true, class: "input input-bordered w-full" %>
@@ -18,7 +18,7 @@
 <% [ [ "Perímetros (cm)", Medicion::PERIMETROS ], [ "Diámetros óseos (cm)", Medicion::DIAMETROS ], [ "Pliegues (mm)", Medicion::PLIEGUES ] ].each do |titulo, campos| %>
   <div>
     <p class="eyebrow mb-1.5 mt-1 text-steel-3"><%= titulo %></p>
-    <div class="grid gap-3 sm:grid-cols-3">
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
       <% campos.each do |campo| %>
         <label class="form-control">
           <span class="label-text mb-1 text-xs font-semibold"><%= Medicion::NOMBRES[campo] %></span>

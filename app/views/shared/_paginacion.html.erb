@@ -1,6 +1,6 @@
 <%# locals: (coleccion:, ruta:, frame:, q: nil) %>
 <% if coleccion.total_pages > 1 %>
-  <div class="mt-4 flex items-center justify-between text-sm text-steel-3">
+  <div class="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm text-steel-3">
     <p>Página <%= coleccion.current_page %> de <%= coleccion.total_pages %> · <%= pluralize(coleccion.total_count, "resultado") %></p>
     <div class="join">
       <%= link_to "‹ Anterior", ruta.call({ page: coleccion.current_page - 1, q: q.presence }.compact),
