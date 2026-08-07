@@ -7,20 +7,24 @@
 <div class="mx-auto -mt-8 w-full max-w-6xl px-4 pb-12">
   <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
     <div class="card-body">
-      <%= turbo_frame_tag "resultados_pagos", data: { controller: "buscador-en-vivo" } do %>
+      <%# Form FUERA del frame (Fase 18p, bug reportado): el frame se
+          recarga con cada busqueda y adentro se llevaba el input — foco y
+          letras perdidas a mitad de tecleo. %>
+      <div data-controller="buscador-en-vivo">
         <%= form_with url: admin_pagos_path, method: :get, class: "mb-1",
               data: { turbo_frame: "resultados_pagos", buscador_en_vivo_target: "form" } do %>
           <label class="input input-bordered flex max-w-sm items-center gap-2">
             <%= render "shared/icono", nombre: :busqueda, clase: "size-4 text-steel-3" %>
             <input type="search" name="q" value="<%= @q %>" placeholder="Buscar por miembro, fecha, valor o método…"
-                   class="grow" data-action="input->buscador-en-vivo#buscar">
+                   class="grow" data-action="input->buscador-en-vivo#buscar" data-buscador-en-vivo-target="entrada">
           </label>
         <% end %>
+        <%= turbo_frame_tag "resultados_pagos" do %>
 
         <% if @q.present? %>
           <p class="text-xs text-steel-3">
             <%= pluralize(@pagos.total_count, "resultado") %> para "<%= @q %>" ·
-            <%= link_to "Limpiar", admin_pagos_path, data: { turbo_frame: "resultados_pagos" }, class: "link" %>
+            <%= link_to "Limpiar", admin_pagos_path, data: { turbo_frame: "resultados_pagos", action: "buscador-en-vivo#limpiar" }, class: "link" %>
           </p>
         <% end %>
 
@@ -80,6 +84,7 @@
           </div>
         <% end %>
       <% end %>
+      </div>
     </div>
   </div>
 </div>

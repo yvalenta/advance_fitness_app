@@ -1,14 +1,21 @@
 <%# locals: (coleccion:, ruta:, frame:, q: nil) %>
-<% if coleccion.total_pages > 1 %>
-  <div class="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm text-steel-3">
-    <p>Página <%= coleccion.current_page %> de <%= coleccion.total_pages %> · <%= pluralize(coleccion.total_count, "resultado") %></p>
-    <div class="join">
-      <%= link_to "‹ Anterior", ruta.call({ page: coleccion.current_page - 1, q: q.presence }.compact),
-            class: "btn btn-sm join-item #{"btn-disabled" if coleccion.first_page?}",
-            data: { turbo_frame: frame } %>
-      <%= link_to "Siguiente ›", ruta.call({ page: coleccion.current_page + 1, q: q.presence }.compact),
-            class: "btn btn-sm join-item #{"btn-disabled" if coleccion.last_page?}",
-            data: { turbo_frame: frame } %>
-    </div>
+<%# Lazy loading por scroll (Fase 18p, petición del cliente): sin botones
+    Anterior/Siguiente — el centinela trae la página siguiente al acercarse
+    al viewport (paginacion_infinita_controller) y se releva con el de esa
+    página, hasta el "fin de la lista". Viaja DENTRO del frame de
+    resultados: una búsqueda nueva recarga el frame y el ciclo renace en su
+    página 1. Sin JS no hay página 2 — el mismo trato que ya tienen el
+    checklist del plan y el modo sesión, que también viven de Stimulus. %>
+<% if coleccion.total_pages > 1 && !coleccion.last_page? %>
+  <div class="mt-4 flex items-center justify-center gap-2 py-2 text-xs text-steel-3"
+       data-controller="paginacion-infinita"
+       data-paginacion-infinita-url-value="<%= ruta.call({ page: coleccion.current_page + 1, q: q.presence }.compact) %>"
+       data-paginacion-infinita-marco-value="<%= frame %>">
+    <span class="loading loading-dots loading-xs" aria-hidden="true"></span>
+    cargando más de <%= pluralize(coleccion.total_count, "resultado") %>…
   </div>
+<% elsif coleccion.total_pages > 1 %>
+  <p class="mt-4 text-center text-xs text-steel-3" data-fin-lista>
+    <%= pluralize(coleccion.total_count, "resultado") %> — fin de la lista
+  </p>
 <% end %>
