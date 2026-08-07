@@ -22,7 +22,7 @@ RSpec.describe "DetallesEntrenamiento", type: :request do
     expect(response).to redirect_to(root_path)
   end
 
-  it "un miembro premium registra una serie y la ve en la lista" do
+  it "un miembro premium registra una serie" do
     sign_in_as users(:one)
     premium!(users(:one))
 
@@ -33,10 +33,10 @@ RSpec.describe "DetallesEntrenamiento", type: :request do
       }
     }.to change(DetalleEntrenamiento, :count).by(1)
     expect(response).to have_http_status(:success)
-    expect(response.body).to include("40")
 
     detalle = DetalleEntrenamiento.last
     expect(detalle.serie).to eq(1)
+    expect(detalle.peso_kg).to eq(40)
     expect(detalle.registro_entrenamiento.user).to eq(users(:one))
   end
 
@@ -52,28 +52,6 @@ RSpec.describe "DetallesEntrenamiento", type: :request do
     }
 
     expect(registro.detalles.order(:serie).pluck(:serie)).to eq([ 1, 2 ])
-  end
-
-  it "el dueño quita su propia serie" do
-    sign_in_as users(:one)
-    premium!(users(:one))
-    registro = users(:one).registros_entrenamiento.create!(fecha: Date.current)
-    detalle = registro.detalles.create!(ejercicio: ejercicio, serie: 1, repeticiones: 10, peso_kg: 40)
-
-    expect {
-      delete detalle_entrenamiento_path(detalle)
-    }.to change(DetalleEntrenamiento, :count).by(-1)
-    expect(response).to have_http_status(:success)
-  end
-
-  it "otro usuario no puede quitar una serie ajena" do
-    sign_in_as users(:two)
-    premium!(users(:one))
-    registro = users(:one).registros_entrenamiento.create!(fecha: Date.current)
-    detalle = registro.detalles.create!(ejercicio: ejercicio, serie: 1, repeticiones: 10, peso_kg: 40)
-
-    expect { delete detalle_entrenamiento_path(detalle) }.not_to change(DetalleEntrenamiento, :count)
-    expect(response).to redirect_to(root_path)
   end
 
   it "resuelve el ejercicio por nombre cuando falta ejercicio_id (planes viejos)" do
@@ -103,29 +81,6 @@ RSpec.describe "DetallesEntrenamiento", type: :request do
     expect(response).to have_http_status(:unprocessable_entity)
   end
 
-  it "muestra el dialog de registro (index) solo con el ejercicio resuelto" do
-    sign_in_as users(:one)
-    premium!(users(:one))
-
-    get detalles_entrenamiento_path, params: { fecha: Date.current.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre }
-    expect(response).to have_http_status(:success)
-    expect(response.body).to include(ejercicio.nombre)
-  end
-
-  # Fase 18a: el formulario precarga reps/kg con la última serie del mismo
-  # ejercicio — de hoy si ya registró, o de la sesión anterior.
-  it "el dialog precarga reps y peso de la sesión anterior del mismo ejercicio" do
-    sign_in_as users(:one)
-    premium!(users(:one))
-    pasado = users(:one).registros_entrenamiento.create!(fecha: Date.current - 2)
-    pasado.detalles.create!(ejercicio: ejercicio, serie: 1, repeticiones: 8, peso_kg: 62.5)
-
-    get detalles_entrenamiento_path, params: { fecha: Date.current.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre }
-
-    expect(response.body).to include('value="8"')
-    expect(response.body).to include('value="62.5"')
-  end
-
   describe "récords personales en el create (Fase 14.13)" do
     before do
       sign_in_as users(:one)
@@ -139,7 +94,9 @@ RSpec.describe "DetallesEntrenamiento", type: :request do
       Juego::DetectorPr.evaluar!(detalle)
     end
 
-    it "al batir la marca agrega la celebración SIN romper la lista (replace + append al mismo target)" do
+    # Fase 18n: la celebración viaja como append a #celebraciones_sesion (el
+    # contenedor del modo sesión); sin récord la respuesta es un ok vacío.
+    it "al batir la marca responde la celebración para la sesión" do
       vara_de_ayer!(reps: 10, peso: 40)
 
       post detalles_entrenamiento_path, params: {
@@ -148,20 +105,18 @@ RSpec.describe "DetallesEntrenamiento", type: :request do
       }
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include(%(action="replace" target="detalles_ejercicio_#{ejercicio.id}"))
-      expect(response.body).to include(%(action="append" target="detalles_ejercicio_#{ejercicio.id}"))
+      expect(response.body).to include(%(action="append" target="celebraciones_sesion"))
       expect(response.body).to include("Nuevo récord personal")
       expect(response.body).to include("50 kg")
     end
 
-    it "el primer registro (baseline) responde la lista de siempre, sin celebración" do
+    it "el primer registro (baseline) no celebra: ok vacío" do
       post detalles_entrenamiento_path, params: {
         fecha: Date.current.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre,
         repeticiones: 10, peso_kg: 40
       }
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include(%(action="replace" target="detalles_ejercicio_#{ejercicio.id}"))
       expect(response.body).not_to include("Nuevo récord personal")
       expect(users(:one).records_personales.where(baseline: true).count).to eq 2
     end
@@ -180,8 +135,7 @@ RSpec.describe "DetallesEntrenamiento", type: :request do
     end
 
     # Fase 18k (bug reportado con captura: 18 series de un plan de 3): el
-    # reenvío de "cumplido tal cual" no duplica, y con series registradas el
-    # dialog deja de ofrecer el atajo.
+    # reenvío de "cumplido tal cual" no duplica.
     it "reenviar 'cumplido tal cual' no duplica las series" do
       params_cumplido = { fecha: Date.current.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre,
                           cumplido: "1", series_plan: 3, repeticiones_plan: "8-10", peso_kg: 15 }
@@ -193,10 +147,6 @@ RSpec.describe "DetallesEntrenamiento", type: :request do
       expect {
         post detalles_entrenamiento_path, params: params_cumplido
       }.not_to change(DetalleEntrenamiento, :count)
-
-      get detalles_entrenamiento_path, params: { fecha: Date.current.iso8601, ejercicio_id: ejercicio.id,
-                                                 nombre: ejercicio.nombre, series_plan: 3, repeticiones_plan: "8-10" }
-      expect(response.body).not_to include("Cumplido tal cual")
     end
 
     # Fase 18l: el modo sesión envía la serie explícita — reintentos y

@@ -86,6 +86,12 @@ export default class extends Controller {
         "X-CSRF-Token": document.querySelector("meta[name='csrf-token']")?.content
       },
       body: JSON.stringify(cuerpo)
+    }).then(async (r) => {
+      // Si la serie rompió un récord, la respuesta trae el toast de
+      // celebración como turbo-stream (Fase 18n) — se renderiza acá mismo,
+      // en plena sesión, que es donde el récord acaba de pasar.
+      const texto = await r.text()
+      if (texto.includes("turbo-stream") && window.Turbo) window.Turbo.renderStreamMessage(texto)
     }).catch(() => {})
   }
 

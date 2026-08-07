@@ -7,6 +7,12 @@ class ObjetivosController < ApplicationController
     authorize @objetivo || Current.user.objetivos_nutricionales.new, :show?
     @registro_hoy = Current.user.registros_calorias.find_by(fecha: Date.current)
     @registros = Current.user.registros_calorias.order(fecha: :desc).limit(7)
+    # "Quemadas" del día (Fase 14.4): volumen levantado hoy (Σ reps × peso)
+    # convertido a kcal con la heurística kcal ≈ volumen_kg × 0.05. Vivía en
+    # la vista (query-desde-vista, patrón prohibido del repo) — Fase 18n.
+    volumen_hoy = Current.user.registros_entrenamiento.find_by(fecha: Date.current)
+                         &.detalles&.sum(&:volumen_kg).to_f
+    @quemadas = volumen_hoy.positive? ? (volumen_hoy * 0.05).round : nil
     # Ajuste del día por fase del ciclo (14.16): kcal_delta ≥ 0 (la lútea sube
     # el presupuesto, jamás lo baja). Sin consentimiento la fase es
     # :desconocida → delta 0 y mensaje nil — invisible.

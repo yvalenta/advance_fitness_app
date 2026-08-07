@@ -9,13 +9,9 @@
 <div class="mx-auto -mt-8 w-full max-w-4xl px-4 pb-12">
   <% if @objetivo %>
     <% consumidas = @registro_hoy&.kcal_consumidas.to_i %>
-    <%# "Quemadas" del día (Fase 14.4): volumen levantado hoy (Σ reps × peso de
-        DetalleEntrenamiento) convertido a kcal con la aproximación
-        kcal ≈ volumen_kg × 0.05 — mover 1.000 kg de volumen cuesta ~50 kcal.
-        Es una heurística visual para la dona, no una medición clínica.
-        Sin series registradas hoy → nil y la dona oculta ese lado. %>
-    <% volumen_hoy = Current.user.registros_entrenamiento.find_by(fecha: Date.current)&.detalles&.sum(&:volumen_kg).to_f %>
-    <% quemadas = volumen_hoy.positive? ? (volumen_hoy * 0.05).round : nil %>
+    <%# "Quemadas" (@quemadas) las calcula el controller — aquí cero queries
+        (Fase 18n). Es una heurística visual para la dona, no clínica; sin
+        series hoy es nil y la dona oculta ese lado. %>
     <%# Macros del día (Fase 14.4): objetivos desde el plan aprobado (si sus
         comidas traen gramos) y consumo real desde el registro de hoy. %>
     <% comidas_plan = Current.user.plan_aprobado&.comidas || [] %>
@@ -33,7 +29,7 @@
     <div class="lg:col-span-2">
     <div class="animate-fade-up">
       <%= render "shared/dona_calorias", consumidas: consumidas, objetivo: @objetivo.objetivo_kcal + kcal_ciclo,
-                 quemadas: quemadas, macros: macros %>
+                 quemadas: @quemadas, macros: macros %>
     </div>
     <% if kcal_ciclo.positive? %>
       <p class="mt-2 px-1 text-xs text-ocean">

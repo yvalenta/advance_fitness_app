@@ -55,9 +55,10 @@ Rails.application.routes.draw do
   # create/destroy responden turbo_stream. Rutas nombradas a mano (en vez de
   # `resources`) para no depender del inflector global: el nombre de tabla
   # real "detalle_entrenamientos" no coincide con "detalles_entrenamiento".
-  get "detalles_entrenamiento", to: "detalles_entrenamiento#index", as: :detalles_entrenamiento
-  post "detalles_entrenamiento", to: "detalles_entrenamiento#create"
-  delete "detalles_entrenamiento/:id", to: "detalles_entrenamiento#destroy", as: :detalle_entrenamiento
+  # Solo el POST del modo sesión (Fase 18n): el dialog de registro (GET) y el
+  # quitar serie (DELETE) se eliminaron con su UI — eran superficie muerta
+  # desde que la sesión captura las series al tap (18l).
+  post "detalles_entrenamiento", to: "detalles_entrenamiento#create", as: :detalles_entrenamiento
   # Analista de Performance (SDD §18.4): dispara AnalizarEntrenamientoJob.
   post "detalles_entrenamiento/analizar", to: "detalles_entrenamiento#analizar", as: :analizar_entrenamiento
 
