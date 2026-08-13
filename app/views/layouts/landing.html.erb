@@ -14,7 +14,7 @@
     <%# Tipografía self-hosted (Fase 16.5) — igual que el layout principal %>
     <%= preload_link_tag "geist-variable.woff2", as: "font", type: "font/woff2", crossorigin: "anonymous" %>
     <%= preload_link_tag "space-grotesk-variable.woff2", as: "font", type: "font/woff2", crossorigin: "anonymous" %>
-    <%= stylesheet_link_tag "application" %>
+    <%= stylesheet_link_tag "application", "tailwind" %>
     <%= javascript_importmap_tags %>
 
     <%= render "shared/paleta_tenant" %>
