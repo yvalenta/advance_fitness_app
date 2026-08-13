@@ -1,4 +1,4 @@
-# Leads del canal de autoservicio en join.ynt.codes (Fase 12a, SDD §17.5):
+# Leads del canal de autoservicio en trainer.ynt.codes/entrena.ynt.codes (Fase 12a, SDD §17.5):
 # entrenadores y personas individuales piden entrar sin pasar por el
 # comercializador. Cobro manual todavía — esta tabla es la cola que el staff
 # del portal comercial revisa y cierra a mano (WhatsApp/llamada), no un

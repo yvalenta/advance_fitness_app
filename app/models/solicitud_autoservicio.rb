@@ -1,4 +1,4 @@
-# Lead del canal de autoservicio (join.ynt.codes, SDD §17.5): un entrenador
+# Lead del canal de autoservicio (trainer.ynt.codes/entrena.ynt.codes, SDD §17.5): un entrenador
 # que quiere su propio tenant, o una persona que quiere usar la app para sí
 # misma sin gimnasio detrás. Sin cobro online todavía — el comercializador
 # la contacta a mano y crea el tenant/usuario por el portal comercial de

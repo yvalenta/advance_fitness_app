@@ -5,7 +5,7 @@
 # si están vacíos, Negocio.* cae al ENV/YAML global.
 class Tenant < ApplicationRecord
   TIPOS = %w[gimnasio entrenador influencer].freeze
-  SUBDOMINIOS_RESERVADOS = %w[comercial app www api advance-fitness-app admin join unete].freeze
+  SUBDOMINIOS_RESERVADOS = %w[comercial app www api advance-fitness-app admin join unete trainer entrena].freeze
 
   # Features apagables por tenant (Fase 18d) sobre el jsonb existente.
   # Default: encendido para todo excepto membresías, que conserva su default

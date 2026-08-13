@@ -1,85 +1,83 @@
-<% content_for :title, "Únete a Advance Fitness — autoservicio" %>
+<%
+  # Fase 12b (SDD §17.5): un dominio por audiencia, sin toggle — @segmento ya
+  # viene fijo del controller (derivado del subdominio, no del usuario).
+  entrenador = @segmento == "entrenador"
+
+  copy = entrenador ? {
+    eyebrow: "Autoservicio para entrenadores · sin comercializador, sin espera",
+    titulo: "Lleva la plataforma a tu propio negocio",
+    subtitulo: "Tu marca, tu subdominio, tus clientes. Planes de entrenamiento y " \
+                "nutrición con IA, seguimiento en tiempo real y todo lo que ya usan " \
+                "nuestros gimnasios — ahora en tu propio panel.",
+    cta: "Quiero mi propio negocio",
+    precio_eyebrow: "Para entrenadores",
+    precio_titulo: "Tu propia marca, tu propio subdominio",
+    precio: "49.900",
+    precio_detalle: "los primeros 3 meses · luego $99.900/mes de lista",
+    precio_ancla: "Menos que una mensualidad de gimnasio.",
+    beneficios: [
+      "Tu subdominio y tu marca, no la nuestra",
+      "Gestiona a tus clientes desde un solo panel",
+      "Planes de entrenamiento y nutrición con IA",
+      "Seguimiento de progreso, rachas y récords"
+    ]
+  } : {
+    eyebrow: "Autoservicio · entrena por tu cuenta",
+    titulo: "Entrena con IA, sin gimnasio ni entrenador",
+    subtitulo: "Un plan de entrenamiento y nutrición hecho para ti, seguimiento de " \
+                "tu progreso en tiempo real y la misma tecnología que ya usan " \
+                "nuestros gimnasios — para que entrenes por tu cuenta.",
+    cta: "Quiero entrar",
+    precio_eyebrow: "Para ti",
+    precio_titulo: "Sin gimnasio ni entrenador detrás",
+    precio: "29.900",
+    precio_detalle: "o gratis con las guías básicas, sin IA",
+    precio_ancla: "Menos que otras apps de entrenamiento con IA.",
+    beneficios: [
+      "Plan de entrenamiento y nutrición personalizado con IA",
+      "Registra tus comidas, pesos y series",
+      "Progreso, rachas y récords personales",
+      "Cancela cuando quieras"
+    ]
+  }
+%>
+<% content_for :title, "#{copy[:titulo]} — Advance Fitness" %>
 
 <%# ── HERO ───────────────────────────────────────────────────────────────── %>
 <section class="gradient-hero relative overflow-hidden">
   <div class="trama-puntos absolute inset-0 opacity-30"></div>
   <div class="relative mx-auto flex max-w-4xl flex-col items-center gap-6 px-6 py-20 text-center">
-    <p class="eyebrow text-volt">Autoservicio · sin comercializador, sin espera</p>
-    <h1 class="font-display text-4xl font-bold text-white sm:text-5xl">
-      Lleva la plataforma a tu negocio,<br class="hidden sm:block"> o úsala para ti mismo
-    </h1>
-    <p class="mt-2 max-w-2xl text-lg text-white/70">
-      Planes de entrenamiento y nutrición diseñados con IA, seguimiento en tiempo real
-      y todo lo que ya usan nuestros gimnasios — ahora también para entrenadores
-      independientes y para cualquier persona que entrena por su cuenta.
-    </p>
+    <p class="eyebrow text-volt"><%= copy[:eyebrow] %></p>
+    <h1 class="font-display text-4xl font-bold text-white sm:text-5xl"><%= copy[:titulo] %></h1>
+    <p class="mt-2 max-w-2xl text-lg text-white/70"><%= copy[:subtitulo] %></p>
 
-    <div class="mt-2 flex flex-col gap-3 sm:flex-row">
-      <%= link_to "Soy entrenador", landing_autoservicio_path(segmento: "entrenador", anchor: "solicitud"),
-            class: "btn btn-primary btn-lg gap-2 px-8 font-bold shadow-xl" %>
-      <%= link_to "Es para mí", landing_autoservicio_path(segmento: "individual", anchor: "solicitud"),
-            class: "btn btn-lg gap-2 px-8 font-bold bg-white/10 text-white hover:bg-white/20 border-0" %>
-    </div>
+    <%= link_to copy[:cta], "#solicitud", class: "btn btn-primary btn-lg mt-2 gap-2 px-10 font-bold shadow-xl" %>
     <p class="text-sm text-white/40">Sin tarjeta. Sin contratos. Te contactamos nosotros.</p>
   </div>
 </section>
 
-<%# ── PRECIOS ────────────────────────────────────────────────────────────── %>
-<section class="mx-auto max-w-4xl px-6 py-16">
-  <div class="text-center">
-    <p class="eyebrow text-volt">Precio de lanzamiento</p>
-    <h2 class="font-display mt-2 text-3xl font-bold">Pensado para que cualquiera pueda empezar</h2>
-  </div>
-
-  <div class="mt-10 grid gap-6 sm:grid-cols-2">
-    <div class="card border-2 border-volt bg-base-100 shadow-md">
-      <div class="card-body gap-4">
-        <div>
-          <p class="eyebrow text-volt">Para entrenadores</p>
-          <h3 class="font-display text-xl font-bold">Tu propia marca, tu propio subdominio</h3>
-        </div>
-        <div>
-          <p class="font-display text-4xl font-bold">
-            $49.900 <span class="text-lg font-normal text-steel-5">COP/mes</span>
-          </p>
-          <p class="text-sm text-steel-3">
-            los primeros 3 meses · luego $99.900/mes · <span class="line-through">precio de lista</span>
-          </p>
-          <p class="mt-2 text-sm font-semibold text-volt">Menos que una mensualidad de gimnasio.</p>
-        </div>
-        <ul class="flex flex-col gap-2 text-sm text-steel-5">
-          <li>✓ Tu subdominio y tu marca, no la nuestra</li>
-          <li>✓ Gestiona a tus clientes desde un solo panel</li>
-          <li>✓ Planes de entrenamiento y nutrición con IA</li>
-          <li>✓ Seguimiento de progreso, rachas y récords</li>
-        </ul>
-        <%= link_to "Quiero mi propio negocio", landing_autoservicio_path(segmento: "entrenador", anchor: "solicitud"),
-              class: "btn btn-primary mt-2 font-bold" %>
+<%# ── PRECIO ─────────────────────────────────────────────────────────────── %>
+<section class="mx-auto max-w-lg px-6 py-16 text-center">
+  <p class="eyebrow text-volt">Precio de lanzamiento</p>
+  <div class="card mt-6 border-2 border-volt bg-base-100 shadow-md">
+    <div class="card-body gap-4">
+      <div>
+        <p class="eyebrow text-volt"><%= copy[:precio_eyebrow] %></p>
+        <h2 class="font-display text-xl font-bold"><%= copy[:precio_titulo] %></h2>
       </div>
-    </div>
-
-    <div class="card border border-base-300 bg-base-100 shadow-sm">
-      <div class="card-body gap-4">
-        <div>
-          <p class="eyebrow text-volt">Para ti</p>
-          <h3 class="font-display text-xl font-bold">Sin gimnasio ni entrenador detrás</h3>
-        </div>
-        <div>
-          <p class="font-display text-4xl font-bold">
-            $29.900 <span class="text-lg font-normal text-steel-5">COP/mes</span>
-          </p>
-          <p class="text-sm text-steel-3">o gratis con las guías básicas, sin IA</p>
-          <p class="mt-2 text-sm font-semibold text-volt">Menos que otras apps de entrenamiento con IA.</p>
-        </div>
-        <ul class="flex flex-col gap-2 text-sm text-steel-5">
-          <li>✓ Plan de entrenamiento y nutrición personalizado con IA</li>
-          <li>✓ Registra tus comidas, pesos y series</li>
-          <li>✓ Progreso, rachas y récords personales</li>
-          <li>✓ Cancela cuando quieras</li>
-        </ul>
-        <%= link_to "Quiero usarlo para mí", landing_autoservicio_path(segmento: "individual", anchor: "solicitud"),
-              class: "btn btn-outline mt-2 font-bold" %>
+      <div>
+        <p class="font-display text-5xl font-bold">
+          $<%= copy[:precio] %> <span class="text-lg font-normal text-steel-5">COP/mes</span>
+        </p>
+        <p class="text-sm text-steel-3"><%= copy[:precio_detalle] %></p>
+        <p class="mt-2 text-sm font-semibold text-volt"><%= copy[:precio_ancla] %></p>
       </div>
+      <ul class="flex flex-col gap-2 text-left text-sm text-steel-5">
+        <% copy[:beneficios].each do |beneficio| %>
+          <li>✓ <%= beneficio %></li>
+        <% end %>
+      </ul>
+      <%= link_to copy[:cta], "#solicitud", class: "btn btn-primary mt-2 font-bold" %>
     </div>
   </div>
 </section>
@@ -93,7 +91,7 @@
         ["🧠", "IA de entrenamiento y nutrición", "Rutina y plan de comidas diseñados para el objetivo, el cuerpo y los gustos de cada persona."],
         ["📈", "Progreso en tiempo real", "Peso, calorías, series y cargas — todo registrado en segundos, sin digitar de más."],
         ["🏆", "Rachas, logros y récords", "Gamificación que mantiene a la gente entrenando: rachas, récords personales y celebraciones."],
-        ["👥", "Muro de comunidad", "Los logros del equipo, visibles para todos — con opt-in explícito de cada persona."],
+        ["👥", "Muro de comunidad", entrenador ? "Los logros de tus clientes, visibles entre ellos — con opt-in explícito de cada persona." : "Los logros de otros como tú, visibles para animarte — con opt-in explícito de cada persona."],
         ["📱", "App instalable en el celular", "Pensada mobile-first, funciona como una app nativa desde el navegador."],
         ["🔒", "Tus datos, aislados", "Cada negocio (o persona) vive en su propio espacio — nada se mezcla con nadie más."]
       ].each do |emoji, titulo, detalle| %>
@@ -124,17 +122,6 @@
   <% end %>
 
   <%= form_with model: @solicitud, url: landing_autoservicios_path, class: "mt-6 flex flex-col gap-4" do |form| %>
-    <div class="grid grid-cols-2 gap-3">
-      <label class="has-[:checked]:border-volt has-[:checked]:bg-volt/10 cursor-pointer rounded-xl border border-base-300 p-3 text-center text-sm font-semibold transition-colors">
-        <%= form.radio_button :segmento, "entrenador", class: "sr-only" %>
-        Soy entrenador
-      </label>
-      <label class="has-[:checked]:border-volt has-[:checked]:bg-volt/10 cursor-pointer rounded-xl border border-base-300 p-3 text-center text-sm font-semibold transition-colors">
-        <%= form.radio_button :segmento, "individual", class: "sr-only" %>
-        Es para mí
-      </label>
-    </div>
-
     <label class="form-control">
       <span class="label-text mb-1 text-xs font-semibold">Nombre</span>
       <%= form.text_field :nombre, class: "input input-bordered w-full", required: true %>
@@ -147,16 +134,18 @@
       <span class="label-text mb-1 text-xs font-semibold">WhatsApp o teléfono</span>
       <%= form.telephone_field :telefono, class: "input input-bordered w-full", required: true %>
     </label>
-    <label class="form-control">
-      <span class="label-text mb-1 text-xs font-semibold">Nombre de tu negocio o marca (si aplica)</span>
-      <%= form.text_field :negocio_nombre, class: "input input-bordered w-full" %>
-    </label>
+    <% if entrenador %>
+      <label class="form-control">
+        <span class="label-text mb-1 text-xs font-semibold">Nombre de tu negocio o marca</span>
+        <%= form.text_field :negocio_nombre, class: "input input-bordered w-full", required: true %>
+      </label>
+    <% end %>
     <label class="form-control">
       <span class="label-text mb-1 text-xs font-semibold">Cuéntanos qué necesitas (opcional)</span>
       <%= form.text_area :mensaje, class: "textarea textarea-bordered w-full", rows: 3 %>
     </label>
 
-    <%= form.submit "Quiero entrar", class: "btn btn-primary btn-lg mt-2 font-bold" %>
+    <%= form.submit copy[:cta], class: "btn btn-primary btn-lg mt-2 font-bold" %>
   <% end %>
 </section>
 
@@ -165,12 +154,17 @@
   <div class="mx-auto max-w-2xl">
     <h2 class="font-display text-center text-2xl font-bold">Preguntas frecuentes</h2>
     <div class="mt-8 flex flex-col gap-3">
-      <% [
+      <% preguntas = [
         ["¿Necesito tarjeta de crédito para empezar?", "No. Dejas tus datos en el formulario y nosotros te contactamos para activar tu cuenta y coordinar el pago."],
         ["¿Cuánto tarda en activarse mi cuenta?", "Menos de 24 horas desde que recibimos tu solicitud."],
-        ["¿Puedo cancelar cuando quiera?", "Sí, sin contratos ni permanencia mínima."],
-        ["Soy entrenador, ¿mis clientes ven mi marca o la de Advance Fitness?", "La tuya. Tu subdominio propio, tu logo, tus colores — la plataforma queda detrás."]
-      ].each do |pregunta, respuesta| %>
+        ["¿Puedo cancelar cuando quiera?", "Sí, sin contratos ni permanencia mínima."]
+      ]
+      preguntas << if entrenador
+        ["¿Mis clientes ven mi marca o la de Advance Fitness?", "La tuya. Tu subdominio propio, tu logo, tus colores — la plataforma queda detrás."]
+      else
+        ["¿Necesito pertenecer a un gimnasio o tener entrenador?", "No. Entrenas por tu cuenta, con tu propio plan generado por IA y tu seguimiento — nadie más de por medio."]
+      end %>
+      <% preguntas.each do |pregunta, respuesta| %>
         <details class="collapse-arrow collapse border border-base-300 bg-base-100">
           <summary class="collapse-title text-sm font-semibold"><%= pregunta %></summary>
           <div class="collapse-content text-sm text-steel-5"><p><%= respuesta %></p></div>

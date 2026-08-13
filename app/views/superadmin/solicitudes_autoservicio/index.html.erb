@@ -2,7 +2,7 @@
 
 <%= render "shared/encabezado",
       titulo: "Solicitudes de autoservicio",
-      descripcion: "Leads de join.ynt.codes (§17.5) — cobro manual, cerrar y crear el tenant/usuario desde Tenants.",
+      descripcion: "Leads de trainer.ynt.codes/entrena.ynt.codes (§17.5) — cobro manual, cerrar y crear el tenant/usuario desde Tenants.",
       accion: link_to("Ver tenants", superadmin_tenants_path, class: "btn btn-ghost font-bold text-white") %>
 
 <div class="mx-auto -mt-8 w-full max-w-6xl px-4 pb-12">
@@ -56,7 +56,7 @@
           </table>
         </div>
       <% else %>
-        <p class="py-12 text-center text-sm text-steel-3">Aún no hay solicitudes. Cuando alguien se registre en join.ynt.codes aparecerá aquí.</p>
+        <p class="py-12 text-center text-sm text-steel-3">Aún no hay solicitudes. Cuando alguien se registre en trainer.ynt.codes/entrena.ynt.codes aparecerá aquí.</p>
       <% end %>
     </div>
   </div>

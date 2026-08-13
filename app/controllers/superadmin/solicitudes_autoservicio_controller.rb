@@ -1,5 +1,5 @@
 # Cola de leads del autoservicio (Fase 12a, SDD §17.5): el comercializador
-# revisa lo que llega desde join.ynt.codes y lo marca atendida cuando cierra
+# revisa lo que llega desde trainer.ynt.codes/entrena.ynt.codes y lo marca atendida cuando cierra
 # (o descarta) la venta a mano. El alta real del tenant/usuario sigue el
 # camino de siempre por Superadmin::TenantsController — esto es solo la
 # bandeja de entrada.

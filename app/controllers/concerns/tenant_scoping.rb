@@ -6,6 +6,9 @@
 #   comercial.ynt.codes,
 #   app.ynt.codes             → modo global (Current.tenant = nil): portal
 #                               comercial para superadmin y comercializador.
+#   trainer.ynt.codes,
+#   entrena.ynt.codes         → modo global (Current.tenant = nil): landing de
+#                               autoservicio (Fase 12b, §17.5), una por audiencia.
 #   advance-fitness-app.ynt.codes,
 #   apex/www.ynt.codes        → tenant "advance-fitness" (back-compat mientras
 #                               no exista el wildcard DNS + TLS + túnel).
@@ -20,6 +23,9 @@ module TenantScoping
   BACK_COMPAT_ADVANCE_FITNESS = %w[www advance-fitness-app].freeze
   SUBDOMINIOS_COMERCIALES = %w[comercial app].freeze
   SUBDOMINIOS_LANDING = %w[join unete].freeze
+  # Autoservicio (Fase 12b, §17.5): landings públicas de un solo dueño (no de
+  # tenant) — igual que el portal comercial, Current.tenant queda nil.
+  SUBDOMINIOS_AUTOSERVICIO = %w[trainer entrena].freeze
 
   included do
     # `prepend_before_action` para correr ANTES de `require_authentication`
@@ -35,7 +41,7 @@ module TenantScoping
 
       if sub.blank? || BACK_COMPAT_ADVANCE_FITNESS.include?(sub)
         Current.tenant = Tenant.find_by(slug: "advance-fitness")
-      elsif SUBDOMINIOS_COMERCIALES.include?(sub)
+      elsif SUBDOMINIOS_COMERCIALES.include?(sub) || SUBDOMINIOS_AUTOSERVICIO.include?(sub)
         Current.tenant = nil
       elsif SUBDOMINIOS_LANDING.include?(sub)
         # Tenant resuelto desde el primer segmento del path: /promo-fitness-2026
