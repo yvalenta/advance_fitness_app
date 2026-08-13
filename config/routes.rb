@@ -1,6 +1,15 @@
 Rails.application.routes.draw do
-  # Landing de campaña: join.ynt.codes/:slug → página pública de conversión
   constraints(subdomain: /\A(join|unete)\z/) do
+    # Autoservicio (Fase 12a, SDD §17.5): la raíz del dominio es la landing de
+    # venta directa a entrenadores y personas individuales — cobro manual, el
+    # comercializador cierra desde el portal. Declarada ANTES de /:slug para
+    # que "/" y "/gracias" no compitan con el slug de campaña de abajo.
+    get  "/",        to: "landing/autoservicios#new",     as: :landing_autoservicio
+    post "/",         to: "landing/autoservicios#create",  as: :landing_autoservicios
+    get  "/gracias",  to: "landing/autoservicios#gracias", as: :landing_autoservicio_gracias
+
+    # Landing de campaña: join.ynt.codes/:slug → página pública de conversión
+    # de un tenant existente (SDD §16.6/§Fase 13).
     get "/:slug",         to: "landing/campanas#show",   as: :landing_campana
     get "/:slug/unirse",  to: "landing/campanas#unirse", as: :landing_unirse
   end
@@ -131,6 +140,9 @@ Rails.application.routes.draw do
   # comercial/app.ynt.codes (Current.tenant = nil).
   namespace :superadmin do
     resources :tenants
+    # Cola de leads del autoservicio (Fase 12a, §17.5): solo listar y marcar
+    # atendida — el alta del tenant/usuario sigue siendo manual por :tenants.
+    resources :solicitudes_autoservicio, only: %i[ index update ]
   end
 
   # Comunidad (Fase 8): lectura pública para todo miembro autenticado (SDD §09).

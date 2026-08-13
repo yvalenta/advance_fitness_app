@@ -1,0 +1,15 @@
+<% content_for :title, "¡Gracias! — Advance Fitness" %>
+
+<div class="flex min-h-screen flex-col items-center justify-center gap-6 p-8 text-center">
+  <span class="flex size-16 items-center justify-center rounded-2xl bg-volt/20 text-volt">
+    <svg class="size-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+  </span>
+  <h1 class="font-display text-3xl font-bold">¡Listo, ya quedaste registrado!</h1>
+  <p class="max-w-md text-steel-5">
+    Te escribimos en menos de 24 horas al correo o WhatsApp que dejaste para
+    activar tu cuenta y coordinar el pago. No necesitas hacer nada más por ahora.
+  </p>
+  <%= link_to "Volver al inicio", landing_autoservicio_path, class: "btn btn-outline mt-2" %>
+</div>

@@ -56,31 +56,7 @@
       <%= render "shared/navbar" %>
     <% end %>
 
-    <% if flash[:alert].present? || flash[:notice].present? %>
-      <%# pointer-events-none: el contenedor cubre toda la navbar (toast-top
-          w-full) pero no debe bloquear sus clics — solo cada caja visible
-          (pointer-events-auto) los captura. Se cierra solo a los 5s. %>
-      <div class="toast toast-top toast-center z-50 w-full max-w-lg px-4 pt-16 pointer-events-none" data-controller="toast">
-        <%# Toasts en chip TINTA (Fase 17 — reporte del usuario): el verde
-            alert-success peleaba con el acento elegido. Sobre bg-neutral el
-            ícono usa text-volt, que sigue SOLO al tema y al acento (ámbar,
-            azul…). El error conserva su rojo semántico — eso no se negocia. %>
-        <% if (mensaje = flash[:alert]) %>
-          <div role="alert" class="alert pointer-events-auto rounded-2xl border border-error/40 bg-neutral text-neutral-content shadow-lg" id="alert" data-toast-target="item">
-            <span class="text-error"><%= render "shared/icono", nombre: :alerta, clase: "size-5 shrink-0" %></span>
-            <span class="text-sm font-medium"><%= mensaje %></span>
-            <button type="button" class="btn btn-ghost btn-xs btn-circle" data-action="toast#cerrar" aria-label="Cerrar">✕</button>
-          </div>
-        <% end %>
-        <% if (mensaje = flash[:notice]) %>
-          <div role="alert" class="alert pointer-events-auto rounded-2xl border border-white/10 bg-neutral text-neutral-content shadow-lg" id="notice" data-toast-target="item">
-            <span class="text-volt"><%= render "shared/icono", nombre: :check, clase: "size-5 shrink-0" %></span>
-            <span class="text-sm font-medium"><%= mensaje %></span>
-            <button type="button" class="btn btn-ghost btn-xs btn-circle" data-action="toast#cerrar" aria-label="Cerrar">✕</button>
-          </div>
-        <% end %>
-      </div>
-    <% end %>
+    <%= render "shared/toast" %>
 
     <%# pb-20: el contenido no queda debajo de la tab bar fija en móvil %>
     <main class="<%= "pb-20 md:pb-0" if con_tab_bar %>">

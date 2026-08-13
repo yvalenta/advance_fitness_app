@@ -34,4 +34,6 @@ ActiveSupport::Inflector.inflections(:en) do |inflect|
   inflect.irregular "ciclo_menstrual", "ciclos_menstruales"
   # Web Push (Fase 15): el inflector daría "suscripcion_pushes".
   inflect.irregular "suscripcion_push", "suscripciones_push"
+  # Autoservicio (Fase 12a, §17.5): el inflector daría "solicitud_autoservicios".
+  inflect.irregular "solicitud_autoservicio", "solicitudes_autoservicio"
 end

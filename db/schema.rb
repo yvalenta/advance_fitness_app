@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_05_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_13_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -404,6 +404,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_120000) do
     t.index ["user_id"], name: "index_sessions_on_user_id"
   end
 
+  create_table "solicitudes_autoservicio", force: :cascade do |t|
+    t.datetime "atendida_en"
+    t.bigint "atendida_por_id"
+    t.datetime "created_at", null: false
+    t.string "email", null: false
+    t.text "mensaje"
+    t.string "negocio_nombre"
+    t.string "nombre", null: false
+    t.string "segmento", null: false
+    t.string "telefono", null: false
+    t.datetime "updated_at", null: false
+    t.index ["atendida_en"], name: "index_solicitudes_autoservicio_on_atendida_en"
+    t.index ["atendida_por_id"], name: "index_solicitudes_autoservicio_on_atendida_por_id"
+    t.index ["segmento"], name: "index_solicitudes_autoservicio_on_segmento"
+  end
+
   create_table "suscripciones", force: :cascade do |t|
     t.string "analisis_tier", default: "mensual", null: false
     t.datetime "created_at", null: false
@@ -512,6 +528,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_120000) do
   add_foreign_key "registros_puntos", "users"
   add_foreign_key "registros_puntos", "users", column: "creado_por_id"
   add_foreign_key "sessions", "users"
+  add_foreign_key "solicitudes_autoservicio", "users", column: "atendida_por_id"
   add_foreign_key "suscripciones", "membresias"
   add_foreign_key "suscripciones", "planes"
   add_foreign_key "suscripciones", "tenants"

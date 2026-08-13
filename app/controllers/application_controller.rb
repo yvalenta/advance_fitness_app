@@ -10,8 +10,11 @@ class ApplicationController < ActionController::Base
   stale_when_importmap_changes
 
   # Toda acción de controller de dominio debe autorizar (SDD §08). Los
-  # controllers de auth y el dashboard (sin record) quedan exentos.
-  SIN_PUNDIT = %w[sessions passwords registrations omniauth_sessions dashboard].freeze
+  # controllers de auth y el dashboard (sin record) quedan exentos, igual que
+  # las landings públicas (campañas §16.6, autoservicio §17.5): son páginas
+  # sin sesión y sin record que autorizar — bug latente encontrado en Fase
+  # 12a, "campanas" nunca estuvo en esta lista y no tenía specs que lo cazaran.
+  SIN_PUNDIT = %w[sessions passwords registrations omniauth_sessions dashboard campanas autoservicios].freeze
   after_action :verify_authorized, unless: :pundit_exento?
 
   rescue_from Pundit::NotAuthorizedError do

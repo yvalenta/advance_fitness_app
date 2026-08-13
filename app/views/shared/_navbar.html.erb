@@ -18,8 +18,9 @@
   ].compact
   comunidad = menu_comunidad
   gestion = []
-  if Current.user.superadmin?
-    gestion << [ "Tenants", superadmin_tenants_path, :usuarios ]
+  if Current.user.superadmin? || Current.user.comercializador?
+    gestion << [ "Tenants", superadmin_tenants_path, :usuarios ] if Current.user.superadmin?
+    gestion << [ "Solicitudes", superadmin_solicitudes_autoservicio_path, :calendario ]
   end
   if Current.user.staff?
     gestion << [ "Check-in", admin_checkins_path, :check ] if membresias_on
