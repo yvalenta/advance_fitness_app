@@ -73,4 +73,21 @@ RSpec.describe "Perfiles", type: :request do
       expect(users(:one).reload.tema).to eq("oscuro")
     end
   end
+
+  # Wake Lock (Fase 19d): toggle en Ajustes, encendido por default.
+  describe "preferencia de pantalla activa" do
+    it "el default es encendido" do
+      expect(users(:one).wake_lock_activo?).to be true
+    end
+
+    it "se puede apagar y prender desde el perfil" do
+      sign_in_as users(:one)
+
+      patch perfil_path, params: { user: { wake_lock_activo: "0" } }
+      expect(users(:one).reload.wake_lock_activo?).to be false
+
+      patch perfil_path, params: { user: { wake_lock_activo: "1" } }
+      expect(users(:one).reload.wake_lock_activo?).to be true
+    end
+  end
 end

@@ -35,6 +35,21 @@ RSpec.describe "Sesiones", type: :request do
     expect(response.body).to include(registros_entrenamiento_path) # endpoint existente
   end
 
+  # Wake Lock (Fase 19d): la sección arranca con el controller y el value
+  # que refleja la preferencia del miembro — apagable en Ajustes.
+  it "pasa la preferencia de pantalla activa al Stimulus de wake lock" do
+    crear_plan!(users(:one), rutina: rutina)
+    sign_in_as users(:one)
+
+    get sesion_path(lunes.iso8601)
+    expect(response.body).to include('data-controller="sesion wake-lock"')
+    expect(response.body).to include('data-wake-lock-activo-value="true"')
+
+    users(:one).update!(wake_lock_activo: false)
+    get sesion_path(lunes.iso8601)
+    expect(response.body).to include('data-wake-lock-activo-value="false"')
+  end
+
   it "serializa uid/series/descanso_seg en el JSON que consume el Stimulus" do
     crear_plan!(users(:one), rutina: rutina)
     sign_in_as users(:one)

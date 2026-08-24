@@ -11,12 +11,15 @@
         mensaje: "El #{l @fecha, format: "%A %d de %B"} no tiene ejercicios programados. Recuperarse también es entrenar." %>
 <% else %>
   <section class="mx-auto flex w-full max-w-lg flex-col gap-4 px-4 py-4"
-           data-controller="sesion"
+           data-controller="sesion wake-lock"
            data-sesion-registro-url-value="<%= registros_entrenamiento_path %>"
            <%# Registro cuantitativo por serie (Fase 18l): solo premium — sin
                la URL el Stimulus no envía nada y los chips quedan visuales. %>
            data-sesion-detalles-url-value="<%= detalles_entrenamiento_path if Current.user.premium? %>"
-           data-sesion-salida-url-value="<%= mi_plan_path %>">
+           data-sesion-salida-url-value="<%= mi_plan_path %>"
+           <%# Wake Lock (Fase 19d): pantalla activa mientras dura la sesión —
+               apagable en Ajustes. %>
+           data-wake-lock-activo-value="<%= Current.user.wake_lock_activo? %>">
     <script type="application/json" data-sesion-target="datos"><%= raw json_escape(@datos.to_json) %></script>
     <%# Destino de la celebración de PRs (Fase 18n): el create de series
         appendea aquí su toast (fixed — flota sobre lo que sea) cuando una
