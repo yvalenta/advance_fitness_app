@@ -1,0 +1,19 @@
+<%# Este día se reprogramó hacia otra fecha (Fase 19e): sin contenido propio. %>
+<%# locals: (movido_hacia:) %>
+<section class="mx-auto w-full max-w-lg px-4 py-10">
+  <div class="card border border-base-300 bg-base-100 shadow-md">
+    <div class="card-body items-center gap-3 py-10 text-center">
+      <span class="flex size-14 items-center justify-center rounded-full bg-ocean/15 text-ocean">
+        <%= render "shared/icono", nombre: :calendario, clase: "size-7" %>
+      </span>
+      <h1 class="font-display text-2xl font-bold">Este entrenamiento se movió</h1>
+      <p class="max-w-sm text-sm text-steel-3">
+        Lo vas a hacer el <%= l movido_hacia.fecha_destino, format: :long %> en su lugar.
+      </p>
+      <div class="mt-2 flex flex-wrap items-center justify-center gap-2">
+        <%= link_to "Ir a esa fecha", sesion_path(movido_hacia.fecha_destino.iso8601), class: "btn btn-primary font-bold" %>
+        <%= button_to "Deshacer", reprogramacion_dia_path(movido_hacia), method: :delete, class: "btn btn-ghost" %>
+      </div>
+    </div>
+  </div>
+</section>

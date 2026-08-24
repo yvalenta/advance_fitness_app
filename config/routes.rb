@@ -90,6 +90,10 @@ Rails.application.routes.draw do
   get "sesion(/:fecha)", to: "sesiones#show", as: :sesion,
       constraints: { fecha: /\d{4}-\d{2}-\d{2}/ }
 
+  # Reprogramar un día (Fase 19e): mueve el entrenamiento de una fecha a
+  # otra sin tocar la plantilla semanal — siempre el propio plan aprobado.
+  resources :reprogramaciones_dia, only: %i[ create destroy ]
+
   # Editor de plan compartido por entrenador y admin (SDD Fase 5.6) —
   # autorizado por Pundit (editar?/publicar?), no por el namespace.
   resources :planes_personalizados, only: %i[ show update ], controller: "gestion_planes" do

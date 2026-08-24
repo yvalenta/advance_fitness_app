@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_23_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_23_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -395,6 +395,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_23_000000) do
     t.index ["user_id", "tipo", "origen_tipo", "origen_id"], name: "index_registros_puntos_origen_unico", unique: true, where: "(origen_id IS NOT NULL)"
   end
 
+  create_table "reprogramaciones_dia", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.date "fecha_destino", null: false
+    t.date "fecha_original", null: false
+    t.bigint "plan_personalizado_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["plan_personalizado_id", "fecha_destino"], name: "index_reprogramaciones_por_destino", unique: true
+    t.index ["plan_personalizado_id", "fecha_original"], name: "index_reprogramaciones_por_origen", unique: true
+    t.index ["plan_personalizado_id"], name: "index_reprogramaciones_dia_on_plan_personalizado_id"
+  end
+
   create_table "sessions", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "ip_address"
@@ -528,6 +539,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_23_000000) do
   add_foreign_key "registros_entrenamiento", "users"
   add_foreign_key "registros_puntos", "users"
   add_foreign_key "registros_puntos", "users", column: "creado_por_id"
+  add_foreign_key "reprogramaciones_dia", "planes_personalizados"
   add_foreign_key "sessions", "users"
   add_foreign_key "solicitudes_autoservicio", "users", column: "atendida_por_id"
   add_foreign_key "suscripciones", "membresias"

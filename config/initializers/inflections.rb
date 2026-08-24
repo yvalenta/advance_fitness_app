@@ -36,4 +36,6 @@ ActiveSupport::Inflector.inflections(:en) do |inflect|
   inflect.irregular "suscripcion_push", "suscripciones_push"
   # Autoservicio (Fase 12a, §17.5): el inflector daría "solicitud_autoservicios".
   inflect.irregular "solicitud_autoservicio", "solicitudes_autoservicio"
+  # Reprogramar un día (Fase 19e): el inflector daría "reprogramacion_dias".
+  inflect.irregular "reprogramacion_dia", "reprogramaciones_dia"
 end

@@ -6,6 +6,8 @@
 <% if @plan.nil? %>
   <%= render "sesiones/vacio", titulo: "Aún no tienes un plan",
         mensaje: "Cuando tu plan de entrenamiento esté publicado podrás entrenar aquí, guiado ejercicio por ejercicio." %>
+<% elsif @movido_hacia %>
+  <%= render "sesiones/movido", movido_hacia: @movido_hacia %>
 <% elsif @ejercicios_dia.empty? %>
   <%= render "sesiones/vacio", titulo: "Hoy toca descanso",
         mensaje: "El #{l @fecha, format: "%A %d de %B"} no tiene ejercicios programados. Recuperarse también es entrenar." %>
@@ -46,6 +48,15 @@
       <% end %>
     </header>
 
+    <%# Reprogramado hacia aquí (Fase 19e): el contenido no es del día que se
+        está viendo, es el de la fecha original movida. %>
+    <% if @movido_desde %>
+      <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-ocean/10 px-3 py-2.5 text-xs text-ocean">
+        <span>Este es el entrenamiento del <%= l @movido_desde.fecha_original, format: :long %>, movido aquí.</span>
+        <%= button_to "Deshacer", reprogramacion_dia_path(@movido_desde), method: :delete, class: "btn btn-ghost btn-xs" %>
+      </div>
+    <% end %>
+
     <%# Mensaje de fase del ciclo (14.16): solo con consentimiento vigente —
         sin él la fase es :desconocida y el mensaje es nil. Los números de la
         sesión ya vienen compuestos desde el controller. %>
@@ -63,5 +74,21 @@
 
     <%= render "sesiones/descanso" %>
     <%= render "sesiones/resumen", fecha: @fecha %>
+
+    <%# Reprogramar este día (Fase 19e): no se ofrece sobre un día ya movido
+        hacia aquí — un día se mueve una vez, no se encadena. %>
+    <% unless @movido_desde %>
+      <details class="rounded-xl border border-base-300 bg-base-100 p-3">
+        <summary class="cursor-pointer text-xs font-semibold text-steel-3">¿No puedes hoy? Reprograma este día</summary>
+        <%= form_with url: reprogramaciones_dia_path, method: :post, class: "mt-2 flex flex-wrap items-end gap-2" do |form| %>
+          <%= form.hidden_field "fecha_original", value: @fecha.iso8601 %>
+          <label class="form-control">
+            <span class="label-text mb-1 text-xs">Mover al</span>
+            <%= form.date_field "fecha_destino", min: Date.current.iso8601, required: true, class: "input input-bordered input-sm" %>
+          </label>
+          <%= form.submit "Mover", class: "btn btn-primary btn-sm font-bold" %>
+        <% end %>
+      </details>
+    <% end %>
   </section>
 <% end %>

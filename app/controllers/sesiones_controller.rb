@@ -14,14 +14,29 @@ class SesionesController < ApplicationController
     end
 
     authorize @plan, :show?
+
+    # Reprogramar un día (Fase 19e): `@fecha` puede haber perdido su
+    # contenido (se movió a otra) o estar mostrando el de OTRA fecha (algo
+    # se movió hacia aquí) — se resuelve ANTES de tocar rutina/ciclo, nunca
+    # tocan la plantilla semanal (`rutina.dias`).
+    @movido_hacia = @plan.movido_hacia(@fecha)
+    @movido_desde = @plan.movido_desde(@fecha)
+    fecha_contenido = @movido_desde&.fecha_original || @fecha
+
     # Composición ciclo × mesociclo (Fase 14.16): la sesión es donde la
     # prescripción se CONSUME, así que aquí los números van efectivos — la
     # semana del mesociclo de la fecha, compuesta con la fase del ciclo
     # (Rutina::Resolutor.componer clampea el factor a 0.7..1.25; la fase solo
     # baja carga). Sin consentimiento la fase es :desconocida → identidad.
+    # La fase del ciclo se lee de HOY (el cuerpo del miembro no se movió),
+    # el contenido del día de FECHA_CONTENIDO (lo que sí se movió).
     @ajuste_ciclo = Ciclo::Ajuste.para(Ciclo::Fase.para(Current.user, @fecha))
-    dias_efectivos = Rutina::Resolutor.dias(@plan.rutina, numero_semana(@fecha), extra: @ajuste_ciclo)
-    @dia = dia_para(@fecha, dias_efectivos)
+    if @movido_hacia
+      @dia = nil
+    else
+      dias_efectivos = Rutina::Resolutor.dias(@plan.rutina, numero_semana(fecha_contenido), extra: @ajuste_ciclo)
+      @dia = dia_para(fecha_contenido, dias_efectivos)
+    end
     @ejercicios_dia = @dia ? Array(@dia["ejercicios"]) : []
     @catalogo = Ejercicio.where(id: @ejercicios_dia.filter_map { |ej| ej["ejercicio_id"] })
                          .index_by(&:id)

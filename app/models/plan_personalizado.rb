@@ -27,6 +27,7 @@ class PlanPersonalizado < ApplicationRecord
 
   belongs_to :user
   belongs_to :aprobado_por, class_name: "User", optional: true
+  has_many :reprogramaciones_dia, dependent: :destroy
 
   validates :estado, inclusion: { in: ESTADOS }
   validates :generado_por, inclusion: { in: GENERADORES }
@@ -237,6 +238,17 @@ class PlanPersonalizado < ApplicationRecord
     con_semana!(numero) do |sem, _norm|
       sem["ajuste"] = (sem["ajuste"] || {}).merge(ajuste_saneado(campos))
     end
+  end
+
+  # Reprogramar un día (Fase 19e): `fecha` dejó de tener contenido propio
+  # porque se movió a otra — SesionesController la muestra como movida.
+  def movido_hacia(fecha)
+    reprogramaciones_dia.find_by(fecha_original: fecha)
+  end
+
+  # `fecha` muestra el contenido de OTRA fecha que se movió hacia ella.
+  def movido_desde(fecha)
+    reprogramaciones_dia.find_by(fecha_destino: fecha)
   end
 
   private
