@@ -101,12 +101,15 @@ export default class extends Controller {
   // ── helpers ──────────────────────────────────────────────────────────
 
   // Genérico: lee todos los inputs del card usando la clave entre corchetes
-  // del name (p. ej. name="comida[kcal]" o name="ejercicio[series]").
+  // del name (p. ej. name="comida[kcal]" o name="ejercicio[series]"). Un
+  // checkbox (Fase 20: "unilateral") no refleja su estado en `.value` (el
+  // atributo estático sigue ahí desmarcado) — se lee `.checked` en su lugar.
   camposDe(card) {
     const campos = {}
     card.querySelectorAll("[name*='['][name$=']']").forEach((input) => {
       const clave = input.name.match(/\[([^\]]+)\]$/)?.[1]
-      if (clave) campos[clave] = input.value
+      if (!clave) return
+      campos[clave] = input.type === "checkbox" ? (input.checked ? "1" : "0") : input.value
     })
     return campos
   }

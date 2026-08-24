@@ -12,7 +12,16 @@ class PlanPersonalizado < ApplicationRecord
   # uid (Fase 14.6): identidad estable POR ENTRADA del array (dos "Press banca"
   # el mismo día llevan uids distintos) — el seguimiento se ancla a él y ya no
   # se re-atribuye si el plan cambia de orden.
-  CAMPOS_EJERCICIO = %w[nombre series repeticiones descanso_seg ejercicio_id peso_sugerido_kg nota_tecnica uid].freeze
+  # Fase 20: tipo ("reps" default, ausente = reps · "tiempo" reusa
+  # `repeticiones` como segundos — plancha, dead hang), unilateral (reps por
+  # lado en la lectura, el total se sigue registrando igual) y
+  # grupo_superserie (dos entradas con el MISMO valor no descansan entre
+  # ellas en el modo sesión, solo tras completar el par). Ninguno lo escribe
+  # la IA (fuera del prompt/validador a propósito, Nota 27) — son ajuste
+  # manual del staff sobre un plan ya generado.
+  CAMPOS_EJERCICIO = %w[nombre series repeticiones descanso_seg ejercicio_id peso_sugerido_kg nota_tecnica uid
+                        tipo unilateral grupo_superserie].freeze
+  TIPOS_EJERCICIO = %w[reps tiempo].freeze
   # Día de la semana (nombre en rutina["dias"]) → offset desde el lunes, para
   # ubicar el RegistroEntrenamiento de la semana actual (Fase 5.10/6.9).
   DIAS_OFFSET = { "lunes" => 0, "martes" => 1, "miercoles" => 2, "jueves" => 3,
@@ -414,9 +423,11 @@ class PlanPersonalizado < ApplicationRecord
 
         saneado[clave.to_s] =
           case clave.to_s
-          when "nombre", "repeticiones", "nota_tecnica" then valor.to_s.strip
+          when "nombre", "repeticiones", "nota_tecnica", "grupo_superserie" then valor.to_s.strip
           when "ejercicio_id" then valor.presence && valor.to_i
           when "peso_sugerido_kg" then valor.presence && como_numero(valor)
+          when "tipo" then TIPOS_EJERCICIO.include?(valor.to_s) ? valor.to_s : "reps"
+          when "unilateral" then valor.to_s == "1" || valor == true
           else valor.to_i
           end
       end

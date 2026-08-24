@@ -159,6 +159,26 @@ module ApplicationHelper
     ].freeze
   end
 
+  # Reps "por lado" de un ejercicio unilateral (Fase 20) — SOLO lectura: el
+  # total se sigue registrando igual (DetalleEntrenamiento no cambia). Un
+  # rango limpio ("8-10") se divide en ambos extremos; cualquier otra cosa
+  # (AMRAP, texto libre) se devuelve tal cual, sin dividir.
+  def reps_por_lado(repeticiones)
+    case repeticiones.to_s
+    when /\A(\d+)\z/ then (Regexp.last_match(1).to_i / 2.0).round.to_s
+    when /\A(\d+)\s*-\s*(\d+)\z/
+      "#{(Regexp.last_match(1).to_i / 2.0).round}-#{(Regexp.last_match(2).to_i / 2.0).round}"
+    else repeticiones.to_s
+    end
+  end
+
+  # Texto de prescripción de un ejercicio (Fase 20): "8-10" · "8-10 por lado"
+  # · "45 s" (tipo tiempo reusa `repeticiones` como segundos, SDD Nota 27).
+  def repeticiones_texto(ejercicio)
+    base = ejercicio["unilateral"] ? "#{reps_por_lado(ejercicio["repeticiones"])} por lado" : ejercicio["repeticiones"].to_s
+    ejercicio["tipo"] == "tiempo" ? "#{base} s" : base
+  end
+
   # Link del navbar con estado activo
   def nav_link(texto, ruta)
     activo = current_page?(ruta)

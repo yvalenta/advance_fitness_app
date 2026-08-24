@@ -70,6 +70,33 @@ RSpec.describe PlanPersonalizado, type: :model do
     expect(ej["peso_sugerido_kg"]).to be_nil
   end
 
+  # Fase 20: tipo (reps/tiempo), unilateral (checkbox) y grupo_superserie
+  describe "campos del editor de la Fase 20" do
+    it "sanea tipo a reps|tiempo, con cualquier otra cosa cae a reps" do
+      plan = plan_con_rutina
+      plan.actualizar_ejercicio!(0, 0, { "tipo" => "tiempo" })
+      expect(plan.reload.ejercicios_de(0).first["tipo"]).to eq("tiempo")
+
+      plan.actualizar_ejercicio!(0, 0, { "tipo" => "algo_inventado" })
+      expect(plan.reload.ejercicios_de(0).first["tipo"]).to eq("reps")
+    end
+
+    it "sanea unilateral desde el checkbox del autosave (\"1\"/\"0\")" do
+      plan = plan_con_rutina
+      plan.actualizar_ejercicio!(0, 0, { "unilateral" => "1" })
+      expect(plan.reload.ejercicios_de(0).first["unilateral"]).to be true
+
+      plan.actualizar_ejercicio!(0, 0, { "unilateral" => "0" })
+      expect(plan.reload.ejercicios_de(0).first["unilateral"]).to be false
+    end
+
+    it "sanea grupo_superserie como texto recortado" do
+      plan = plan_con_rutina
+      plan.actualizar_ejercicio!(0, 0, { "grupo_superserie" => " A1 " })
+      expect(plan.reload.ejercicios_de(0).first["grupo_superserie"]).to eq("A1")
+    end
+  end
+
   it "agregar_ejercicio! y eliminar_ejercicio! ajustan el día" do
     plan = plan_con_rutina
 

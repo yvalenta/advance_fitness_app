@@ -103,7 +103,12 @@ class SesionesController < ApplicationController
             nota_tecnica: ej["nota_tecnica"].to_s,
             ejercicio_id: id,
             peso_registro_kg: peso_para_registrar(anteriores[id], ej),
-            series_registradas: [ registradas_hoy[id].to_i, series ].min }
+            series_registradas: [ registradas_hoy[id].to_i, series ].min,
+            # Fase 20: tipo (reps/tiempo, para el timer de trabajo del modo
+            # sesión) y grupo_superserie (dos entradas con el mismo valor no
+            # descansan entre sí — sesion_controller.js las empareja por esto).
+            tipo: ej["tipo"] == "tiempo" ? "tiempo" : "reps",
+            grupo_superserie: ej["grupo_superserie"].presence }
         end
       }
     end

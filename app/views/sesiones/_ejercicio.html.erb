@@ -20,8 +20,11 @@
 
     <div>
       <h2 class="font-display text-2xl font-bold leading-tight"><%= ejercicio["nombre"] %></h2>
+      <% if ejercicio["grupo_superserie"].present? %>
+        <span class="badge badge-sm mt-1 gap-1 border-ocean/40 bg-ocean/10 text-ocean">⚡ Superserie</span>
+      <% end %>
       <p class="mt-1 font-semibold text-volt-d">
-        <%= ejercicio["series"] %> × <%= ejercicio["repeticiones"] %>
+        <%= ejercicio["series"] %> × <%= repeticiones_texto(ejercicio) %>
         <% if ejercicio["peso_sugerido_kg"].to_f.positive? %>
           <span class="text-pulse">· ≈<%= ejercicio["peso_sugerido_kg"] %> kg</span>
         <% end %>

@@ -9,6 +9,40 @@ RSpec.describe ApplicationHelper, type: :helper do
     expect(helper.origen_plan(PlanPersonalizado.new(generado_por: "entrenador"))).to eq("entrenador")
   end
 
+  # Fase 20: prescripción de un ejercicio (reps · por lado · tiempo)
+  describe "#reps_por_lado" do
+    it "divide un número limpio" do
+      expect(helper.reps_por_lado("10")).to eq("5")
+      expect(helper.reps_por_lado("9")).to eq("5") # redondeo estándar
+    end
+
+    it "divide ambos extremos de un rango limpio" do
+      expect(helper.reps_por_lado("8-10")).to eq("4-5")
+    end
+
+    it "deja tal cual lo que no es un número ni un rango limpio" do
+      expect(helper.reps_por_lado("AMRAP")).to eq("AMRAP")
+    end
+  end
+
+  describe "#repeticiones_texto" do
+    it "reps normal, sin adornos" do
+      expect(helper.repeticiones_texto({ "repeticiones" => "8-10" })).to eq("8-10")
+    end
+
+    it "unilateral agrega \"por lado\" sobre la división" do
+      expect(helper.repeticiones_texto({ "repeticiones" => "8-10", "unilateral" => true })).to eq("4-5 por lado")
+    end
+
+    it "tipo tiempo agrega el sufijo de segundos" do
+      expect(helper.repeticiones_texto({ "repeticiones" => "45", "tipo" => "tiempo" })).to eq("45 s")
+    end
+
+    it "compone unilateral + tiempo" do
+      expect(helper.repeticiones_texto({ "repeticiones" => "40", "tipo" => "tiempo", "unilateral" => true })).to eq("20 por lado s")
+    end
+  end
+
   # El beacon de analiticas. Lo que se protege es que NO aparezca donde no debe:
   # la inyeccion automatica de zona ya lo habia puesto en los ocho hostnames de
   # ynt.codes, incluido el verificador de sobres, que afirma no enviar nada a

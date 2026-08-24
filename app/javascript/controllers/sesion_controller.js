@@ -6,10 +6,20 @@ import { Controller } from "@hotwired/stimulus"
 // throttling de pestañas en segundo plano: cada tick recalcula desde Date.now)
 // y al final registra cada ejercicio ejecutado contra el endpoint existente
 // de registros de entrenamiento — un POST secuencial por ejercicio.
+//
+// Fase 20 agrega dos variantes sobre el mismo cronómetro compartido:
+//   - Ejercicios por tiempo (tipo: "tiempo"): el tap en "Serie N" no registra
+//     al toque, ARRANCA el cronómetro como trabajo cronometrado (duración =
+//     `repeticiones` reusado como segundos, SDD Nota 27); al terminar (solo
+//     o por "Listo") registra los segundos REALES sostenidos, no siempre el
+//     objetivo completo.
+//   - Superseries (grupo_superserie): dos ejercicios con el mismo grupo se
+//     alternan serie a serie SIN descanso entre ellos — el descanso llega
+//     solo al cerrar la ronda (cuando ambos ya hicieron esa serie).
 export default class extends Controller {
   static targets = ["datos", "ejercicio", "siguiente", "descanso", "cuenta", "anillo",
-                    "proximo", "progresoTexto", "progresoBarra", "resumen",
-                    "duracion", "seriesHechas", "volumen", "botonHecho", "errorGuardado"]
+                    "tituloCronometro", "botonSaltar", "proximo", "progresoTexto", "progresoBarra",
+                    "resumen", "duracion", "seriesHechas", "volumen", "botonHecho", "errorGuardado"]
   static values = { registroUrl: String, detallesUrl: String, salidaUrl: String }
 
   connect() {
@@ -19,24 +29,64 @@ export default class extends Controller {
     this.hechas = this.ejercicios.map(() => 0)
     this.inicio = Date.now()
     this.circunferencia = 2 * Math.PI * 54 // r=54 del anillo SVG (viewBox 120)
+    this.parejas = this.mapaDeParejas()
+    this.enTrabajo = false
     this.restaurarRegistradas()
   }
 
   disconnect() { this.detenerTimer() }
+
+  // grupo_superserie → [índiceA, índiceB] (solo pares; más de dos con el
+  // mismo grupo se ignora, el primero y el último "ganan" el emparejamiento).
+  mapaDeParejas() {
+    const porGrupo = {}
+    this.ejercicios.forEach((ejercicio, indice) => {
+      if (!ejercicio.grupo_superserie) return
+      ;(porGrupo[ejercicio.grupo_superserie] ||= []).push(indice)
+    })
+    const parejas = {}
+    Object.values(porGrupo).forEach(([ a, b ]) => {
+      if (a == null || b == null) return
+      parejas[a] = b
+      parejas[b] = a
+    })
+    return parejas
+  }
+
+  parejaDe(indice) { return indice in this.parejas ? this.parejas[indice] : null }
 
   // ── Series ──────────────────────────────────────────────────────────────
   marcarSerie(event) {
     const chip = event.currentTarget
     if (chip.dataset.hecha) return
 
+    const ejercicio = this.ejercicios[this.actual]
+    if (ejercicio.tipo === "tiempo") {
+      this.iniciarTrabajo(chip, ejercicio)
+    } else {
+      this.completarSerie(chip)
+    }
+  }
+
+  // Registra la serie (chip ya marcado en pintarHecha) y decide qué sigue:
+  // si el ejercicio actual tiene pareja de superserie, se alterna sin
+  // descanso; si no, el comportamiento de siempre (descanso entre series
+  // propias, "Siguiente" al completar todas).
+  completarSerie(chip) {
     this.pintarHecha(chip)
     this.registrarSerie(Number(chip.dataset.serie) + 1)
-
     this.hechas[this.actual] += 1
+
+    const pareja = this.parejaDe(this.actual)
+    if (pareja !== null) {
+      this.avanzarSuperserie(pareja)
+      return
+    }
+
     if (this.hechas[this.actual] >= this.ejercicios[this.actual].series) {
       this.siguienteTargets[this.actual].hidden = false
     } else {
-      this.iniciarDescanso(this.ejercicios[this.actual].descanso_seg)
+      this.iniciarCronometro(this.ejercicios[this.actual].descanso_seg)
     }
   }
 
@@ -68,14 +118,19 @@ export default class extends Controller {
   // envía): reps del plan (límite inferior del rango) y kg de la vez pasada
   // o el sugerido de estreno. Best-effort: un fallo de red jamás interrumpe
   // el entrenamiento — el índice único por serie evita duplicados.
+  // Fase 20: un ejercicio por tiempo registra los SEGUNDOS reales sostenidos
+  // (this.segundosTrabajoReales), no el objetivo si se cortó antes/después.
   registrarSerie(numeroSerie) {
     if (!this.detallesUrlValue) return
     const ejercicio = this.ejercicios[this.actual]
     if (!ejercicio.ejercicio_id && !ejercicio.nombre) return
 
+    const reps = ejercicio.tipo === "tiempo"
+      ? (this.segundosTrabajoReales || parseInt(ejercicio.repeticiones, 10) || 1)
+      : (parseInt(ejercicio.repeticiones, 10) || 1)
     const cuerpo = {
       fecha: this.datos.fecha, ejercicio_id: ejercicio.ejercicio_id, nombre: ejercicio.nombre,
-      serie: numeroSerie, repeticiones: parseInt(ejercicio.repeticiones, 10) || 1
+      serie: numeroSerie, repeticiones: reps
     }
     if (ejercicio.peso_registro_kg > 0) cuerpo.peso_kg = ejercicio.peso_registro_kg
 
@@ -95,12 +150,63 @@ export default class extends Controller {
     }).catch(() => {})
   }
 
-  // ── Cronómetro de descanso ──────────────────────────────────────────────
-  iniciarDescanso(segundos) {
+  // ── Superseries (Fase 20) ────────────────────────────────────────────────
+  // El orden lo controla el panel visible: el miembro solo puede tapear el
+  // chip del ejercicio que está mostrando, así que el estado "de quién es
+  // el turno" es siempre this.actual — no hace falta rastrear más.
+  avanzarSuperserie(pareja) {
+    const esPrimeroDelPar = this.actual < pareja
+    if (esPrimeroDelPar) {
+      // A acaba de hacer su serie → pasa a B sin descanso, misma ronda.
+      this.panelActual().hidden = true
+      this.actual = pareja
+      this.panelActual().hidden = false
+      this.resaltarProximaSerie()
+      return
+    }
+
+    // B acaba de hacer su serie → cierra la ronda del par.
+    const primero = pareja
+    const rondaCompleta = this.hechas[this.actual] >= this.ejercicios[this.actual].series &&
+                          this.hechas[primero] >= this.ejercicios[primero].series
+    if (rondaCompleta) {
+      this.siguienteTargets[this.actual].hidden = false
+      return
+    }
+
+    this.panelActual().hidden = true
+    this.actual = primero
+    this.iniciarCronometro(this.ejercicios[primero].descanso_seg) // vuelve a mostrar A al terminar
+  }
+
+  // ── Cronómetro compartido: descanso o trabajo cronometrado (Fase 20) ────
+  iniciarCronometro(segundos) {
+    this.enTrabajo = false
     this.duracionDescanso = segundos
     this.fin = Date.now() + segundos * 1000
     this.panelActual().hidden = true
+    this.tituloCronometroTarget.textContent = "Descanso"
+    this.botonSaltarTarget.textContent = "Saltar"
     this.proximoTarget.textContent = this.proximaSerieTexto()
+    this.descansoTarget.hidden = false
+    this.pintarDescanso()
+    this.timer = setInterval(() => this.pintarDescanso(), 250)
+  }
+
+  // Ejercicio por tiempo (Fase 20): el chip arranca el trabajo en vez de
+  // registrar al toque — mismo cronómetro visual, título/botón distintos, y
+  // al terminar registra la serie (segundos reales) en vez de solo avisar.
+  iniciarTrabajo(chip, ejercicio) {
+    this.enTrabajo = true
+    this.chipEnTrabajo = chip
+    this.inicioTrabajo = Date.now()
+    const segundos = parseInt(ejercicio.repeticiones, 10) || 30
+    this.duracionDescanso = segundos
+    this.fin = Date.now() + segundos * 1000
+    this.panelActual().hidden = true
+    this.tituloCronometroTarget.textContent = "Trabajo"
+    this.botonSaltarTarget.textContent = "Listo"
+    this.proximoTarget.textContent = ejercicio.nombre
     this.descansoTarget.hidden = false
     this.pintarDescanso()
     this.timer = setInterval(() => this.pintarDescanso(), 250)
@@ -111,7 +217,10 @@ export default class extends Controller {
     this.cuentaTarget.textContent = restante
     const fraccion = this.duracionDescanso > 0 ? restante / this.duracionDescanso : 0
     this.anilloTarget.style.strokeDashoffset = this.circunferencia * (1 - fraccion)
-    if (restante <= 0) this.terminarDescanso({ vibrar: true })
+    if (restante <= 0) {
+      if (this.enTrabajo) this.terminarTrabajo()
+      else this.terminarDescanso({ vibrar: true })
+    }
   }
 
   extenderDescanso() {
@@ -120,7 +229,12 @@ export default class extends Controller {
     this.pintarDescanso()
   }
 
-  saltarDescanso() { this.terminarDescanso({ vibrar: false }) }
+  // Un solo botón para ambos modos: "Saltar" corta el descanso, "Listo"
+  // cierra el trabajo cronometrado antes de tiempo (registra lo sostenido).
+  saltarCronometro() {
+    if (this.enTrabajo) this.terminarTrabajo()
+    else this.terminarDescanso({ vibrar: false })
+  }
 
   terminarDescanso({ vibrar }) {
     this.detenerTimer()
@@ -128,6 +242,18 @@ export default class extends Controller {
     this.descansoTarget.hidden = true
     this.panelActual().hidden = false
     this.resaltarProximaSerie()
+  }
+
+  terminarTrabajo() {
+    this.detenerTimer()
+    if ("vibrate" in navigator) navigator.vibrate([200, 100, 200])
+    this.segundosTrabajoReales = Math.max(1, Math.round((Date.now() - this.inicioTrabajo) / 1000))
+    this.descansoTarget.hidden = true
+    this.enTrabajo = false
+    this.panelActual().hidden = false
+    this.completarSerie(this.chipEnTrabajo)
+    this.segundosTrabajoReales = null
+    this.chipEnTrabajo = null
   }
 
   detenerTimer() {
@@ -217,10 +343,13 @@ export default class extends Controller {
   }
 
   // Volumen = series hechas × reps (límite inferior del rango) × kg — el
-  // mismo kg que se registra (vez pasada o sugerido, Fase 18l).
+  // mismo kg que se registra (vez pasada o sugerido, Fase 18l). Un ejercicio
+  // por tiempo no aporta volumen de carga (no hay reps que multiplicar).
   volumenKg() {
-    return Math.round(this.ejercicios.reduce((suma, ejercicio, i) =>
-      suma + this.hechas[i] * (parseInt(ejercicio.repeticiones, 10) || 0) * (ejercicio.peso_registro_kg || ejercicio.peso_sugerido_kg || 0), 0))
+    return Math.round(this.ejercicios.reduce((suma, ejercicio, i) => {
+      if (ejercicio.tipo === "tiempo") return suma
+      return suma + this.hechas[i] * (parseInt(ejercicio.repeticiones, 10) || 0) * (ejercicio.peso_registro_kg || ejercicio.peso_sugerido_kg || 0)
+    }, 0))
   }
 
   formatoDuracion(ms) {

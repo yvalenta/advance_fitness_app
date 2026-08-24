@@ -1,9 +1,11 @@
-<%# Cronómetro de descanso: cuenta regresiva grande + anillo SVG que se vacía.
-    Un solo panel compartido; sesion_controller.js lo alimenta con el
-    descanso_seg del ejercicio en curso (dasharray = 2π·54 ≈ 339.29). %>
+<%# Cronómetro compartido: cuenta regresiva grande + anillo SVG que se vacía.
+    Un solo panel para DOS usos (Fase 20): descanso entre series, o el
+    trabajo cronometrado de un ejercicio por tiempo (plancha, dead hang) —
+    sesion_controller.js decide cuál según el ejercicio y cambia el título/
+    botón. dasharray = 2π·54 ≈ 339.29. %>
 <section class="card border border-base-300 bg-base-100 shadow-md" hidden data-sesion-target="descanso">
   <div class="card-body items-center gap-4 text-center">
-    <p class="text-xs font-bold uppercase tracking-widest text-steel-3">Descanso</p>
+    <p class="text-xs font-bold uppercase tracking-widest text-steel-3" data-sesion-target="tituloCronometro">Descanso</p>
     <div class="relative flex size-60 items-center justify-center">
       <svg class="absolute inset-0 size-full -rotate-90" viewBox="0 0 120 120" aria-hidden="true">
         <circle cx="60" cy="60" r="54" fill="none" stroke-width="8" class="stroke-steel"/>
@@ -16,7 +18,8 @@
     <p class="text-sm text-steel-3">Sigue: <span class="font-semibold" data-sesion-target="proximo"></span></p>
     <div class="flex w-full gap-2">
       <button type="button" class="btn btn-outline flex-1 font-bold" data-action="sesion#extenderDescanso">+30 s</button>
-      <button type="button" class="btn btn-primary flex-1 font-bold" data-action="sesion#saltarDescanso">Saltar</button>
+      <button type="button" class="btn btn-primary flex-1 font-bold"
+              data-sesion-target="botonSaltar" data-action="sesion#saltarCronometro">Saltar</button>
     </div>
   </div>
 </section>

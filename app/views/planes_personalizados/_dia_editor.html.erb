@@ -105,13 +105,16 @@
               <%= render "shared/icono", nombre: :busqueda, clase: "size-3.5 shrink-0 text-steel-3" %>
             </p>
             <p class="mt-0.5 text-sm">
-              <span class="whitespace-nowrap font-bold text-volt-d"><%= ejercicio["series"] %> × <%= ejercicio["repeticiones"] %></span>
+              <span class="whitespace-nowrap font-bold text-volt-d"><%= ejercicio["series"] %> × <%= repeticiones_texto(ejercicio) %></span>
               <% if ejercicio["peso_sugerido_kg"].to_f.positive? %>
                 <%# Peso inicial sugerido por el análisis del perfil (Fase 6.5) %>
                 <span class="whitespace-nowrap text-steel-3">· ≈<%= ejercicio["peso_sugerido_kg"] %> kg</span>
               <% end %>
               <% if ejercicio["descanso_seg"].to_i.positive? %>
                 <span class="whitespace-nowrap text-steel-3">· <%= ejercicio["descanso_seg"] %> s</span>
+              <% end %>
+              <% if ejercicio["grupo_superserie"].present? %>
+                <span class="whitespace-nowrap text-ocean">· ⚡ superserie</span>
               <% end %>
             </p>
             <% if (anterior = anteriores[ejercicio["ejercicio_id"]]) %>
@@ -183,6 +186,30 @@
                 <input type="text" name="ejercicio[nota_tecnica]" value="<%= ejercicio["nota_tecnica"] %>" maxlength="90"
                        placeholder="Consejo de ejecución (opcional)" class="grow" aria-label="Nota técnica"
                        data-action="input->autosave#programar">
+              </label>
+            </div>
+            <%# Fase 20: tipo (reps/tiempo), superserie (par sin descanso entre sí)
+                y unilateral (por lado) — nunca los escribe la IA (Nota 27). %>
+            <div class="grid grid-cols-[6rem_1fr_5.5rem] gap-2">
+              <label class="input input-sm input-bordered flex items-center gap-1">
+                <span class="text-xs font-bold text-steel-3">Tipo</span>
+                <select name="ejercicio[tipo]" class="grow bg-transparent text-right text-xs"
+                        aria-label="Tipo de ejercicio" data-action="change->autosave#programar">
+                  <option value="reps" <%= "selected" if ejercicio["tipo"] != "tiempo" %>>Reps</option>
+                  <option value="tiempo" <%= "selected" if ejercicio["tipo"] == "tiempo" %>>Tiempo</option>
+                </select>
+              </label>
+              <label class="input input-sm input-bordered flex items-center gap-1">
+                <span class="text-xs font-bold text-steel-3">Superserie</span>
+                <input type="text" name="ejercicio[grupo_superserie]" value="<%= ejercicio["grupo_superserie"] %>"
+                       placeholder="ej. A1" maxlength="20" class="w-full" aria-label="Grupo de superserie"
+                       data-action="input->autosave#programar">
+              </label>
+              <label class="input input-sm input-bordered flex cursor-pointer items-center justify-center gap-1.5">
+                <input type="checkbox" name="ejercicio[unilateral]" <%= "checked" if ejercicio["unilateral"] %>
+                       class="checkbox checkbox-xs" aria-label="Unilateral, por lado"
+                       data-action="change->autosave#programar">
+                <span class="text-xs font-bold text-steel-3">Por lado</span>
               </label>
             </div>
             <div class="flex flex-wrap items-center gap-2">

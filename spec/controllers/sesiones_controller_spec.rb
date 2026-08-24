@@ -64,6 +64,41 @@ RSpec.describe "Sesiones", type: :request do
     expect(response.body).to include('"descanso_seg":60')
   end
 
+  # Fase 20: tipo (timer de trabajo) y grupo_superserie (par sin descanso)
+  # en el JSON que arma el Stimulus — la lectura HTML usa el hash crudo.
+  it "serializa tipo y grupo_superserie para el Stimulus" do
+    rutina_superserie = { "dias" => [
+      { "dia" => "lunes", "ejercicios" => [
+        { "uid" => "a1", "nombre" => "Press banca", "series" => 3, "repeticiones" => "10", "grupo_superserie" => "A" },
+        { "uid" => "b1", "nombre" => "Plancha", "series" => 3, "repeticiones" => "40", "tipo" => "tiempo", "grupo_superserie" => "A" }
+      ] }
+    ] }
+    crear_plan!(users(:one), rutina: rutina_superserie)
+    sign_in_as users(:one)
+
+    get sesion_path(lunes.iso8601)
+
+    expect(response.body).to include('"tipo":"reps"')
+    expect(response.body).to include('"tipo":"tiempo"')
+    expect(response.body.scan('"grupo_superserie":"A"').size).to eq(2)
+  end
+
+  it "un ejercicio unilateral muestra las reps por lado, y la superserie su badge" do
+    rutina_mixta = { "dias" => [
+      { "dia" => "lunes", "ejercicios" => [
+        { "uid" => "z1", "nombre" => "Zancadas", "series" => 3, "repeticiones" => "8-10",
+          "unilateral" => true, "grupo_superserie" => "B" }
+      ] }
+    ] }
+    crear_plan!(users(:one), rutina: rutina_mixta)
+    sign_in_as users(:one)
+
+    get sesion_path(lunes.iso8601)
+
+    expect(response.body).to include("4-5 por lado")
+    expect(response.body).to include("Superserie")
+  end
+
   # Fase 18l: la sesión captura las series cuantitativas al tap (premium).
   describe "registro cuantitativo por serie" do
     let(:ejercicio_catalogo) do
