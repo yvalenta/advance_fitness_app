@@ -170,6 +170,53 @@ RSpec.describe "DetallesEntrenamiento", type: :request do
     end
   end
 
+  describe "progresión por reglas en el create (Fase 20d)" do
+    before do
+      sign_in_as users(:one)
+      premium!(users(:one))
+    end
+
+    def crear_plan_con_uid!
+      PlanPersonalizado.create!(user: users(:one), generado_por: "reglas", estado: "aprobado", plan_nutricional: {},
+        rutina: { "dias" => [ { "dia" => "lunes", "ejercicios" => [
+          { "uid" => "u1", "nombre" => ejercicio.nombre, "ejercicio_id" => ejercicio.id,
+            "series" => 2, "repeticiones" => "8-10", "peso_sugerido_kg" => 40 }
+        ] } ] })
+    end
+
+    it "sube el peso sugerido cuando el uid viaja y se completan todas las series al tope" do
+      plan = crear_plan_con_uid!
+
+      post detalles_entrenamiento_path, params: {
+        fecha: Date.current.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre,
+        serie: 1, repeticiones: 10, peso_kg: 40, uid: "u1"
+      }
+      expect(plan.reload.ejercicios_de(0).first["peso_sugerido_kg"]).to eq(40) # falta la 2ª serie
+
+      post detalles_entrenamiento_path, params: {
+        fecha: Date.current.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre,
+        serie: 2, repeticiones: 10, peso_kg: 40, uid: "u1"
+      }
+      expect(plan.reload.ejercicios_de(0).first["peso_sugerido_kg"]).to eq(42.5)
+    end
+
+    it "sin uid en el POST (rutinas viejas) no evalúa progresión ni revienta" do
+      plan = crear_plan_con_uid!
+
+      post detalles_entrenamiento_path, params: {
+        fecha: Date.current.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre,
+        serie: 1, repeticiones: 10, peso_kg: 40
+      }
+      post detalles_entrenamiento_path, params: {
+        fecha: Date.current.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre,
+        serie: 2, repeticiones: 10, peso_kg: 40
+      }
+
+      expect(response).to have_http_status(:success)
+      expect(plan.reload.ejercicios_de(0).first["peso_sugerido_kg"]).to eq(40)
+    end
+  end
+
   describe "POST /detalles_entrenamiento/analizar" do
     def registrar_series_de_semanas(user, semanas:)
       semanas.times do |i|

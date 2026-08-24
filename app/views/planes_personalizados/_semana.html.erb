@@ -49,7 +49,7 @@
             con_seguimiento: con_seguimiento, editable: editable, editando_por_defecto: editando_por_defecto,
             registro: (registros[fechas[indice]] if con_seguimiento),
             fecha: (fechas[indice] if con_seguimiento), anteriores: anteriores,
-            premium: usuario&.premium?, mensaje_ciclo: mensaje_ciclo %>
+            premium: usuario&.premium?, staff: usuario&.staff?, mensaje_ciclo: mensaje_ciclo %>
     </div>
   <% end %>
 </div>

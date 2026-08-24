@@ -130,7 +130,7 @@ export default class extends Controller {
       : (parseInt(ejercicio.repeticiones, 10) || 1)
     const cuerpo = {
       fecha: this.datos.fecha, ejercicio_id: ejercicio.ejercicio_id, nombre: ejercicio.nombre,
-      serie: numeroSerie, repeticiones: reps
+      serie: numeroSerie, repeticiones: reps, uid: ejercicio.uid
     }
     if (ejercicio.peso_registro_kg > 0) cuerpo.peso_kg = ejercicio.peso_registro_kg
 

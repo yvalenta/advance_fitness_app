@@ -6,7 +6,7 @@
 <%# para ubicar el día destino. %>
 <%# Fase 14.9: el id y las URLs llevan la semana del mesociclo — el registro %>
 <%# y la fecha del seguimiento se resuelven por semana (Rutina::Calendario). %>
-<%# locals: (plan:, dia:, indice:, semana: 1, con_seguimiento: false, editable: false, editando_por_defecto: false, registro: nil, fecha: nil, anteriores: {}, premium: nil, mensaje_ciclo: nil) %>
+<%# locals: (plan:, dia:, indice:, semana: 1, con_seguimiento: false, editable: false, editando_por_defecto: false, registro: nil, fecha: nil, anteriores: {}, premium: nil, staff: nil, mensaje_ciclo: nil) %>
 <% semana = local_assigns.fetch(:semana, 1) %>
 <% con_seguimiento = local_assigns.fetch(:con_seguimiento, false) %>
 <% editable = local_assigns.fetch(:editable, false) %>
@@ -216,7 +216,7 @@
               <button type="button" class="btn btn-ghost btn-xs" data-action="modal-ejercicios#abrir">
                 <%= render "shared/icono", nombre: :busqueda, clase: "size-3.5" %> Plantilla
               </button>
-              <% if Current.user.staff? %>
+              <% if local_assigns[:staff] %>
                 <button type="button" class="btn btn-ghost btn-xs text-steel-5"
                         data-action="modal-ejercicios#guardarPlantilla" data-musculo="otro">
                   Guardar como plantilla

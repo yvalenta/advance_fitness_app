@@ -37,6 +37,11 @@ class DetallesEntrenamientoController < ApplicationController
     # (18n): el toast es fixed y flota por encima de todo; sin récords no
     # hay nada que decir y la respuesta es un ok vacío.
     records = detalle ? Juego::DetectorPr.evaluar!(detalle) : []
+    # Progresión por reglas (Fase 20d, sin IA): mismo criterio "inline, no
+    # job" que el detector de PRs — es aritmética barata, no HTTP a la IA.
+    if params[:uid].present?
+      Progresion::Regla.evaluar_tras_serie!(user: Current.user, uid: params[:uid], fecha: @registro.fecha, ejercicio: @ejercicio)
+    end
     if records.any?
       render turbo_stream: turbo_stream.append("celebraciones_sesion",
                                                partial: "shared/celebracion_pr", locals: { records: records })
