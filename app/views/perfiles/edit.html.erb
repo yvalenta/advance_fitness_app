@@ -183,6 +183,16 @@
         <span class="flex-1 text-sm font-semibold">Notificaciones</span>
       </div>
       <div class="mt-2 pl-11"><%= render "shared/push_optin" %></div>
+
+      <%# Push del rest-timer (Fase 20e): apagado por defecto, aparte del de
+          racha — solo tiene efecto con al menos un dispositivo suscrito arriba. %>
+      <%= form_with model: @user, url: perfil_path, method: :patch, class: "mt-3 flex items-center gap-3 border-t border-base-200 pt-3" do |form| %>
+        <span class="flex-1 pl-11">
+          <span class="block text-sm font-semibold">Avisarme cuando termine mi descanso</span>
+          <span class="block text-xs text-steel-3">Un push si dejas la app abierta con un cronómetro corriendo.</span>
+        </span>
+        <%= form.check_box :descanso_push_activo, class: "toggle toggle-primary", onchange: "this.form.requestSubmit()" %>
+      <% end %>
     </div>
 
     <div class="rounded-2xl border border-base-300 bg-base-100 px-4 py-3 shadow-sm">

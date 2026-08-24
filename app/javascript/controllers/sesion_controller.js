@@ -16,11 +16,18 @@ import { Controller } from "@hotwired/stimulus"
 //   - Superseries (grupo_superserie): dos ejercicios con el mismo grupo se
 //     alternan serie a serie SIN descanso entre ellos — el descanso llega
 //     solo al cerrar la ronda (cuando ambos ya hicieron esa serie).
+//
+// Push del rest-timer (Fase 20e): si el miembro deja la pestaña con un
+// cronómetro corriendo (visibilitychange → hidden), se programa UN aviso
+// retrasado en el servidor con los segundos que faltan; si vuelve antes de
+// tiempo, se cancela. El servidor decide si de verdad manda algo (opt-in +
+// dispositivo suscrito) — aquí siempre se intenta, es barato y el estado
+// real vive del lado del servidor.
 export default class extends Controller {
   static targets = ["datos", "ejercicio", "siguiente", "descanso", "cuenta", "anillo",
                     "tituloCronometro", "botonSaltar", "proximo", "progresoTexto", "progresoBarra",
                     "resumen", "duracion", "seriesHechas", "volumen", "botonHecho", "errorGuardado"]
-  static values = { registroUrl: String, detallesUrl: String, salidaUrl: String }
+  static values = { registroUrl: String, detallesUrl: String, salidaUrl: String, descansoPushUrl: String }
 
   connect() {
     this.datos = JSON.parse(this.datosTarget.textContent)
@@ -31,10 +38,51 @@ export default class extends Controller {
     this.circunferencia = 2 * Math.PI * 54 // r=54 del anillo SVG (viewBox 120)
     this.parejas = this.mapaDeParejas()
     this.enTrabajo = false
+    this.tokenPush = null
+    this.manejarVisibilidad = this.manejarVisibilidad.bind(this)
+    document.addEventListener("visibilitychange", this.manejarVisibilidad)
     this.restaurarRegistradas()
   }
 
-  disconnect() { this.detenerTimer() }
+  disconnect() {
+    this.detenerTimer()
+    document.removeEventListener("visibilitychange", this.manejarVisibilidad)
+    this.cancelarPushPendiente()
+  }
+
+  // ── Push del rest-timer (Fase 20e) ───────────────────────────────────────
+  manejarVisibilidad() {
+    if (document.visibilityState === "hidden") this.programarPushSiHayCronometro()
+    else this.cancelarPushPendiente()
+  }
+
+  programarPushSiHayCronometro() {
+    if (!this.timer || !this.descansoPushUrlValue) return
+
+    const restante = Math.max(1, Math.ceil((this.fin - Date.now()) / 1000))
+    const mensaje = this.enTrabajo
+      ? `${this.ejercicios[this.actual]?.nombre || "Tu ejercicio"} — se acabó el tiempo`
+      : this.proximaSerieTexto()
+
+    fetch(this.descansoPushUrlValue, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector("meta[name='csrf-token']")?.content
+      },
+      body: JSON.stringify({ segundos: restante, mensaje })
+    }).then((r) => r.json()).then((datos) => { this.tokenPush = datos.token }).catch(() => {})
+  }
+
+  cancelarPushPendiente() {
+    if (!this.tokenPush || !this.descansoPushUrlValue) return
+
+    this.tokenPush = null
+    fetch(this.descansoPushUrlValue, {
+      method: "DELETE",
+      headers: { "X-CSRF-Token": document.querySelector("meta[name='csrf-token']")?.content }
+    }).catch(() => {})
+  }
 
   // grupo_superserie → [índiceA, índiceB] (solo pares; más de dos con el
   // mismo grupo se ignora, el primero y el último "ganan" el emparejamiento).

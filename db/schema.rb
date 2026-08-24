@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_23_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_24_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -480,6 +480,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_23_000001) do
   create_table "users", force: :cascade do |t|
     t.string "acento", default: "volt", null: false
     t.datetime "created_at", null: false
+    t.boolean "descanso_push_activo", default: false, null: false
+    t.string "descanso_push_token"
     t.string "email_address", null: false
     t.date "fecha_ingreso", default: -> { "CURRENT_DATE" }, null: false
     t.date "fecha_nacimiento"

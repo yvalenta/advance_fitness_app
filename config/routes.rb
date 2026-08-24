@@ -61,6 +61,11 @@ Rails.application.routes.draw do
   post "suscripciones_push", to: "suscripciones_push#create", as: :suscripciones_push
   delete "suscripciones_push", to: "suscripciones_push#destroy"
 
+  # Push del rest-timer (Fase 20e): programa/cancela un aviso retrasado
+  # mientras dura un cronómetro del modo sesión — ver DescansoPushController.
+  post "descanso_push", to: "descanso_push#create", as: :descanso_push
+  delete "descanso_push", to: "descanso_push#destroy"
+
   # Registro cuantitativo de series (SDD §18, feature premium): index carga
   # el dialog por fecha+ejercicio (query string, mismo patrón de :ayuda);
   # create/destroy responden turbo_stream. Rutas nombradas a mano (en vez de

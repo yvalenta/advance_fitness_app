@@ -19,6 +19,9 @@
                la URL el Stimulus no envía nada y los chips quedan visuales. %>
            data-sesion-detalles-url-value="<%= detalles_entrenamiento_path if Current.user.premium? %>"
            data-sesion-salida-url-value="<%= mi_plan_path %>"
+           <%# Push del rest-timer (Fase 20e): siempre se manda la URL — el
+               servidor decide si el miembro lo quiere (opt-in + dispositivo). %>
+           data-sesion-descanso-push-url-value="<%= descanso_push_path %>"
            <%# Wake Lock (Fase 19d): pantalla activa mientras dura la sesión —
                apagable en Ajustes. %>
            data-wake-lock-activo-value="<%= Current.user.wake_lock_activo? %>">

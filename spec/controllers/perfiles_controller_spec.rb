@@ -90,4 +90,21 @@ RSpec.describe "Perfiles", type: :request do
       expect(users(:one).reload.wake_lock_activo?).to be true
     end
   end
+
+  # Push del rest-timer (Fase 20e): apagado por defecto, aparte del de racha.
+  describe "preferencia de aviso al terminar el descanso" do
+    it "el default es apagado" do
+      expect(users(:one).descanso_push_activo?).to be false
+    end
+
+    it "se puede activar y desactivar desde el perfil" do
+      sign_in_as users(:one)
+
+      patch perfil_path, params: { user: { descanso_push_activo: "1" } }
+      expect(users(:one).reload.descanso_push_activo?).to be true
+
+      patch perfil_path, params: { user: { descanso_push_activo: "0" } }
+      expect(users(:one).reload.descanso_push_activo?).to be false
+    end
+  end
 end

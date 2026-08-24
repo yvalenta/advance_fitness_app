@@ -37,8 +37,10 @@ class PerfilesController < ApplicationController
       @peso_actual = @user.mediciones.recientes.first&.peso_kg
     end
 
-    # rol jamás asignable aquí (SDD §08); tema, acento y wake_lock_activo sí son del usuario
+    # rol jamás asignable aquí (SDD §08); tema, acento, wake_lock_activo y
+    # descanso_push_activo sí son del usuario
     def perfil_params
-      params.expect(user: %i[nombre fecha_nacimiento sexo talla_cm nivel_actividad tema acento wake_lock_activo])
+      params.expect(user: %i[nombre fecha_nacimiento sexo talla_cm nivel_actividad tema acento
+                             wake_lock_activo descanso_push_activo])
     end
 end
