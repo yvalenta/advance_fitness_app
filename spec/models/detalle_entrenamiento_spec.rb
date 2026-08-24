@@ -60,4 +60,34 @@ RSpec.describe DetalleEntrenamiento, type: :model do
       expect(DetalleEntrenamiento.ejercicio_para(ejercicio_id: nil, nombre: "Ejercicio inventado")).to be_nil
     end
   end
+
+  describe ".mejores_sets_para_una_rm" do
+    it "toma la serie de mayor 1RM estimado, no la de más peso" do
+      # 60kg×10 → 80.0 estimado; 80kg×3 → 88.0 estimado (gana esta última)
+      detalle(peso_kg: 60, repeticiones: 10).save!
+      detalle(serie: 2, peso_kg: 80, repeticiones: 3).save!
+
+      mejor = DetalleEntrenamiento.mejores_sets_para_una_rm(users(:one)).first
+      expect(mejor.peso_kg).to eq(80)
+      expect(mejor.repeticiones).to eq(3)
+    end
+
+    it "ignora series de peso corporal y de más de 12 repeticiones" do
+      detalle(peso_kg: nil, repeticiones: 20).save!
+      detalle(serie: 2, peso_kg: 40, repeticiones: 15).save!
+
+      expect(DetalleEntrenamiento.mejores_sets_para_una_rm(users(:one))).to be_empty
+    end
+
+    it "filtra por ejercicio_id cuando se pasa una lista" do
+      otro_ejercicio = Ejercicio.create!(dataset_id: "test-0002", nombre: "Sentadilla", nombre_en: "Squat",
+                                         nombre_normalizado: "sentadilla", categoria: "fuerza", musculo: "pierna")
+      detalle.save!
+      DetalleEntrenamiento.create!(registro_entrenamiento: registro, ejercicio: otro_ejercicio,
+                                   serie: 1, repeticiones: 5, peso_kg: 100)
+
+      resultado = DetalleEntrenamiento.mejores_sets_para_una_rm(users(:one), [ ejercicio.id ])
+      expect(resultado.map(&:ejercicio_id)).to eq([ ejercicio.id ])
+    end
+  end
 end

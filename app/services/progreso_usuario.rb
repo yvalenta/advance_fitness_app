@@ -12,11 +12,12 @@ module ProgresoUsuario
 
   FEEDBACKS_MAX = 10
 
-  SECCIONES_GRAFICA = %w[peso calorias asistencia].freeze
+  SECCIONES_GRAFICA = %w[peso calorias asistencia una_rm heatmap mapa_muscular].freeze
 
   Resultado = Struct.new(:pesos, :fuente_peso, :mediciones, :objetivos_historial,
                           :objetivo, :calorias, :asistencia, :visitas_mes,
-                          :dias_registrados, :dias_en_meta, :feedbacks_ia, keyword_init: true)
+                          :dias_registrados, :dias_en_meta, :feedbacks_ia,
+                          :una_rm, :heatmap, :mapa_muscular, keyword_init: true)
 
   def self.para(usuario)
     calorias = seccion_calorias(usuario)
@@ -36,11 +37,14 @@ module ProgresoUsuario
   # Una sección de gráfica para su turbo-frame (Fase 16.6). El Resultado
   # parcial deja en nil lo que la gráfica no lee — los partials solo tocan
   # los miembros de su sección.
-  def self.seccion(usuario, tipo)
+  def self.seccion(usuario, tipo, periodo: :semana)
     case tipo
     when "peso" then Resultado.new(**seccion_pesos(usuario))
     when "calorias" then Resultado.new(**seccion_calorias(usuario))
     when "asistencia" then Resultado.new(**seccion_asistencia(usuario))
+    when "una_rm" then Resultado.new(**seccion_una_rm(usuario))
+    when "heatmap" then Resultado.new(**seccion_heatmap(usuario))
+    when "mapa_muscular" then Resultado.new(**seccion_mapa_muscular(usuario, periodo))
     end
   end
 
@@ -89,5 +93,32 @@ module ProgresoUsuario
                            .includes(:feedback_ia).order(fecha: :desc).limit(FEEDBACKS_MAX) }
   end
 
-  private_class_method :seccion_pesos, :seccion_calorias, :seccion_asistencia, :seccion_resumen
+  # 1RM estimado (CalculadoraUnaRepMax) por ejercicio, de mayor a menor.
+  def self.seccion_una_rm(usuario)
+    mejores = DetalleEntrenamiento.mejores_sets_para_una_rm(usuario)
+                                  .includes(:ejercicio, :registro_entrenamiento)
+    filas = mejores.filter_map do |detalle|
+      estimado = CalculadoraUnaRepMax.estimar(peso_kg: detalle.peso_kg, repeticiones: detalle.repeticiones)
+      next unless estimado
+
+      { ejercicio: detalle.ejercicio, estimado_kg: estimado, peso_kg: detalle.peso_kg,
+        repeticiones: detalle.repeticiones, fecha: detalle.registro_entrenamiento.fecha }
+    end
+    { una_rm: filas.sort_by { |fila| -fila[:estimado_kg] } }
+  end
+
+  # Heatmap de actividad del último año (Juego::Heatmap): mismo criterio de
+  # "cumplido" que la racha (check-in o ejercicio marcado hecho ese día).
+  def self.seccion_heatmap(usuario)
+    dias = Juego::Heatmap.para(usuario, desde: Date.current - 364, hasta: Date.current)
+    { heatmap: Juego::Heatmap.en_columnas(dias) }
+  end
+
+  # Volumen entrenado por grupo muscular (Juego::MapaMuscular).
+  def self.seccion_mapa_muscular(usuario, periodo = :semana)
+    { mapa_muscular: Juego::MapaMuscular.para(usuario, periodo: periodo) }
+  end
+
+  private_class_method :seccion_pesos, :seccion_calorias, :seccion_asistencia, :seccion_resumen,
+                        :seccion_una_rm, :seccion_heatmap, :seccion_mapa_muscular
 end

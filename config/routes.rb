@@ -39,7 +39,7 @@ Rails.application.routes.draw do
   # Gráficas perezosas por scroll (Fase 16.6): cada turbo-frame trae SOLO su
   # serie — la página del miembro carga el resumen y nada más.
   get "progreso/grafica/:tipo", to: "progreso_graficas#show", as: :progreso_grafica,
-      constraints: { tipo: /peso|calorias|asistencia/ }
+      constraints: { tipo: /peso|calorias|asistencia|una_rm|heatmap|mapa_muscular/ }
 
   # Auto-registro de peso del miembro (Fase 5.9): crea una medición propia.
   resources :mediciones, only: :create

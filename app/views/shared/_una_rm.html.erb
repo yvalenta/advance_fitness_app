@@ -1,0 +1,55 @@
+<%# 1RM estimado por ejercicio (fórmula de Epley, CalculadoraUnaRepMax): la
+    mejor serie de cada ejercicio entre 1-12 reps con peso externo. Incluye
+    una calculadora para series hipotéticas (cálculo en el cliente, misma
+    fórmula, sin ida y vuelta al servidor — no es IA, es aritmética). %>
+<%# locals: (progreso:) %>
+<div class="card border border-base-300 bg-base-100 shadow-md">
+  <div class="card-body">
+    <h2 class="card-title text-base">
+      <span class="flex size-7 items-center justify-center rounded-lg bg-base-200 text-steel-5">
+        <%= render "shared/icono", nombre: :rayo, clase: "size-4" %>
+      </span>
+      1RM estimado
+    </h2>
+    <% if progreso.una_rm.any? %>
+      <ul class="flex flex-col divide-y divide-base-200 text-sm">
+        <% progreso.una_rm.each do |fila| %>
+          <li class="flex items-center justify-between gap-2 py-2">
+            <div>
+              <p class="font-semibold"><%= fila[:ejercicio].nombre %></p>
+              <p class="text-xs text-steel-3">
+                Desde <%= fila[:repeticiones] %> × <%= fila[:peso_kg] %> kg — <%= l fila[:fecha], format: :long %>
+              </p>
+            </div>
+            <span class="badge badge-lg badge-ghost font-bold text-steel-5"><%= fila[:estimado_kg] %> kg</span>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <div class="flex flex-col items-center gap-2 rounded-xl bg-base-200 py-10 text-center">
+        <%= render "shared/icono", nombre: :rayo, clase: "size-8 text-steel-1" %>
+        <p class="text-sm text-steel-3">Registra series con peso (1-12 repeticiones) para estimar tu 1RM.</p>
+      </div>
+    <% end %>
+
+    <div class="mt-4 rounded-xl border border-base-300 bg-base-200 p-3" data-controller="una-rm">
+      <p class="mb-2 text-xs font-semibold text-steel-5">Calculadora — series que aún no has hecho</p>
+      <div class="flex flex-wrap items-end gap-3">
+        <label class="form-control">
+          <span class="label-text mb-1 text-xs">Peso (kg)</span>
+          <input type="number" step="0.5" min="0" class="input input-bordered input-sm w-24"
+                 data-una-rm-target="peso" data-action="input->una-rm#calcular">
+        </label>
+        <label class="form-control">
+          <span class="label-text mb-1 text-xs">Repeticiones</span>
+          <input type="number" min="1" max="12" class="input input-bordered input-sm w-20"
+                 data-una-rm-target="repeticiones" data-action="input->una-rm#calcular">
+        </label>
+        <p class="pb-1.5 text-sm">
+          <span class="text-steel-3">≈</span>
+          <span class="font-bold text-steel-5" data-una-rm-target="resultado">—</span>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>

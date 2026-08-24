@@ -23,7 +23,7 @@ RSpec.describe "Progresos", type: :request do
     expect(response).to have_http_status(:success)
     expect(response.body).to include("70.0 kg") # peso actual (resumen)
     expect(response.body).to include("1 de 1 días registrados en meta")
-    %w[peso calorias asistencia].each do |tipo|
+    %w[peso calorias asistencia una_rm heatmap mapa_muscular].each do |tipo|
       assert_select "turbo-frame#grafica_#{tipo}[src=?][loading=lazy]", progreso_grafica_path(tipo: tipo)
     end
     expect(response.body).not_to include("<svg aria-label=")
@@ -35,6 +35,10 @@ RSpec.describe "Progresos", type: :request do
     ObjetivoNutricional.fijar_para(user, tipo: "deficit", peso_kg: 70)
     RegistroCaloria.registrar(user, kcal: 1800)
     Acceso.registrar_para(user, user.membresia, ahora: Time.current.change(hour: 10))
+    ejercicio = Ejercicio.create!(dataset_id: "test-progreso", nombre: "Press de banca", nombre_en: "Bench press",
+                                  nombre_normalizado: "press de banca", categoria: "fuerza", musculo: "pecho")
+    registro = RegistroEntrenamiento.create!(user: user, fecha: Date.current)
+    registro.detalles.create!(ejercicio: ejercicio, serie: 1, repeticiones: 5, peso_kg: 80)
     sign_in_as user
 
     get progreso_grafica_path(tipo: "peso")
@@ -48,6 +52,31 @@ RSpec.describe "Progresos", type: :request do
 
     get progreso_grafica_path(tipo: "asistencia")
     assert_select "svg[aria-label='Visitas al gimnasio por semana']"
+
+    get progreso_grafica_path(tipo: "una_rm")
+    expect(response.body).to include("Press de banca")
+    expect(response.body).to include("93.3 kg") # Epley: 80 × (1 + 5/30)
+
+    get progreso_grafica_path(tipo: "heatmap")
+    assert_select "svg[aria-label='Días de actividad del último año']"
+
+    get progreso_grafica_path(tipo: "mapa_muscular")
+    assert_select "svg[aria-label='Mapa muscular — Frente']"
+    assert_select "svg[aria-label='Mapa muscular — Espalda']"
+    expect(response.body).to include("Sin trabajar en este período")
+  end
+
+  it "mapa_muscular respeta el período elegido y por defecto usa semana" do
+    sign_in_as users(:one)
+
+    get progreso_grafica_path(tipo: "mapa_muscular")
+    assert_select "a.btn-active", text: "Semana"
+
+    get progreso_grafica_path(tipo: "mapa_muscular", periodo: "mes")
+    assert_select "a.btn-active", text: "Mes"
+
+    get progreso_grafica_path(tipo: "mapa_muscular", periodo: "algo_invalido")
+    assert_select "a.btn-active", text: "Semana"
   end
 
   it "un tipo de gráfica fuera del contrato no rutea" do
@@ -70,5 +99,14 @@ RSpec.describe "Progresos", type: :request do
 
     get progreso_grafica_path(tipo: "asistencia")
     expect(response.body).to include("check-ins en recepción aparecerán aquí")
+
+    get progreso_grafica_path(tipo: "una_rm")
+    expect(response.body).to include("Registra series con peso (1-12 repeticiones)")
+
+    get progreso_grafica_path(tipo: "heatmap")
+    expect(response.body).to include("Tu actividad del último año aparecerá aquí")
+
+    get progreso_grafica_path(tipo: "mapa_muscular")
+    expect(response.body).to include("Registra series en tus sesiones para ver qué músculos trabajaste")
   end
 end

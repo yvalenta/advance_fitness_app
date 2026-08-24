@@ -126,6 +126,21 @@
         <%= placeholder %>
       <% end %>
     </div>
+    <div class="animate-fade-up fade-delay-2">
+      <%= turbo_frame_tag "grafica_una_rm", src: progreso_grafica_path(tipo: "una_rm"), loading: :lazy, target: "_top" do %>
+        <%= placeholder %>
+      <% end %>
+    </div>
+    <div class="animate-fade-up fade-delay-2 lg:col-span-2">
+      <%= turbo_frame_tag "grafica_heatmap", src: progreso_grafica_path(tipo: "heatmap"), loading: :lazy, target: "_top" do %>
+        <%= placeholder %>
+      <% end %>
+    </div>
+    <div class="animate-fade-up fade-delay-2 lg:col-span-2">
+      <%= turbo_frame_tag "grafica_mapa_muscular", src: progreso_grafica_path(tipo: "mapa_muscular"), loading: :lazy, target: "_top" do %>
+        <%= placeholder %>
+      <% end %>
+    </div>
     <div class="animate-fade-up fade-delay-2 lg:col-span-2"><%= render "shared/historial_analisis", progreso: @progreso %></div>
   </div>
 </div>

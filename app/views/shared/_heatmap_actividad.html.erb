@@ -1,0 +1,45 @@
+<%# Heatmap de actividad del último año (Juego::Heatmap) — mismo criterio de
+    "día cumplido" que la racha: check-in en recepción o al menos un
+    ejercicio marcado hecho. %>
+<%# locals: (progreso:) %>
+<div class="card border border-base-300 bg-base-100 shadow-md">
+  <div class="card-body">
+    <h2 class="card-title text-base">
+      <span class="flex size-7 items-center justify-center rounded-lg bg-base-200 text-steel-5">
+        <%= render "shared/icono", nombre: :fuego, clase: "size-4" %>
+      </span>
+      Actividad — último año
+    </h2>
+    <% columnas = progreso.heatmap %>
+    <% if columnas.any? { |semana| semana.any? { |dia| dia[:nivel].to_i.positive? } } %>
+      <% ancho_celda = 11 %>
+      <% paso = ancho_celda + 3 %>
+      <% ancho_total = columnas.size * paso %>
+      <% alto_total = (7 * paso) + 2 %>
+      <div class="relative overflow-x-auto" data-controller="grafica"
+           data-action="mousemove->grafica#mostrar mouseleave->grafica#ocultar">
+        <svg viewBox="0 0 <%= ancho_total %> <%= alto_total %>" class="mt-1" style="min-width: <%= ancho_total %>px; height: <%= alto_total %>px"
+             role="img" aria-label="Días de actividad del último año">
+          <% columnas.each_with_index do |semana, col| %>
+            <% semana.each_with_index do |dia, fila| %>
+              <% nivel = dia[:nivel] %>
+              <% opacidad = { nil => 0.25, 0 => 1, 1 => 0.35, 2 => 0.65, 3 => 1 }.fetch(nivel) %>
+              <% relleno = nivel.to_i.positive? ? "var(--color-volt)" : "var(--color-base-300)" %>
+              <rect x="<%= col * paso %>" y="<%= fila * paso %>" width="<%= ancho_celda %>" height="<%= ancho_celda %>"
+                    rx="2.5" fill="<%= relleno %>" fill-opacity="<%= opacidad %>"
+                    <% if nivel %>data-etiqueta="<%= l dia[:fecha], format: :long %> — <%= nivel.zero? ? "sin actividad" : "activo" %>"<% end %>/>
+            <% end %>
+          <% end %>
+        </svg>
+        <div class="pointer-events-none absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-lg bg-steel px-2.5 py-1 text-xs font-semibold text-volt-d shadow-lg"
+             hidden data-grafica-target="tooltip"></div>
+      </div>
+      <p class="mt-2 text-xs text-steel-3">Cada casilla es un día — check-in en recepción o al menos un ejercicio marcado.</p>
+    <% else %>
+      <div class="flex flex-col items-center gap-2 rounded-xl bg-base-200 py-10 text-center">
+        <%= render "shared/icono", nombre: :fuego, clase: "size-8 text-steel-1" %>
+        <p class="text-sm text-steel-3">Tu actividad del último año aparecerá aquí.</p>
+      </div>
+    <% end %>
+  </div>
+</div>

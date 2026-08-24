@@ -31,6 +31,21 @@ class DetalleEntrenamiento < ApplicationRecord
       .index_by(&:ejercicio_id)
   end
 
+  # Mejor serie de cada ejercicio para estimar el 1RM (CalculadoraUnaRepMax,
+  # fórmula de Epley): la de mayor 1RM estimado entre 1-12 reps con peso
+  # externo — no basta con "el peso más alto", una serie de menos peso y más
+  # reps puede estimar más. Misma técnica DISTINCT ON de ultimos_por_ejercicio.
+  def self.mejores_sets_para_una_rm(user, ejercicio_ids = nil)
+    scope = joins(:registro_entrenamiento)
+              .where(registro_entrenamiento: { user_id: user.id })
+              .where.not(peso_kg: nil)
+              .where(repeticiones: 1..CalculadoraUnaRepMax::REPS_MAXIMAS)
+    scope = scope.where(ejercicio_id: ejercicio_ids.uniq) if ejercicio_ids.present?
+
+    scope.select("DISTINCT ON (ejercicio_id) detalle_entrenamientos.*")
+         .order(Arel.sql("ejercicio_id, peso_kg * (1 + repeticiones / 30.0) DESC"))
+  end
+
   # Resuelve el Ejercicio real para registrar una serie: por id (rutinas
   # nuevas) o por nombre contra el catálogo (fallback para rutinas viejas
   # sin ejercicio_id en su JSON, mismo criterio de Ejercicio.buscar_por_nombre

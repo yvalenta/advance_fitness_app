@@ -130,6 +130,35 @@ module ApplicationHelper
     )
   end
 
+  # Geometría del mapa muscular (Fase 19): dos siluetas ESQUEMÁTICAS (no
+  # anatómicas, coherentes con el estilo stencil de la marca §06) sobre un
+  # viewBox 120×230 — cada zona etiquetada con la llave de
+  # PlantillaEjercicio::MUSCULOS que Juego::MapaMuscular ya agrega. "otro" no
+  # tiene zona (se anota aparte en el partial).
+  def zonas_mapa_muscular_frente
+    [
+      { musculo: "hombro", forma: :circle, atributos: { cx: 32, cy: 48, r: 13 } },
+      { musculo: "hombro", forma: :circle, atributos: { cx: 88, cy: 48, r: 13 } },
+      { musculo: "pecho", forma: :rect, atributos: { x: 30, y: 55, width: 60, height: 38, rx: 10 } },
+      { musculo: "biceps", forma: :rect, atributos: { x: 12, y: 58, width: 15, height: 40, rx: 7 } },
+      { musculo: "biceps", forma: :rect, atributos: { x: 93, y: 58, width: 15, height: 40, rx: 7 } },
+      { musculo: "core", forma: :rect, atributos: { x: 38, y: 95, width: 44, height: 35, rx: 8 } },
+      { musculo: "pierna", forma: :rect, atributos: { x: 33, y: 133, width: 20, height: 80, rx: 10 } },
+      { musculo: "pierna", forma: :rect, atributos: { x: 67, y: 133, width: 20, height: 80, rx: 10 } }
+    ].freeze
+  end
+
+  def zonas_mapa_muscular_espalda
+    [
+      { musculo: "espalda", forma: :rect, atributos: { x: 28, y: 50, width: 64, height: 48, rx: 10 } },
+      { musculo: "triceps", forma: :rect, atributos: { x: 12, y: 58, width: 15, height: 40, rx: 7 } },
+      { musculo: "triceps", forma: :rect, atributos: { x: 93, y: 58, width: 15, height: 40, rx: 7 } },
+      { musculo: "gluteo", forma: :rect, atributos: { x: 35, y: 100, width: 50, height: 32, rx: 10 } },
+      { musculo: "pierna", forma: :rect, atributos: { x: 33, y: 133, width: 20, height: 80, rx: 10 } },
+      { musculo: "pierna", forma: :rect, atributos: { x: 67, y: 133, width: 20, height: 80, rx: 10 } }
+    ].freeze
+  end
+
   # Link del navbar con estado activo
   def nav_link(texto, ruta)
     activo = current_page?(ruta)
