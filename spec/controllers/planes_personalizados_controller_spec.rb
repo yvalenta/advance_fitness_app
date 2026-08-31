@@ -56,6 +56,34 @@ RSpec.describe "PlanesPersonalizados", type: :request do
     assert_select "#punto_borradores span.bg-error", count: 0
   end
 
+  # La fuga de existencia (tarea 2026-08-31): el conteo crudo encendía el
+  # punto del staff de A por un borrador de B — acá el ÚNICO pendiente es de
+  # otro gimnasio y el punto debe quedarse apagado.
+  it "el punto NO se enciende por pendientes de otro gimnasio" do
+    ajeno = User.create!(email_address: "miembro-mp@x.com", password: "clave1234",
+                         rol: "miembro", tenant: tenants(:megaplex), nombre: "Miembro MP")
+    PlanPersonalizado.create!(user: ajeno, generado_por: "ia",
+                              estado: "generando", rutina: {}, plan_nutricional: {})
+    sign_in_as users(:entrenador)
+
+    get root_path
+    assert_select "#punto_borradores span.bg-error", count: 0
+  end
+
+  # El navbar debe suscribirse al MISMO par [tenant, "planes_pendientes"] al
+  # que difunde el modelo; el stream global era el canal de la fuga.
+  it "el navbar se suscribe al stream de su gimnasio, no al global" do
+    sign_in_as users(:entrenador)
+    get root_path
+
+    firmado_af = Turbo::StreamsChannel.signed_stream_name(
+      [ tenants(:advance_fitness), "planes_pendientes" ]
+    )
+    assert_select "turbo-cable-stream-source[signed-stream-name=?]", firmado_af
+    assert_select "turbo-cable-stream-source[signed-stream-name=?]",
+                  Turbo::StreamsChannel.signed_stream_name("planes_pendientes"), count: 0
+  end
+
   # Fase 14.2: tarjeta de ejercicio con miniatura del catálogo, línea densa y
   # "la vez pasada" calculada por el controller en UNA query (sin N+1).
   describe "tarjeta de ejercicio (Fase 14.2)" do

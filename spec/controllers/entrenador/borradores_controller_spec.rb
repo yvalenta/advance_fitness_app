@@ -26,4 +26,19 @@ RSpec.describe "Entrenador::Borradores", type: :request do
     expect(response.body).to match("Origen: análisis automático")
     expect(response.body).not_to match(/\bIA\b/)
   end
+
+  # Streams por gimnasio (tarea 2026-08-31): la cola se suscribe al par
+  # [tenant, "planes_pendientes"] — el mismo al que difunde el modelo. Con el
+  # stream global, los turbo streams de un tenant llegaban al staff de todos.
+  it "la cola se suscribe al stream de su gimnasio, no al global" do
+    sign_in_as users(:entrenador)
+    get entrenador_borradores_path
+
+    firmado_af = Turbo::StreamsChannel.signed_stream_name(
+      [ tenants(:advance_fitness), "planes_pendientes" ]
+    )
+    assert_select "turbo-cable-stream-source[signed-stream-name=?]", firmado_af
+    assert_select "turbo-cable-stream-source[signed-stream-name=?]",
+                  Turbo::StreamsChannel.signed_stream_name("planes_pendientes"), count: 0
+  end
 end

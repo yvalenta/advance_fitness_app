@@ -223,6 +223,95 @@ RSpec.describe PlanPersonalizado, type: :model do
     end
   end
 
+  # ── Cola del entrenador: streams por gimnasio (tarea 2026-08-31) ───────
+  # El stream "planes_pendientes" era GLOBAL: las altas/bajas de la cola de
+  # un tenant llegaban a los navegadores del staff de todos los demás. Ahora
+  # el par es [tenant, "planes_pendientes"], con el tenant del DUEÑO del plan
+  # vía sus puestos — el mismo criterio de pertenencia que policy_scope.
+  describe "difusión de la cola por tenant" do
+    let(:tenant_af) { tenants(:advance_fitness) }
+    let(:tenant_mp) { tenants(:megaplex) }
+    let(:miembro_mp) do
+      User.create!(email_address: "miembro-mp@x.com", password: "clave1234",
+                   rol: "miembro", tenant: tenant_mp, nombre: "Miembro MP")
+    end
+
+    def crear_plan_mp
+      PlanPersonalizado.create!(user: miembro_mp, rutina: rutina_base, plan_nutricional: nutricion_base)
+    end
+
+    it "el alta de un borrador difunde SOLO al stream de su gimnasio (fila + 2 puntos)" do
+      assert_turbo_stream_broadcasts([ tenant_af, "planes_pendientes" ], count: 3) do
+        assert_no_turbo_stream_broadcasts([ tenant_mp, "planes_pendientes" ]) do
+          crear_plan
+        end
+      end
+    end
+
+    it "el alta del gimnasio B difunde a B y jamás a A" do
+      assert_turbo_stream_broadcasts([ tenant_mp, "planes_pendientes" ], count: 3) do
+        assert_no_turbo_stream_broadcasts([ tenant_af, "planes_pendientes" ]) do
+          crear_plan_mp
+        end
+      end
+    end
+
+    it "nada viaja ya por el stream global sin tenant (el canal de la fuga)" do
+      assert_no_turbo_stream_broadcasts("planes_pendientes") do
+        crear_plan.publicar!(users(:entrenador))
+        crear_plan_mp
+      end
+    end
+
+    it "publicar saca la fila y apaga el punto por el stream de SU gimnasio" do
+      plan = crear_plan
+      # remove de la fila + replace de los dos puntos = 3, todos en el par de AF
+      assert_turbo_stream_broadcasts([ tenant_af, "planes_pendientes" ], count: 3) do
+        assert_no_turbo_stream_broadcasts([ tenant_mp, "planes_pendientes" ]) do
+          plan.publicar!(users(:entrenador))
+        end
+      end
+    end
+
+    it "el punto difundido cuenta con el scope del gimnasio del dueño (sin Current)" do
+      # El broadcast renderiza el partial fuera de un request: el `tenant:`
+      # va explícito en los locals y el punto de B se enciende por su borrador.
+      puntos = capture_turbo_stream_broadcasts([ tenant_mp, "planes_pendientes" ]) do
+        crear_plan_mp
+      end.select { |stream| stream["target"].to_s.start_with?("punto_borradores") }
+
+      expect(puntos.size).to eq(2) # navbar desktop + móvil
+      expect(puntos).to all(satisfy { |stream| stream.to_html.include?("bg-error") })
+    end
+
+    it "un dueño con puesto en dos gimnasios difunde a las colas de ambos" do
+      miembro_mp.puestos.create!(tenant: tenant_af, rol: "miembro")
+
+      assert_turbo_stream_broadcasts([ tenant_af, "planes_pendientes" ], count: 3) do
+        assert_turbo_stream_broadcasts([ tenant_mp, "planes_pendientes" ], count: 3) do
+          crear_plan_mp
+        end
+      end
+    end
+  end
+
+  # El scope que alimenta el punto del navbar: pertenencia por PUESTO del
+  # dueño (como ApplicationPolicy::Scope#del_tenant) y fail-closed sin tenant.
+  describe ".del_tenant" do
+    it "filtra por el puesto del dueño y sin tenant no devuelve nada" do
+      plan_af = crear_plan
+      ajeno = User.create!(email_address: "miembro-mp@x.com", password: "clave1234",
+                           rol: "miembro", tenant: tenants(:megaplex), nombre: "Miembro MP")
+      plan_mp = PlanPersonalizado.create!(user: ajeno, rutina: rutina_base,
+                                          plan_nutricional: nutricion_base)
+
+      del_af = PlanPersonalizado.del_tenant(tenants(:advance_fitness))
+      expect(del_af).to include(plan_af)
+      expect(del_af).not_to include(plan_mp)
+      expect(PlanPersonalizado.del_tenant(nil)).to be_empty
+    end
+  end
+
   # ── Plan sugerido con la membresía (Fase 5.11) ─────────────────────────
   it "asegurar_sugerido! crea el plan reglas aprobado con membresía y objetivo" do
     ObjetivoNutricional.fijar_para(users(:one), tipo: "superavit", peso_kg: 70)

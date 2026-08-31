@@ -54,8 +54,10 @@
 %>
 
 <header class="gradient-hero sticky top-0 z-40 border-b border-white/10 shadow-lg">
-  <%# El punto de Borradores se actualiza en vivo con la cola (Fase 5.11) %>
-  <%= turbo_stream_from "planes_pendientes" if Current.user.entrenador? || Current.user.admin? %>
+  <%# El punto de Borradores se actualiza en vivo con la cola (Fase 5.11). %>
+  <%# Stream namespaceado por tenant (tarea 2026-08-31): el par debe calzar %>
+  <%# con el broadcast del modelo — el global mezclaba gimnasios. %>
+  <%= turbo_stream_from Current.tenant, "planes_pendientes" if Current.tenant && (Current.user.entrenador? || Current.user.admin?) %>
   <div class="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4">
     <%= link_to root_path, class: "flex shrink-0 items-center gap-2.5" do %>
       <% if Current.tenant&.logo&.attached? %>

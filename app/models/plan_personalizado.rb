@@ -50,6 +50,12 @@ class PlanPersonalizado < ApplicationRecord
   scope :fallidos, -> { where(estado: "fallido") }
   # Lo que el entrenador debe atender en su cola
   scope :pendientes, -> { where(estado: %w[generando borrador fallido]) }
+  # Planes cuyo DUEÑO tiene puesto en el gimnasio — el mismo criterio de
+  # pertenencia que ApplicationPolicy::Scope#del_tenant (puestos, no la cache
+  # users.tenant_id). Con tenant nil devuelve vacío: fail-closed, igual que
+  # las policies. Lo usa el punto de borradores del navbar, que se renderiza
+  # también desde broadcasts donde no existe Current.user.
+  scope :del_tenant, ->(tenant) { where(user_id: Puesto.where(tenant_id: tenant).select(:user_id)) }
   # Un plan real tarda segundos; más de esto casi siempre es un worker que
   # murió a mitad de camino (p. ej. un deploy) sin dejar rastro del error.
   MINUTOS_ANTES_DE_ESTANCARSE = 10
@@ -265,29 +271,43 @@ class PlanPersonalizado < ApplicationRecord
     # En cola del entrenador = necesita atención (generando/borrador/fallido)
     def en_cola? = estado.in?(%w[generando borrador fallido])
 
+    # Gimnasios donde el DUEÑO del plan tiene puesto — los mismos cuyo staff
+    # ve este plan en su cola (policy_scope vía del_tenant). El stream
+    # "planes_pendientes" va namespaceado por tenant (tarea 2026-08-31): sin
+    # el par, los turbo streams de un gimnasio llegaban a los navegadores del
+    # staff de TODOS los demás. En un broadcast no hay Current: el tenant
+    # sale del dueño, jamás del request.
+    def tenants_del_duenio = Tenant.where(id: user.puestos.select(:tenant_id))
+
     def difundir_alta
       return unless en_cola?
 
-      broadcast_prepend_to("planes_pendientes", target: "planes_pendientes",
-                           partial: "entrenador/borradores/fila", locals: { plan: self })
-      difundir_punto
+      tenants_del_duenio.each do |tenant|
+        broadcast_prepend_to(tenant, "planes_pendientes", target: "planes_pendientes",
+                             partial: "entrenador/borradores/fila", locals: { plan: self })
+        difundir_punto(tenant)
+      end
     end
 
     def difundir_cambio
-      if en_cola?
-        broadcast_replace_to("planes_pendientes", target: self,
-                             partial: "entrenador/borradores/fila", locals: { plan: self })
-      else
-        broadcast_remove_to("planes_pendientes", target: self)
+      tenants_del_duenio.each do |tenant|
+        if en_cola?
+          broadcast_replace_to(tenant, "planes_pendientes", target: self,
+                               partial: "entrenador/borradores/fila", locals: { plan: self })
+        else
+          broadcast_remove_to(tenant, "planes_pendientes", target: self)
+        end
+        difundir_punto(tenant)
       end
-      difundir_punto
     end
 
-    # Punto de notificación del navbar (Fase 5.11): se refresca con la cola
-    def difundir_punto
+    # Punto de notificación del navbar (Fase 5.11): se refresca con la cola.
+    # El partial recibe `tenant:` explícito para contar SOLO los pendientes
+    # de ese gimnasio (acá no hay Current del que colgarse).
+    def difundir_punto(tenant)
       %w[punto_borradores punto_borradores_movil].each do |id|
-        broadcast_replace_to("planes_pendientes", target: id,
-                             partial: "shared/punto_borradores", locals: { id: id })
+        broadcast_replace_to(tenant, "planes_pendientes", target: id,
+                             partial: "shared/punto_borradores", locals: { id: id, tenant: tenant })
       end
     end
 

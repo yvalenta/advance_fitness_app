@@ -6,8 +6,10 @@
       descripcion: "Analizados según la información de cada miembro; se publican solo cuando los apruebas." %>
 
 <div class="mx-auto -mt-8 w-full max-w-4xl px-4 pb-12">
-  <%# Turbo Streams: altas y cambios de estado (generando/fallido/borrador) llegan en vivo %>
-  <%= turbo_stream_from "planes_pendientes" %>
+  <%# Turbo Streams: altas y cambios de estado (generando/fallido/borrador) llegan %>
+  <%# en vivo. El stream va namespaceado por tenant (tarea 2026-08-31): el global %>
+  <%# le entregaba a este staff los planes de TODOS los gimnasios. %>
+  <%= turbo_stream_from Current.tenant, "planes_pendientes" %>
   <div class="card animate-fade-up border border-base-300 bg-base-100 shadow-md">
     <div class="card-body">
       <div id="planes_pendientes" class="flex flex-col divide-y divide-base-200">

@@ -273,6 +273,23 @@ RSpec.describe "Acciones cruzadas entre tenants (staff de A contra datos de B)",
       expect(response.body).not_to include("Fugado Megaplex")  # ni el nombre de B…
       expect(response.body).not_to include(plan_personalizado_path(plan_mp)) # …ni el enlace a su editor
     end
+
+    # El punto del navbar y su stream (tarea 2026-08-31): ni la EXISTENCIA de
+    # un pendiente de B se filtra — el punto queda apagado — ni el navegador
+    # del staff de A queda suscrito a un canal por el que B pueda difundir
+    # (el par firmado es [tenant de A, "planes_pendientes"], no el global).
+    it "el punto de borradores no delata pendientes de B y el stream va firmado por tenant" do
+      plan_mp # el ÚNICO pendiente de toda la base es de B
+
+      get root_path
+
+      expect(response).to have_http_status(:success)
+      assert_select "#punto_borradores span.bg-error", count: 0
+      assert_select "turbo-cable-stream-source[signed-stream-name=?]",
+                    Turbo::StreamsChannel.signed_stream_name([ tenants(:advance_fitness), "planes_pendientes" ])
+      assert_select "turbo-cable-stream-source[signed-stream-name=?]",
+                    Turbo::StreamsChannel.signed_stream_name("planes_pendientes"), count: 0
+    end
   end
 
   describe "análisis de entrenamiento (staff de A contra un registro de B)" do
