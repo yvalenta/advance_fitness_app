@@ -6,7 +6,7 @@ Guía del proceso real de despliegue a producción, usado desde la Fase 5.17.
 
 - **Servidor:** AWS Lightsail Ubuntu 24.04, `18.191.129.33` (us-east-2, misma región que el pooler de Supabase), usuario `ynt` (grupo `docker`). Migrado desde el homelab el 2026-08-05.
   - **La IP es estática desde el 2026-08-06** (`ynt-lightsail-ip`, adjunta — no cobra mientras esté adjunta): no cambia con stop/start. Si algún día cambiara, la fila `produccion · host ssh` del auditor de `nomicheck_ops` sale roja y nombra este archivo.
-  - **Fallback frío:** el homelab (`192.168.40.253`, WiFi solo 2.4GHz) conserva el mismo stack con su `cloudflared-main` **y su contenedor Rails detenidos** (2026-08-06: el contenedor había quedado corriendo sin túnel y consumía ~13 de las 15 conexiones del pooler de Supabase — producción en Lightsail daba `EMAXCONNSESSION` bajo carga; por eso el fallback se apaga COMPLETO). Failover manual: `ssh ynt@192.168.40.253 "docker start advance_fitness_app-web-a30140f5b8d1f468e3a68308cd72150d89c7cdd1 && docker start cloudflared-main"` — el sha del nombre es el commit de producción sincronizado al homelab (**última sincronización: 2026-08-15**, ver «Re-sincronizar el fallback» abajo); si se re-sincroniza, actualizar este comando — (y detener el cloudflared **y el contenedor** de Lightsail: repartir tráfico entre versiones ya causó el bug del tenant perdido, y ambos contenedores arriba re-saturan el pooler).
+  - **Fallback frío:** el homelab (`homelab.casa`, WiFi solo 2.4GHz) conserva el mismo stack con su `cloudflared-main` **y su contenedor Rails detenidos** (2026-08-06: el contenedor había quedado corriendo sin túnel y consumía ~13 de las 15 conexiones del pooler de Supabase — producción en Lightsail daba `EMAXCONNSESSION` bajo carga; por eso el fallback se apaga COMPLETO). **OJO (2026-08-31): el standby NO EXISTE hoy.** El contenedor sincronizado el 2026-08-15 (`…-web-a30140f5…`) murió con el disco del homelab (2026-08-24) y la resurrección no lo recreó — `docker ps -a` de la caja no tiene ningún contenedor de fitness, así que **no hay failover posible hasta re-sincronizar**. La imagen de producción (`28b3f95…`) quedó transferida a la caja el 2026-08-31; falta el contenedor, y el §4 necesita una decisión: el script clona los secretos DEL CONTENEDOR VIEJO, que ya no está — la provisión del env es del dueño (mismo dilema que el standby de NomiCheck resolvió con el camino directo prod→homelab, sin pasar por la Mac). Cuando vuelva, el failover será `ssh ynt@homelab.casa "docker start advance_fitness_app-web-<sha-sincronizado> && docker start cloudflared-main"` — actualizar el sha acá al re-sincronizar — (y detener el cloudflared **y el contenedor** de Lightsail: repartir tráfico entre versiones ya causó el bug del tenant perdido, y ambos contenedores arriba re-saturan el pooler).
 - **Orquestador:** Kamal 2 + Thruster, build **remoto** en el propio servidor (`builder.remote: ssh://ynt@18.191.129.33`, arch `amd64`) para evitar emulación QEMU lenta desde una Mac `arm64`.
 - **Registro de imágenes:** `localhost:5555` — registro local temporal en la Mac que ejecuta `bin/kamal`, con túnel SSH inverso para que el builder remoto y el servidor lo alcancen (patrón oficial de Kamal para build remoto).
 - **Red / exposición pública:** sin puertos públicos ni `kamal-proxy` (`servers.web.proxy: false`). El contenedor se une a la red Docker `docker-lab_proxy-network` con `network-alias: rails-app`. Un túnel nombrado de Cloudflare (`docker-lab-cloudflared-1`, definido en `/home/ynt/docker-lab/docker-compose.yml`) apunta a `http://rails-app:80` en esa red y sirve `https://advance-fitness-app.ynt.codes`. Cloudflare termina el SSL.
@@ -72,12 +72,12 @@ El procedimiento es copiar la imagen y **crear el contenedor detenido**:
 #    así que tarda). Van comprimidos: son capas sin comprimir en el almacén local.
 SHA=$(ssh ynt@18.191.129.33 'docker ps --format "{{.Names}}"' | grep advance_fitness | sed 's/.*-web-//')
 IMG=localhost:5555/advance_fitness_app:$SHA
-ssh ynt@18.191.129.33 "docker save $IMG | gzip -1" | ssh ynt@192.168.40.253 'gunzip | docker load'
+ssh ynt@18.191.129.33 "docker save $IMG | gzip -1" | ssh ynt@homelab.casa 'gunzip | docker load'
 ```
 
 ```bash
 # 2. El contenedor, DETENIDO y clonando el env del standby anterior.
-ssh ynt@192.168.40.253 "/tmp/sincronizar_standby.sh <contenedor-standby-viejo> $SHA"
+ssh ynt@homelab.casa "/tmp/sincronizar_standby.sh <contenedor-standby-viejo> $SHA"
 ```
 
 El script vive en `ops/sincronizar_standby.sh` de este repo y **corre en el
@@ -93,8 +93,8 @@ anterior.
 **Verificar siempre las tres cosas**, en este orden:
 
 ```bash
-ssh ynt@192.168.40.253 'docker ps --format "{{.Names}}" | grep -c advance_fitness'   # DEBE ser 0
-ssh ynt@192.168.40.253 'docker ps -a --format "{{.Names}}|{{.Status}}" | grep advance_fitness'  # el nuevo, en Created
+ssh ynt@homelab.casa 'docker ps --format "{{.Names}}" | grep -c advance_fitness'   # DEBE ser 0
+ssh ynt@homelab.casa 'docker ps -a --format "{{.Names}}|{{.Status}}" | grep advance_fitness'  # el nuevo, en Created
 curl -s -o /dev/null -w "%{http_code}\n" https://advance-fitness-app.ynt.codes/     # producción intacta
 ```
 
