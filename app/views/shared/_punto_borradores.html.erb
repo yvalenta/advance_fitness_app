@@ -1,9 +1,14 @@
 <%# Punto de notificación de la cola de borradores (Fase 5.11): visible solo %>
-<%# si hay planes pendientes; se refresca en vivo por el stream planes_pendientes. %>
-<%# Sin strict-locals: el broadcast del modelo inyecta el local plan_personalizado. %>
+<%# si hay planes pendientes DE ESTE GIMNASIO (tarea 2026-08-31): el conteo %>
+<%# crudo emitía existencia cross-tenant — el staff de A veía el punto por %>
+<%# un borrador de B. Sin strict-locals: el broadcast del modelo inyecta el %>
+<%# local plan_personalizado. `tenant:` llega explícito desde el broadcast %>
+<%# (ahí no hay Current); desde el navbar cae a Current.tenant. Sin tenant %>
+<%# no se muestra nada: fail-closed, igual que las policies. %>
 <% id = local_assigns.fetch(:id, "punto_borradores") %>
+<% tenant = local_assigns.fetch(:tenant) { Current.tenant } %>
 <span id="<%= id %>" class="inline-flex w-2 justify-center">
-  <% if PlanPersonalizado.pendientes.exists? %>
+  <% if tenant && PlanPersonalizado.del_tenant(tenant).pendientes.exists? %>
     <span class="size-2 animate-pulse rounded-full bg-error" title="Borradores pendientes"></span>
   <% end %>
 </span>
