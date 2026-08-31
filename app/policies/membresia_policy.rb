@@ -2,24 +2,26 @@
 
 class MembresiaPolicy < ApplicationPolicy
   def index?
-    user.staff?
+    user.staff? || user.mostrador?
   end
 
   def show?
-    propia? || user.staff?
+    propia? || user.staff? || user.mostrador?
   end
 
   def create?
-    user.staff?
+    user.staff? || user.mostrador?
   end
 
   def update?
-    user.staff?
+    user.staff? || user.mostrador?
   end
 
-  # Renovar = pago + extensión del vencimiento (solo admin registra pagos)
+  # Renovar = pago + extensión del vencimiento. Va con quien cobra: admin y
+  # recepción (antes solo admin, porque `recepcion` no existía y el único que
+  # registraba pagos era él).
   def renovar?
-    user.admin?
+    user.mostrador?
   end
 
   def destroy?
@@ -28,7 +30,11 @@ class MembresiaPolicy < ApplicationPolicy
 
   class Scope < ApplicationPolicy::Scope
     def resolve
-      user.staff? ? del_tenant_directo(scope) : scope.where(user_id: user.id)
+      if user.staff? || user.mostrador?
+        del_tenant_directo(scope)
+      else
+        scope.where(user_id: user.id)
+      end
     end
   end
 

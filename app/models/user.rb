@@ -1,7 +1,7 @@
 class User < ApplicationRecord
-  # miembro/entrenador/admin viven dentro de un tenant; superadmin y
+  # miembro/entrenador/recepcion/admin viven dentro de un tenant; superadmin y
   # comercializador operan en el portal comercial global (SDD §16.6).
-  ROLES = %w[miembro entrenador admin superadmin comercializador].freeze
+  ROLES = %w[miembro entrenador admin superadmin comercializador recepcion].freeze
   ROLES_GLOBALES = %w[superadmin comercializador].freeze
   SOMATOTIPOS = %w[ectomorfo mesomorfo endomorfo].freeze
   # Preferencia de apariencia (Fase 16, Nota 21): "sistema" sigue al SO.
@@ -62,7 +62,23 @@ class User < ApplicationRecord
   validates :tema, inclusion: { in: TEMAS }
   validates :acento, inclusion: { in: ACENTOS }
 
+  # DOS permisos distintos, a propósito:
+  #
+  # `staff?` es el permiso de ENTRENAMIENTO — rutinas, planes personalizados,
+  # mediciones/antropometría, plantillas, series y el Analista. Lo usan ~20
+  # policies.
+  # `mostrador?` es el permiso de RECEPCIÓN — cobros, check-ins, membresías y
+  # alta de miembros.
+  #
+  # `recepcion` entra SOLO en el segundo. Meterlo dentro de `staff?` habría
+  # sido una línea, y habría abierto de un golpe MedicionPolicy,
+  # PlanPersonalizadoPolicy, DetalleEntrenamientoPolicy, las plantillas, Post
+  # y Novedad: quien atiende el mostrador cobra y da acceso, pero no lee el
+  # plan de entrenamiento ni las medidas del cuerpo de nadie. `admin` sí está
+  # en los dos porque el admin del gimnasio hace ambos oficios.
   def staff? = rol.in?(%w[entrenador admin])
+  def mostrador? = rol.in?(%w[recepcion admin])
+  def recepcion? = rol == "recepcion"
   def admin? = rol == "admin"
   def entrenador? = rol == "entrenador"
   def superadmin? = rol == "superadmin"

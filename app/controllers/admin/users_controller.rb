@@ -10,13 +10,10 @@ class Admin::UsersController < ApplicationController
   def show
     @user = User.find(params[:id])
     authorize @user
-    @accesos = @user.accesos.recientes.limit(10)
-    @plan = @user.plan_actual
-    @progreso = ProgresoUsuario.para(@user)
-    @registro_reciente = @user.registros_entrenamiento.order(fecha: :desc).first
+    cargar_ficha
   end
 
-  ROLES_ASIGNABLES = %w[miembro entrenador admin].freeze
+  ROLES_ASIGNABLES = %w[miembro entrenador recepcion admin].freeze
 
   def new
     authorize User, :create?
@@ -59,15 +56,28 @@ class Admin::UsersController < ApplicationController
     if @user.update(user_params)
       redirect_to admin_user_path(@user), notice: "Perfil actualizado."
     else
-      @accesos = @user.accesos.recientes.limit(10)
-      @plan = @user.plan_actual
-      @progreso = ProgresoUsuario.para(@user)
-      @registro_reciente = @user.registros_entrenamiento.order(fecha: :desc).first
+      cargar_ficha
       render :show, status: :unprocessable_entity
     end
   end
 
   private
+    # La ficha del miembro tiene DOS mitades (Fase 18k). La de mostrador
+    # —perfil, membresía y últimos accesos— la ve cualquiera que llegue hasta
+    # acá; la de entrenamiento —plan, antropometría, progreso y Analista— es
+    # solo para `staff?`. Recepción abre la ficha para cobrar y dar acceso, y
+    # no debe leer de paso el plan ni las medidas: por eso la mitad de
+    # entrenamiento ni siquiera se CONSULTA (esconderla en la vista dejaría
+    # los datos cargados y una query de más).
+    def cargar_ficha
+      @accesos = @user.accesos.recientes.limit(10)
+      return unless Current.user.staff?
+
+      @plan = @user.plan_actual
+      @progreso = ProgresoUsuario.para(@user)
+      @registro_reciente = @user.registros_entrenamiento.order(fecha: :desc).first
+    end
+
     def user_params
       params.expect(user: %i[nombre email_address fecha_nacimiento sexo nivel_actividad somatotipo])
     end

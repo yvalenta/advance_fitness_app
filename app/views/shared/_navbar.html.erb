@@ -22,6 +22,16 @@
     gestion << [ "Tenants", superadmin_tenants_path, :usuarios ] if Current.user.superadmin?
     gestion << [ "Solicitudes", superadmin_solicitudes_autoservicio_path, :calendario ]
   end
+  # Mostrador (Fase 18k): recepción y admin. Cobrar, dar acceso, dar de alta.
+  if Current.user.mostrador?
+    gestion << [ "Check-in", admin_checkins_path, :check ] if membresias_on
+    gestion << [ "Miembros", admin_users_path, :usuarios ]
+    gestion << [ "Membresías", admin_membresias_path, :escudo ] if membresias_on
+    gestion << [ "Pagos", admin_pagos_path, :tarjeta ] if membresias_on
+  end
+  # Entrenamiento y contenido: entrenador y admin. Los tres primeros también
+  # son suyos; el `uniq!` del final evita que el admin —que es las dos
+  # cosas— los vea repetidos.
   if Current.user.staff?
     gestion << [ "Check-in", admin_checkins_path, :check ] if membresias_on
     gestion << [ "Miembros", admin_users_path, :usuarios ]
@@ -30,11 +40,11 @@
     gestion << [ "Novedades", admin_novedades_path, :calendario ] if feature_habilitada?("novedades")
   end
   if Current.user.admin?
-    gestion << [ "Pagos", admin_pagos_path, :tarjeta ] if membresias_on
     gestion << [ "Suscripciones", admin_suscripciones_path, :rayo ]
     gestion << [ "Funcionalidades", admin_funcionalidades_path, :ajustes ] if Current.tenant
   end
   gestion << [ "Borradores", entrenador_borradores_path, :busqueda ] if Current.user.entrenador? || Current.user.admin?
+  gestion.uniq!
 %>
 
 <header class="gradient-hero sticky top-0 z-40 border-b border-white/10 shadow-lg">

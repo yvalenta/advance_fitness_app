@@ -23,6 +23,8 @@ class CicloMenstrualPolicy < ApplicationPolicy
     # aquí no es por tenant sino por PERSONA. El staff obtiene un scope
     # vacío aunque existan ciclos en su tenant — `user.staff?` jamás debe
     # aparecer en este método (dato de salud sensible, SDD §16.6 no aplica).
+    # `user.mostrador?` tampoco (Fase 18k): recepción cobra y da acceso; este
+    # dato no es de ninguno de los dos oficios.
     def resolve = scope.where(user_id: user.id)
   end
 

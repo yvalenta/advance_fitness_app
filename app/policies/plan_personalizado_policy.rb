@@ -35,8 +35,15 @@ class PlanPersonalizadoPolicy < ApplicationPolicy
   def publicar? = revisar?
 
   class Scope < ApplicationPolicy::Scope
+    # `aprobado` NO es una columna: el estado vive en `estado` y `aprobado?`
+    # es un predicado del modelo (ESTADOS = generando/borrador/aprobado/
+    # fallido). La rama del no-staff pedía `aprobado: true` y reventaba con
+    # PG::UndefinedColumn — nunca se notó porque hoy ningún controller llama
+    # a `policy_scope(PlanPersonalizado)` y los specs solo ejercitaban la
+    # rama de staff. Lo caza el spec de blindaje de recepción (Fase 18k),
+    # que es el primer rol no-staff que pasa por acá.
     def resolve
-      user.staff? ? del_tenant(scope) : scope.where(user_id: user.id, aprobado: true)
+      user.staff? ? del_tenant(scope) : scope.aprobados.where(user_id: user.id)
     end
   end
 end

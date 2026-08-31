@@ -162,6 +162,42 @@ RSpec.describe "Aislamiento cross-tenant en policies", type: :model do
       .to contain_exactly(ciclo)
   end
 
+  # El rol `recepcion` (Fase 18k) abrió cuatro Scopes que antes solo miraban
+  # `staff?` — pagos, accesos, membresías y users. El aislamiento por tenant
+  # tiene que valer igual para el mostrador: la recepcionista del gimnasio B
+  # no ve un peso ni un check-in del gimnasio A.
+  it "el mostrador (recepcion) tampoco cruza tenants: pagos, accesos, membresías y users" do
+    recepcion_mp = User.create!(email_address: "recepcion-mp@x.com", password: "clave1234",
+                                rol: "recepcion", tenant: tenant_mp, nombre: "Recepción MP")
+    recepcion_af = users(:recepcion)
+
+    membresia_af = membresias(:activa_one)
+    membresia_mp = Membresia.create!(user: miembro_mp, estado: "activa",
+                                     fecha_inicio: Date.current,
+                                     fecha_vencimiento: Date.current + 30)
+    pago_af = pagos(:inicial_one)
+    pago_mp = membresia_mp.pagos.create!(monto: 80_000, metodo: "efectivo",
+                                         registrado_por: recepcion_mp, fecha_pago: Date.current,
+                                         periodo_inicio: Date.current, periodo_fin: Date.current + 30)
+    acceso_af = Acceso.create!(user: miembro_af, fecha_hora: Time.current)
+    acceso_mp = Acceso.create!(user: miembro_mp, fecha_hora: Time.current)
+
+    {
+      PagoPolicy => [ Pago, pago_af, pago_mp ],
+      AccesoPolicy => [ Acceso, acceso_af, acceso_mp ],
+      MembresiaPolicy => [ Membresia, membresia_af, membresia_mp ],
+      UserPolicy => [ User, recepcion_af, recepcion_mp ]
+    }.each do |policy_class, (modelo, registro_af, registro_mp)|
+      scope_af = policy_class::Scope.new(recepcion_af, modelo).resolve
+      scope_mp = policy_class::Scope.new(recepcion_mp, modelo).resolve
+
+      expect(scope_af).to include(registro_af), "#{policy_class}: no ve lo propio"
+      expect(scope_af).not_to include(registro_mp), "#{policy_class}: FUGA al tenant vecino"
+      expect(scope_mp).to include(registro_mp), "#{policy_class}: no ve lo propio"
+      expect(scope_mp).not_to include(registro_af), "#{policy_class}: FUGA al tenant vecino"
+    end
+  end
+
   it "ConsentimientoPolicy — estrictamente personal: cada quien ve SOLO los suyos" do
     # El scope es más cerrado que el resto (ni el staff ve los ajenos), así
     # que el aislamiento se prueba con consentimientos de los propios admins.

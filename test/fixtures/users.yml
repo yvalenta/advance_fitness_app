@@ -36,3 +36,13 @@ admin:
   rol: admin
   fecha_ingreso: <%= Date.current %>
   tenant: advance_fitness
+
+# Mostrador (Fase 18k): cobra, da acceso y da de alta, pero NO es staff —
+# no ve rutinas, planes ni mediciones.
+recepcion:
+  email_address: recepcion@example.com
+  password_digest: <%= password_digest %>
+  nombre: Recepción Ejemplo
+  rol: recepcion
+  fecha_ingreso: <%= Date.current %>
+  tenant: advance_fitness

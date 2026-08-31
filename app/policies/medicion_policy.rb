@@ -1,5 +1,8 @@
 # Las mediciones las toma el staff (antropometría de suscripción) o el propio
 # miembro (auto-registro de peso, Fase 5.9). Un miembro solo crea las suyas.
+# `user.mostrador?` NO va acá (Fase 18k): la antropometría es el cuerpo de la
+# persona, no el mostrador — recepción cobra, da acceso y da de alta, y estas
+# medidas quedan entre el miembro y su entrenador.
 class MedicionPolicy < ApplicationPolicy
   def index? = user.staff?
   def new? = user.staff?

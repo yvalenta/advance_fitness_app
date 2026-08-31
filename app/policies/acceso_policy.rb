@@ -2,16 +2,17 @@
 
 class AccesoPolicy < ApplicationPolicy
   def index?
-    user.staff?
+    user.staff? || user.mostrador?
   end
 
   def show?
-    record.user_id == user.id || user.staff?
+    record.user_id == user.id || user.staff? || user.mostrador?
   end
 
-  # Staff registra check-ins; el propio miembro puede auto-registrarse
+  # Staff y mostrador registran check-ins; el propio miembro puede
+  # auto-registrarse. El check-in es LA tarea de recepción (Flujo D del SDD).
   def create?
-    user.staff? || record.user_id == user.id
+    user.staff? || user.mostrador? || record.user_id == user.id
   end
 
   def update?
@@ -24,7 +25,11 @@ class AccesoPolicy < ApplicationPolicy
 
   class Scope < ApplicationPolicy::Scope
     def resolve
-      user.staff? ? del_tenant(scope) : scope.where(user_id: user.id)
+      if user.staff? || user.mostrador?
+        del_tenant(scope)
+      else
+        scope.where(user_id: user.id)
+      end
     end
   end
 end

@@ -66,8 +66,12 @@
         <% if Current.user.admin? %>
           <label class="form-control">
             <span class="label-text mb-1 text-xs font-semibold">Rol</span>
+            <%# Solo los roles de tenant (Fase 18k): el controller filtra por
+                ROLES_ASIGNABLES al crear, y el select ya no ofrece
+                superadmin/comercializador, que viven en el portal comercial
+                y ni siquiera pasarían la validación de tenant. %>
             <select name="user[rol]" class="select select-bordered w-full">
-              <% User::ROLES.each do |rol| %>
+              <% Admin::UsersController::ROLES_ASIGNABLES.each do |rol| %>
                 <option value="<%= rol %>" <%= "selected" if @user.rol == rol %>><%= rol %></option>
               <% end %>
             </select>
@@ -140,6 +144,11 @@
       </div>
     </div>
 
+    <%# ── Mitad de ENTRENAMIENTO (Fase 18k): plan, antropometría, progreso y
+        Analista solo para `staff?`. Recepción abre esta ficha para cobrar y
+        dar acceso; el plan y las medidas del cuerpo no son su oficio. El
+        controller tampoco los carga, así que aquí vendrían en nil. ── %>
+    <% if Current.user.staff? %>
     <div class="card animate-fade-up fade-delay-2 border border-base-300 bg-base-100 shadow-md">
       <div class="card-body">
         <h2 class="card-title text-base">
@@ -189,8 +198,10 @@
         </div>
       </div>
     </div>
+    <% end %>
   </div>
 
+  <% if Current.user.staff? %>
   <%# ── Progreso (Fase 6.13): las mismas gráficas que ve el propio miembro ── %>
   <div class="mt-6">
     <h2 class="mb-3 font-display text-lg font-bold">Progreso</h2>
@@ -218,4 +229,5 @@
 
     <%= render "shared/historial_analisis", progreso: @progreso %>
   </div>
+  <% end %>
 </div>
