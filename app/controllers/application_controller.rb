@@ -14,7 +14,10 @@ class ApplicationController < ActionController::Base
   # las landings públicas (campañas §16.6, autoservicio §17.5): son páginas
   # sin sesión y sin record que autorizar — bug latente encontrado en Fase
   # 12a, "campanas" nunca estuvo en esta lista y no tenía specs que lo cazaran.
-  SIN_PUNDIT = %w[sessions passwords registrations omniauth_sessions dashboard campanas autoservicios].freeze
+  # "cambios_organizacion" es auth como sessions: el canje del pase (show)
+  # arranca SIN usuario autenticado y no hay record que autorizar — la
+  # autorización real es el puesto del par, validada en el propio controller.
+  SIN_PUNDIT = %w[sessions passwords registrations omniauth_sessions dashboard campanas autoservicios cambios_organizacion].freeze
   after_action :verify_authorized, unless: :pundit_exento?
 
   rescue_from Pundit::NotAuthorizedError do

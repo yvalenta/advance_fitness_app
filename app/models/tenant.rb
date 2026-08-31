@@ -13,6 +13,10 @@ class Tenant < ApplicationRecord
   FEATURES = %w[membresias blog novedades nutricion ciclo gamificacion].freeze
 
   has_many :users, dependent: :restrict_with_error
+  # La pata N:M de la pertenencia (tarea 2026-08-31): un tenant con puestos
+  # no se borra — puede tener puestos de users cuya cache apunta a OTRO
+  # tenant, que el restrict de users no cubre.
+  has_many :puestos, dependent: :restrict_with_error
   has_many :posts, dependent: :destroy
   has_many :novedades, dependent: :destroy
   has_one_attached :logo

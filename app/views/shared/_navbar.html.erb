@@ -45,6 +45,12 @@
   end
   gestion << [ "Borradores", entrenador_borradores_path, :busqueda ] if Current.user.entrenador? || Current.user.admin?
   gestion.uniq!
+
+  # Selector de organización (tarea 2026-08-31): los puestos de la cuenta con
+  # su tenant en UNA sola query (eager_load — el pooler de producción tiene
+  # 15 conexiones). Los globales no tienen puestos y quedan fuera de una.
+  mis_puestos = Current.user.global? ? [] :
+    Current.user.puestos.eager_load(:tenant).merge(Tenant.activos).order("tenants.nombre").to_a
 %>
 
 <header class="gradient-hero sticky top-0 z-40 border-b border-white/10 shadow-lg">
@@ -116,6 +122,9 @@
     </nav>
 
     <div class="ml-auto flex items-center gap-1">
+      <%# ── Selector de organización (solo con >1 puesto) ── %>
+      <%= render "shared/selector_organizacion", puestos: mis_puestos if mis_puestos.size > 1 %>
+
       <%# ── Avatar + cuenta ── %>
       <div class="dropdown dropdown-end">
         <div tabindex="0" role="button" class="flex cursor-pointer items-center gap-2.5 rounded-full py-1 pl-1 pr-3 transition-colors hover:bg-white/10">

@@ -45,13 +45,16 @@ class Admin::MembresiasController < ApplicationController
     render :new, status: :unprocessable_entity
   end
 
+  # policy_scope + find (tarea 2026-08-31): el Membresia.find crudo dejaba al
+  # staff de un gimnasio editar por ID membresías del otro (la policy solo
+  # miraba el rol). Con el scope, el ID ajeno es RecordNotFound = 404.
   def edit
-    @membresia = Membresia.find(params[:id])
+    @membresia = policy_scope(Membresia).find(params[:id])
     authorize @membresia
   end
 
   def update
-    @membresia = Membresia.find(params[:id])
+    @membresia = policy_scope(Membresia).find(params[:id])
     authorize @membresia
     @membresia.assign_attributes(membresia_params.except(:user_id))
 

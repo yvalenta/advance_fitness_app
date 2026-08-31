@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_24_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_31_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -60,6 +60,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_24_000001) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "cambios_organizacion", force: :cascade do |t|
+    t.bigint "a_tenant_id", null: false
+    t.datetime "created_at", null: false
+    t.bigint "de_tenant_id"
+    t.string "ip"
+    t.string "token_digest"
+    t.string "user_agent"
+    t.bigint "user_id", null: false
+    t.index ["token_digest"], name: "index_cambios_organizacion_on_token_digest", unique: true
+    t.index ["user_id", "created_at"], name: "index_cambios_organizacion_on_user_id_and_created_at"
   end
 
   create_table "ciclos_menstruales", force: :cascade do |t|
@@ -339,6 +351,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_24_000001) do
     t.index ["tenant_id"], name: "index_posts_on_tenant_id"
   end
 
+  create_table "puestos", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "rol", null: false
+    t.bigint "tenant_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["tenant_id"], name: "index_puestos_on_tenant_id"
+    t.index ["user_id", "tenant_id"], name: "index_puestos_on_user_id_and_tenant_id", unique: true
+  end
+
   create_table "records_personales", force: :cascade do |t|
     t.boolean "baseline", default: false, null: false
     t.datetime "created_at", null: false
@@ -505,6 +527,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_24_000001) do
   add_foreign_key "accesos", "users"
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "cambios_organizacion", "tenants", column: "a_tenant_id"
+  add_foreign_key "cambios_organizacion", "tenants", column: "de_tenant_id"
+  add_foreign_key "cambios_organizacion", "users"
   add_foreign_key "ciclos_menstruales", "users"
   add_foreign_key "ciclos_menstruales", "users", column: "creado_por_id"
   add_foreign_key "consentimientos", "users"
@@ -534,6 +559,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_24_000001) do
   add_foreign_key "plantillas_ejercicio", "users", column: "creado_por_id"
   add_foreign_key "posts", "tenants"
   add_foreign_key "posts", "users", column: "autor_id"
+  add_foreign_key "puestos", "tenants"
+  add_foreign_key "puestos", "users"
   add_foreign_key "records_personales", "detalle_entrenamientos", on_delete: :nullify
   add_foreign_key "records_personales", "ejercicios"
   add_foreign_key "records_personales", "users"

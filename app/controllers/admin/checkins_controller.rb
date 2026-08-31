@@ -3,9 +3,14 @@ class Admin::CheckinsController < ApplicationController
   def index
     authorize Acceso
     @busqueda = params[:q].to_s.strip
+    # La búsqueda sale de policy_scope (tarea 2026-08-31): antes el ILIKE iba
+    # sobre User entero — el mostrador de un gimnasio enumeraba nombre+email
+    # de los miembros de CUALQUIER otro tecleando letras comunes.
     @miembros =
       if @busqueda.present?
-        User.where("nombre ILIKE :q OR email_address ILIKE :q", q: "%#{@busqueda}%")
+        policy_scope(User)
+            .where("nombre ILIKE :q OR email_address ILIKE :q",
+                   q: "%#{User.sanitize_sql_like(@busqueda)}%")
             .includes(:membresia).order(:nombre).limit(10)
       else
         User.none
@@ -17,7 +22,11 @@ class Admin::CheckinsController < ApplicationController
   # activo reemplaza la mensualidad, así que un miembro premium entra aunque no
   # tenga membresía mensual activa (SDD §10, regla de negocio).
   def create
-    miembro = User.find(params[:user_id])
+    # policy_scope y no User.find crudo (tarea 2026-08-31): un miembro sin
+    # puesto en este gimnasio no existe para el mostrador — 404, sin registrar
+    # el Acceso, sin encolar puntos y sin filtrar su estado de membresía en
+    # el flash.
+    miembro = policy_scope(User).find(params[:user_id])
     authorize Acceso.new(user: miembro)
     membresia = miembro.membresia
 

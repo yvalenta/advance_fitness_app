@@ -5,13 +5,14 @@
 # medidas quedan entre el miembro y su entrenador.
 class MedicionPolicy < ApplicationPolicy
   def index? = user.staff?
-  def new? = user.staff?
+  def new? = user.staff? && duenio_del_gimnasio_del_staff?
   # Edición de mediciones pasadas (Fase 6.11): solo el staff, nunca el miembro.
-  def edit? = user.staff?
-  def update? = user.staff?
+  def edit? = user.staff? && duenio_del_gimnasio_del_staff?
+  def update? = user.staff? && duenio_del_gimnasio_del_staff?
 
   def create?
-    user.staff? || (record.respond_to?(:user_id) && record.user_id == user.id)
+    (user.staff? && duenio_del_gimnasio_del_staff?) ||
+      (record.respond_to?(:user_id) && record.user_id == user.id)
   end
 
   class Scope < ApplicationPolicy::Scope
@@ -19,4 +20,16 @@ class MedicionPolicy < ApplicationPolicy
       user.staff? ? del_tenant(scope) : scope.where(user_id: user.id)
     end
   end
+
+  private
+    # Defensa en profundidad (tarea 2026-08-31, patrón de UserPolicy#del_
+    # gimnasio_del_staff?): además del rol, el DUEÑO de la medición debe
+    # tener puesto en el gimnasio del staff. El controller ya carga al
+    # miembro vía policy_scope, pero si mañana un controller descuidado
+    # vuelve al find crudo, esta capa lo frena sola. Con la CLASE (authorize
+    # Medicion en #index) no hay dueño que mirar: decide solo el rol.
+    def duenio_del_gimnasio_del_staff?
+      return true unless record.is_a?(Medicion)
+      record.user.present? && record.user.puestos.exists?(tenant_id: user.tenant_id)
+    end
 end

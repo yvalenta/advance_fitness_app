@@ -8,7 +8,8 @@
       <p class="eyebrow mb-1 text-volt-d">Miembro</p>
       <h1 class="font-display text-2xl font-bold text-white sm:text-3xl"><%= nombre_visible(@user) %></h1>
       <p class="mt-1.5 flex flex-wrap items-center gap-2 text-sm text-white/60">
-        <span class="badge badge-sm badge-ghost"><%= @user.rol %></span>
+        <%# Rol del PUESTO en este gimnasio (cargar_ficha), no la cache users.rol %>
+        <span class="badge badge-sm badge-ghost"><%= @rol_en_este_gimnasio %></span>
         <% if @user.vip? %>
           <span class="badge badge-sm badge-warning gap-1 font-semibold">
             <%= render "shared/icono", nombre: :fuego, clase: "size-3" %> VIP
@@ -70,9 +71,11 @@
                 ROLES_ASIGNABLES al crear, y el select ya no ofrece
                 superadmin/comercializador, que viven en el portal comercial
                 y ni siquiera pasarían la validación de tenant. %>
+            <%# Preselecciona el rol del PUESTO acá (el que este form edita),
+                no la cache users.rol de donde esté estacionada la cuenta. %>
             <select name="user[rol]" class="select select-bordered w-full">
               <% Admin::UsersController::ROLES_ASIGNABLES.each do |rol| %>
-                <option value="<%= rol %>" <%= "selected" if @user.rol == rol %>><%= rol %></option>
+                <option value="<%= rol %>" <%= "selected" if @rol_en_este_gimnasio == rol %>><%= rol %></option>
               <% end %>
             </select>
           </label>

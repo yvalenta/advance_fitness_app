@@ -54,7 +54,9 @@ RSpec.describe "GestionComidas", type: :request do
     expect {
       patch plan_personalizado_comida_path(@plan, 0), as: :json, params: { comida: { kcal: "999" } }
     }.not_to change { @plan.reload.comidas.first["kcal"] }
-    expect(response).to have_http_status(:redirect)
+    # 404 y no redirect (tarea 2026-08-31): el plan sin publicar ni siquiera
+    # aparece en el policy_scope del miembro — indistinguible de inexistente.
+    expect(response).to have_http_status(:not_found)
   end
 
   # Fase 12.1: una vez publicado, el miembro también edita la nutrición de

@@ -1,0 +1,28 @@
+# Coherentes con users.yml: cada user con tenant tiene su puesto con el
+# MISMO rol — exactamente lo que produce el backfill de
+# 20260831000000_crear_puestos sobre datos reales.
+
+one:
+  user: one
+  tenant: advance_fitness
+  rol: miembro
+
+two:
+  user: two
+  tenant: advance_fitness
+  rol: miembro
+
+entrenador:
+  user: entrenador
+  tenant: advance_fitness
+  rol: entrenador
+
+admin:
+  user: admin
+  tenant: advance_fitness
+  rol: admin
+
+recepcion:
+  user: recepcion
+  tenant: advance_fitness
+  rol: recepcion

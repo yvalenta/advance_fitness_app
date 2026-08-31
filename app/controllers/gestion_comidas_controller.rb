@@ -40,8 +40,10 @@ class GestionComidasController < ApplicationController
       ]
     end
 
+    # policy_scope + find (tarea 2026-08-31): el autosave por comida tampoco
+    # acepta un plan de otro gimnasio — id ajeno = 404 indistinguible.
     def cargar_plan
-      @plan = PlanPersonalizado.find(params[:plan_personalizado_id])
+      @plan = policy_scope(PlanPersonalizado).find(params[:plan_personalizado_id])
       authorize @plan, :editar?
     end
 

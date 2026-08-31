@@ -53,9 +53,11 @@ RSpec.describe "GestionDias", type: :request do
   it "el miembro NO edita su plan de IA aún en borrador (sin publicar)" do
     sign_in_as users(:one)
 
-    # @plan es "borrador" por defecto: aún no visible/editable para el miembro
+    # @plan es "borrador" por defecto: aún no visible/editable para el miembro.
+    # 404 y no redirect (tarea 2026-08-31): el borrador ni siquiera aparece
+    # en el policy_scope del miembro — indistinguible de inexistente.
     patch plan_personalizado_dia_path(@plan, 0), as: :json, params: { dia: { enfoque: "hackeo" } }
-    expect(response).to have_http_status(:redirect)
+    expect(response).to have_http_status(:not_found)
     expect(@plan.reload.dias[0]["enfoque"]).to eq("pecho")
   end
 
@@ -64,14 +66,15 @@ RSpec.describe "GestionDias", type: :request do
 
     ajeno_reglas = PlanPersonalizado.create!(user: users(:two), generado_por: "reglas",
                                              estado: "aprobado", rutina: rutina, plan_nutricional: {})
+    # 404 (tarea 2026-08-31): el plan ajeno no existe para el policy_scope.
     patch plan_personalizado_dia_path(ajeno_reglas, 0), as: :json, params: { dia: { enfoque: "hackeo" } }
-    expect(response).to have_http_status(:redirect)
+    expect(response).to have_http_status(:not_found)
 
     ajeno_ia = PlanPersonalizado.create!(user: users(:two), generado_por: "ia", estado: "aprobado",
                                          aprobado_por: users(:entrenador), rutina: rutina,
                                          plan_nutricional: { "kcal_diarias" => 0, "comidas" => [] })
     patch plan_personalizado_dia_path(ajeno_ia, 0), as: :json, params: { dia: { enfoque: "hackeo" } }
-    expect(response).to have_http_status(:redirect)
+    expect(response).to have_http_status(:not_found)
   end
 
   # Fase 5.12: la rutina de un plan de IA (una vez publicado) también es

@@ -44,4 +44,22 @@ RSpec.describe MembresiaPolicy, type: :model do
     expect(MembresiaPolicy::Scope.new(@admin, Membresia).resolve.count).to eq(Membresia.count)
     expect(MembresiaPolicy::Scope.new(@recepcion, Membresia).resolve.count).to eq(Membresia.count)
   end
+
+  # Defensa en profundidad (tarea 2026-08-31): además del rol, la fila ancla
+  # por tenant_id (persistida) o por el tenant estacionado del dueño (nueva).
+  it "el admin de A no ve, edita, renueva ni da de alta plata anclada en B" do
+    miembro_mp = User.create!(email_address: "miembro-mp@x.com", password: "clave1234",
+                              rol: "miembro", tenant: tenants(:megaplex), nombre: "Miembro MP")
+    membresia_mp = Membresia.create!(user: miembro_mp, estado: "activa",
+                                     fecha_inicio: Date.current,
+                                     fecha_vencimiento: Date.current + 30)
+
+    expect(MembresiaPolicy.new(@admin, membresia_mp).show?).to be_falsey
+    expect(MembresiaPolicy.new(@admin, membresia_mp).update?).to be_falsey
+    expect(MembresiaPolicy.new(@admin, membresia_mp).renovar?).to be_falsey
+    # Alta nueva apuntando a un dueño de B: también negada.
+    expect(MembresiaPolicy.new(@admin, Membresia.new(user: miembro_mp)).create?).to be_falsey
+    # …y el dueño de B sigue viendo la suya.
+    expect(MembresiaPolicy.new(miembro_mp, membresia_mp).show?).to be_truthy
+  end
 end

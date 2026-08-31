@@ -4,9 +4,9 @@
 class GestionDiasController < ApplicationController
   include RenderizaDiaRutina
 
+  before_action :cargar_plan
+
   def update
-    @plan = PlanPersonalizado.find(params[:plan_personalizado_id])
-    authorize @plan, :editar_rutina?
     indice = params[:id].to_i
 
     if (musculo = params.dig(:dia, :sesion_musculo)).present?
@@ -20,6 +20,16 @@ class GestionDiasController < ApplicationController
   end
 
   private
+    # policy_scope + find (tarea 2026-08-31): el autosave del día tampoco
+    # acepta un plan de otro gimnasio — id ajeno = 404 indistinguible. Como
+    # before_action (patrón de GestionEjercicios) y NO dentro del rescue del
+    # update: el rescue se tragaba el RecordNotFound del scope ANTES del
+    # authorize y despertaba a verify_authorized.
+    def cargar_plan
+      @plan = policy_scope(PlanPersonalizado).find(params[:plan_personalizado_id])
+      authorize @plan, :editar_rutina?
+    end
+
     def aplicar_sesion(indice, musculo)
       plantillas = PlantillaEjercicio.ordenadas.where(musculo: musculo).to_a
       @plan.aplicar_sesion!(indice, musculo, plantillas)

@@ -62,7 +62,10 @@ class Admin::SuscripcionesController < ApplicationController
   # pasarela nueva — se dispara desde la ficha del miembro, no el listado,
   # y responde turbo_stream para no salir de esa página).
   def update
-    suscripcion = Suscripcion.find(params[:id])
+    # policy_scope + find (tarea 2026-08-31): el find crudo dejaba al admin
+    # de un gimnasio cancelar o cambiar el tier de suscripciones del otro
+    # por ID. Con el scope, el ID ajeno es RecordNotFound = 404.
+    suscripcion = policy_scope(Suscripcion).find(params[:id])
     authorize suscripcion, :update?
 
     if params[:analisis_tier].present?
@@ -91,8 +94,19 @@ class Admin::SuscripcionesController < ApplicationController
       GenerarPlanJob.perform_later(plan.id)
     end
 
+    # Enumeración por PUESTOS del tenant (tarea 2026-08-31) — el rol que
+    # filtra es el DEL PUESTO acá, no la cache users.rol — Y ADEMÁS
+    # estacionado acá (`users.tenant_id`): esta lista alimenta la CREACIÓN de
+    # dinero, y una suscripción hereda el tenant de la cache del dueño
+    # (TenantDesnormalizado) — ofrecer a alguien estacionado en otro gimnasio
+    # crearía una fila anclada ALLÁ, invisible en la caja de acá. Hasta el
+    # épico del dinero multi-gimnasio: el dinero se opera donde la cuenta
+    # está estacionada; para ENCONTRAR a la persona está la lista de usuarios,
+    # que sí enumera por puestos a secas.
     def miembros_del_tenant
-      User.where(tenant: Current.user.tenant, rol: %w[miembro entrenador])
+      User.joins(:puestos).where(puestos: { tenant_id: Current.user.tenant_id,
+                                            rol: %w[miembro entrenador] })
+          .where(tenant_id: Current.user.tenant_id)
     end
 
     def miembros_sin_suscripcion_activa

@@ -1,0 +1,35 @@
+<%#
+  Selector de organización (tarea 2026-08-31): visible SOLO con más de un
+  puesto — quien pertenece a un solo gimnasio no tiene a dónde cambiarse.
+  Cada opción POSTea a CambiosOrganizacionController#create (el embudo del
+  pase firmado): un link GET no sirve — el salto emite un token de un solo
+  uso y es una acción, no una navegación cacheable. `puestos:` llega con el
+  tenant ya cargado en la misma query (ver navbar) — acá no se consulta nada.
+%>
+<div class="dropdown dropdown-end">
+  <div tabindex="0" role="button"
+       class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white">
+    <%= render "shared/icono", nombre: :escudo, clase: "size-4" %>
+    <span class="hidden max-w-32 truncate sm:block"><%= Current.tenant&.nombre %></span>
+    <svg class="size-3.5 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+  </div>
+  <ul tabindex="0" class="dropdown-content menu z-50 mt-3 w-64 gap-0.5 rounded-2xl border border-base-300 bg-base-100 p-2 shadow-xl">
+    <li class="menu-title text-steel-3">Organización</li>
+    <% puestos.each do |puesto| %>
+      <li>
+        <% if Current.tenant && puesto.tenant_id == Current.tenant.id %>
+          <span class="menu-active justify-between gap-3">
+            <span class="truncate"><%= puesto.tenant.nombre %></span>
+            <span class="badge badge-ghost badge-sm shrink-0"><%= puesto.rol %></span>
+          </span>
+        <% else %>
+          <%= button_to cambio_organizacion_path(tenant_id: puesto.tenant_id),
+                class: "w-full justify-between gap-3" do %>
+            <span class="truncate"><%= puesto.tenant.nombre %></span>
+            <span class="badge badge-ghost badge-sm shrink-0"><%= puesto.rol %></span>
+          <% end %>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+</div>

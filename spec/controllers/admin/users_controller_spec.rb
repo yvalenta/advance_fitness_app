@@ -4,7 +4,10 @@ RSpec.describe "Admin::Users", type: :request do
   it "un miembro no accede a la ficha de otro" do
     sign_in_as users(:one)
     get admin_user_path(users(:two))
-    expect(response).to redirect_to(root_path)
+    # 404 y no redirect (tarea 2026-08-31): la ficha se carga vía
+    # policy_scope y para un miembro el scope es solo él mismo — el ID
+    # ajeno "no existe", sin confirmarle que el ID es real.
+    expect(response).to have_http_status(:not_found)
   end
 
   it "el staff ve la ficha con la card de plan" do
@@ -113,7 +116,8 @@ RSpec.describe "Admin::Users", type: :request do
     sign_in_as users(:one)
     patch admin_user_path(users(:two)), params: { user: { nombre: "Hackeado" } }
 
-    expect(response).to redirect_to(root_path)
+    # 404 indistinguible (tarea 2026-08-31): mismo motivo que en #show.
+    expect(response).to have_http_status(:not_found)
     expect(users(:two).reload.nombre).not_to eq("Hackeado")
   end
 end

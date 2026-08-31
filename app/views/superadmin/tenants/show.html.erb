@@ -12,7 +12,8 @@
         <div><dt class="text-xs font-semibold uppercase text-steel-3">Correo</dt><dd><%= @tenant.email_contacto %></dd></div>
         <div><dt class="text-xs font-semibold uppercase text-steel-3">Estado</dt><dd><%= @tenant.activo? ? "Activo" : "Inactivo" %></dd></div>
         <div><dt class="text-xs font-semibold uppercase text-steel-3">Membresías</dt><dd><%= @tenant.membresias_habilitadas? ? "Habilitadas" : "Deshabilitadas" %></dd></div>
-        <div><dt class="text-xs font-semibold uppercase text-steel-3">Usuarios</dt><dd><%= @tenant.users.size %></dd></div>
+        <%# Cuentas con PUESTO acá (tarea 2026-08-31), no las estacionadas. %>
+        <div><dt class="text-xs font-semibold uppercase text-steel-3">Usuarios</dt><dd><%= @tenant.puestos.size %></dd></div>
         <div><dt class="text-xs font-semibold uppercase text-steel-3">Mensualidad</dt><dd><%= @tenant.precio_mensualidad ? number_to_currency(@tenant.precio_mensualidad, unit: "$", precision: 0) : "usa default global" %></dd></div>
         <div><dt class="text-xs font-semibold uppercase text-steel-3">Plan Personalizado</dt><dd><%= @tenant.precio_personalizado ? number_to_currency(@tenant.precio_personalizado, unit: "$", precision: 0) : "usa default global" %></dd></div>
       </dl>

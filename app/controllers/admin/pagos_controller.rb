@@ -8,14 +8,17 @@ class Admin::PagosController < ApplicationController
     @pagos = @pagos.page(params[:page]).per(25)
   end
 
+  # policy_scope + find (tarea 2026-08-31): el Pago.find crudo dejaba al
+  # admin de un gimnasio corregir o ANULAR pagos del otro por ID. Con el
+  # scope, el ID ajeno es RecordNotFound = 404.
   def edit
-    @pago = Pago.find(params[:id])
+    @pago = policy_scope(Pago).find(params[:id])
     authorize @pago
   end
 
   # Corrección de un pago vigente (Fase 5.11): solo monto y método
   def update
-    @pago = Pago.find(params[:id])
+    @pago = policy_scope(Pago).find(params[:id])
     authorize @pago
 
     if @pago.update(params.expect(pago: %i[monto metodo]))
@@ -27,7 +30,7 @@ class Admin::PagosController < ApplicationController
 
   # "Eliminar" = anular: el pago queda en el historial marcado como eliminado
   def destroy
-    @pago = Pago.find(params[:id])
+    @pago = policy_scope(Pago).find(params[:id])
     authorize @pago
     @pago.anular!(por: Current.user)
     redirect_to admin_pagos_path, notice: "Pago marcado como eliminado."

@@ -47,4 +47,21 @@ RSpec.describe PagoPolicy, type: :model do
     expect(PagoPolicy::Scope.new(recepcion, Pago).resolve).to include(pago)
     expect(PagoPolicy::Scope.new(otro, Pago).resolve).not_to include(pago)
   end
+
+  # Defensa en profundidad (tarea 2026-08-31): además del rol, el pago ancla
+  # por su tenant_id — el admin de A no corrige ni anula dinero de B.
+  it "el admin de A no ve, corrige ni anula un pago anclado en B" do
+    miembro_mp = User.create!(email_address: "miembro-mp@x.com", password: "clave1234",
+                              rol: "miembro", tenant: tenants(:megaplex), nombre: "Miembro MP")
+    membresia_mp = Membresia.create!(user: miembro_mp, estado: "activa",
+                                     fecha_inicio: Date.current,
+                                     fecha_vencimiento: Date.current + 30)
+    pago_mp = membresia_mp.pagos.create!(monto: 80_000, metodo: "efectivo",
+                                         registrado_por: admin, fecha_pago: Date.current,
+                                         periodo_inicio: Date.current, periodo_fin: Date.current + 30)
+
+    expect(PagoPolicy.new(admin, pago_mp).show?).to be false
+    expect(PagoPolicy.new(admin, pago_mp).update?).to be false
+    expect(PagoPolicy.new(admin, pago_mp).destroy?).to be false
+  end
 end

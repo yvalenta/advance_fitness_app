@@ -38,13 +38,16 @@ RSpec.describe "Admin::Mediciones", type: :request do
   it "un miembro no puede ver ni tomar mediciones de otros" do
     sign_in_as users(:one)
 
+    # 404 y no redirect (tarea 2026-08-31): el miembro se carga vía
+    # policy_scope, y para un miembro el scope es solo él mismo — el ID
+    # ajeno "no existe", sin confirmarle a nadie que el ID es real.
     get admin_user_mediciones_path(users(:entrenador))
-    expect(response).to redirect_to(root_path)
+    expect(response).to have_http_status(:not_found)
 
     expect {
       post admin_user_mediciones_path(users(:entrenador)), params: { medicion: { peso_kg: 90 } }
     }.not_to change(Medicion, :count)
-    expect(response).to redirect_to(root_path)
+    expect(response).to have_http_status(:not_found)
   end
 
   it "el staff edita una medición pasada sin duplicar el historial" do
@@ -63,7 +66,8 @@ RSpec.describe "Admin::Mediciones", type: :request do
     sign_in_as users(:one)
 
     patch admin_user_medicion_path(users(:entrenador), medicion), params: { medicion: { peso_kg: 60 } }
-    expect(response).to redirect_to(root_path)
+    # 404 indistinguible (tarea 2026-08-31): mismo motivo que el ejemplo de arriba.
+    expect(response).to have_http_status(:not_found)
     expect(medicion.reload.peso_kg.to_f).to eq(80)
   end
 

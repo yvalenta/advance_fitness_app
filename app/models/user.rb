@@ -20,7 +20,18 @@ class User < ApplicationRecord
   }.freeze
 
   has_secure_password
+  # CONTRATO redefinido (tarea 2026-08-31, puestos): `tenant_id` y `rol`
+  # dejan de ser la verdad de pertenencia y pasan a ser LA CACHE de "dónde
+  # está parada la cuenta ahora y con qué rol AHÍ". La verdad es `puestos`
+  # (un rol por gimnasio); la cache se mantiene coherente porque SOLO el
+  # embudo del cambio de organización la reescribe, copiando del puesto
+  # destino. Todo lo que ya filtra por users.tenant_id/rol sigue siendo
+  # correcto — lee la posición vigente, no la lista de pertenencias.
   belongs_to :tenant, optional: true
+  # La verdad de pertenencia N:M. `destroy` (no delete_all como los
+  # append-only): son filas vivas sin patrón readonly — al borrar la cuenta
+  # se van sus puestos.
+  has_many :puestos, dependent: :destroy
   has_many :sessions, dependent: :destroy
   has_one :membresia, dependent: :destroy
   has_many :accesos, dependent: :destroy
@@ -34,6 +45,9 @@ class User < ApplicationRecord
   # ReadOnlyRecord, por eso `delete_all` — al borrar el user, el rastro
   # de sus consentimientos se va con él (dato personal, RGPD-friendly).
   has_many :consentimientos, dependent: :delete_all
+  # Log del cambio de organización: append-only como consentimientos →
+  # delete_all; su IP y user-agent son dato personal y se van con la cuenta.
+  has_many :cambios_organizacion, dependent: :delete_all
   # Motor de juego (Fase 14.12): el ledger también es append-only → delete_all.
   has_many :registros_puntos, dependent: :delete_all
   has_one :perfil_juego, dependent: :destroy
@@ -50,6 +64,21 @@ class User < ApplicationRecord
   # En la zona horaria de la app (el default CURRENT_DATE de Postgres es UTC
   # y entre 19:00 y 24:00 hora Colombia daría el día siguiente)
   before_validation(on: :create) { self.fecha_ingreso ||= Date.current }
+
+  # INVARIANTE del contrato cache/verdad (tarea 2026-08-31): toda cuenta con
+  # `tenant_id` presente y rol de tenant tiene un puesto en ese par con el
+  # MISMO rol. En el mismo espíritu que TenantDesnormalizado ("que no se
+  # pueda persistir una fila incoherente aunque el controller se olvide"),
+  # el espejo vive en el modelo y no en cada call-site: registro público,
+  # alta en el mostrador, alta del admin inicial de un tenant nuevo, OAuth y
+  # seeds crean o mueven la cache y este callback materializa/sincroniza el
+  # puesto del par. Sin él, un user nuevo no pasaría jamás
+  # `verificar_pertenencia_al_tenant` (que exige puesto). Las fixtures no
+  # corren callbacks: puestos.yml las cubre.
+  #
+  # La dirección inversa (puesto → cache) es SOLO del embudo: `estacionar_en!`.
+  after_save :sincronizar_puesto_con_la_cache,
+             if: -> { saved_change_to_tenant_id? || saved_change_to_rol? }
 
   validates :email_address, presence: true, uniqueness: { scope: :tenant_id, message: "ya está registrado en este gimnasio" }
   validates :rol, inclusion: { in: ROLES }
@@ -84,6 +113,27 @@ class User < ApplicationRecord
   def superadmin? = rol == "superadmin"
   def comercializador? = rol == "comercializador"
   def global? = rol.in?(ROLES_GLOBALES)
+
+  # El embudo del cambio de organización (selector + pase firmado) para la
+  # cuenta EN un tenant: valida que el puesto del par exista (levanta
+  # ActiveRecord::RecordNotFound si no — jamás se estaciona sin pertenencia)
+  # y sincroniza la cache `tenant_id`+`rol` en una transacción, copiando el
+  # rol DEL PUESTO destino. Es la ÚNICA dirección puesto → cache; nadie más
+  # debe reescribir la cache para "cambiar de gimnasio".
+  #
+  # Divergencia conocida que este método NO resuelve (documentada a
+  # propósito): el email es único por (email_address, tenant_id) — si en el
+  # tenant destino ya existe OTRA cuenta con el mismo correo (el viejo
+  # workaround de "dos cuentas para dos gimnasios"), el update! levanta
+  # RecordInvalid y el salto no ocurre. Esas cuentas duplicadas se fusionan a
+  # mano antes de darles un segundo puesto.
+  def estacionar_en!(tenant)
+    puesto = puestos.find_by!(tenant_id: tenant.id)
+    transaction do
+      update!(tenant_id: tenant.id, rol: puesto.rol)
+    end
+    puesto
+  end
 
   def objetivo_activo = objetivos_nutricionales.find_by(activo: true)
 
@@ -154,4 +204,18 @@ class User < ApplicationRecord
       user.tenant = tenant
     end
   end
+
+  private
+    # Ver el comentario del after_save arriba. `find_or_initialize_by` +
+    # update! y no upsert: pasa por las validaciones de Puesto (roles
+    # globales jamás — el guard de abajo lo corta antes) y el único de la
+    # base respalda ante una carrera. Cuando `estacionar_en!` copia el rol
+    # del puesto a la cache, este callback re-encuentra el mismo puesto con
+    # el mismo rol y no toca nada.
+    def sincronizar_puesto_con_la_cache
+      return if tenant_id.blank? || rol.in?(ROLES_GLOBALES)
+
+      puesto = puestos.find_or_initialize_by(tenant_id: tenant_id)
+      puesto.update!(rol: rol) if puesto.new_record? || puesto.rol != rol
+    end
 end

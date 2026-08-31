@@ -58,7 +58,9 @@ RSpec.describe "GestionEjercicios", type: :request do
     expect {
       patch plan_personalizado_dia_ejercicio_path(@plan, 0, 0), as: :json, params: { ejercicio: { series: "9" } }
     }.not_to change { @plan.reload.ejercicios_de(0).first["series"] }
-    expect(response).to have_http_status(:redirect)
+    # 404 y no redirect (tarea 2026-08-31): el plan sin publicar ni siquiera
+    # aparece en el policy_scope del miembro — indistinguible de inexistente.
+    expect(response).to have_http_status(:not_found)
   end
 
   # Fase 5.12: publicado, el dueño edita la rutina aunque sea de IA

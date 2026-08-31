@@ -4,7 +4,9 @@
 # policy del plan (show?): el miembro solo su plan aprobado, el staff todos.
 class GestionSemanasController < ApplicationController
   def show
-    @plan = PlanPersonalizado.find(params[:plan_personalizado_id])
+    # policy_scope + find (tarea 2026-08-31): una semana de un plan de otro
+    # gimnasio da 404 indistinguible — el find crudo se la servía a cualquier staff.
+    @plan = policy_scope(PlanPersonalizado).find(params[:plan_personalizado_id])
     authorize @plan, :show?
 
     @numero = params[:numero].to_i

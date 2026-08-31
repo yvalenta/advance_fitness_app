@@ -6,7 +6,8 @@ class PagoPolicy < ApplicationPolicy
   end
 
   def show?
-    record.membresia.user_id == user.id || user.staff? || user.mostrador?
+    record.membresia.user_id == user.id ||
+      ((user.staff? || user.mostrador?) && del_gimnasio_del_staff?)
   end
 
   # Cobrar es el oficio del mostrador (Fase 18k): admin y recepción registran
@@ -21,11 +22,11 @@ class PagoPolicy < ApplicationPolicy
   # Recepción NO corrige ni anula: quien cobra no borra su propio rastro —
   # un error de mostrador lo arregla el admin, y queda quién lo hizo.
   def update?
-    user.admin? && !record.anulado?
+    user.admin? && !record.anulado? && del_gimnasio_del_staff?
   end
 
   def destroy?
-    user.admin? && !record.anulado?
+    user.admin? && !record.anulado? && del_gimnasio_del_staff?
   end
 
   class Scope < ApplicationPolicy::Scope
@@ -38,4 +39,14 @@ class PagoPolicy < ApplicationPolicy
       end
     end
   end
+
+  private
+    # Defensa en profundidad (tarea 2026-08-31): además del rol, el pago debe
+    # anclar en el gimnasio del viewer por su `tenant_id` desnormalizado
+    # (SDD §16.7) — un find crudo en un controller descuidado ya no basta
+    # para corregir o anular dinero del gimnasio vecino.
+    def del_gimnasio_del_staff?
+      return true unless record.is_a?(Pago)
+      record.tenant_id == user.tenant_id
+    end
 end

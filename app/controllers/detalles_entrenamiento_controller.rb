@@ -55,7 +55,11 @@ class DetallesEntrenamientoController < ApplicationController
   # un registro_entrenamiento (no un ejercicio puntual). Encola y vuelve de
   # inmediato — la IA nunca bloquea la respuesta.
   def analizar
-    @registro = RegistroEntrenamiento.find(params[:registro_entrenamiento_id])
+    # policy_scope + find (tarea 2026-08-31): el find crudo dejaba al staff
+    # de A encolar el Analista sobre el registro de un miembro de B (la
+    # policy solo miraba user.staff?). El Scope de RegistroEntrenamiento
+    # ancla por el puesto del dueño — un id ajeno da 404 indistinguible.
+    @registro = policy_scope(RegistroEntrenamiento).find(params[:registro_entrenamiento_id])
     authorize @registro, policy_class: DetalleEntrenamientoPolicy
 
     unless @registro.user.datos_suficientes_para_analisis?

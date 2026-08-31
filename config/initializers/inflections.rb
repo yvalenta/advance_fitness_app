@@ -38,4 +38,7 @@ ActiveSupport::Inflector.inflections(:en) do |inflect|
   inflect.irregular "solicitud_autoservicio", "solicitudes_autoservicio"
   # Reprogramar un día (Fase 19e): el inflector daría "reprogramacion_dias".
   inflect.irregular "reprogramacion_dia", "reprogramaciones_dia"
+  # Cambio de organización (tarea 2026-08-31): el inflector daría
+  # "cambio_organizacions". "puesto"/"puestos" funciona con la regla default.
+  inflect.irregular "cambio_organizacion", "cambios_organizacion"
 end

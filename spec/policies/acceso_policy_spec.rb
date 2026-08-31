@@ -51,4 +51,19 @@ RSpec.describe AccesoPolicy, type: :model do
     expect(AccesoPolicy.new(admin, acceso_propio).update?).to be false
     expect(AccesoPolicy.new(admin, acceso_propio).destroy?).to be false
   end
+
+  # Defensa en profundidad (tarea 2026-08-31): registrar o ver un acceso
+  # exige que el miembro tenga puesto en el gimnasio del viewer — el rol de
+  # staff/mostrador solo ya no basta ante un find crudo.
+  it "ni el admin ni recepción de A registran o ven el check-in de un miembro de B" do
+    miembro_mp = User.create!(email_address: "miembro-mp@x.com", password: "clave1234",
+                              rol: "miembro", tenant: tenants(:megaplex), nombre: "Miembro MP")
+    acceso_mp = Acceso.new(user: miembro_mp)
+
+    expect(AccesoPolicy.new(admin, acceso_mp).create?).to be false
+    expect(AccesoPolicy.new(recepcion, acceso_mp).create?).to be false
+    expect(AccesoPolicy.new(admin, Acceso.create!(user: miembro_mp, fecha_hora: Time.current)).show?).to be false
+    # …y el propio miembro de B sigue pudiendo auto-registrarse.
+    expect(AccesoPolicy.new(miembro_mp, acceso_mp).create?).to be true
+  end
 end

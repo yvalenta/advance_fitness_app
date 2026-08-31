@@ -34,7 +34,9 @@
                       <% else %>
                         <span class="badge badge-error badge-sm">inactivo</span>
                       <% end %>
-                      <span class="text-xs text-steel-3"><%= tenant.users.size %> usuarios</span>
+                      <%# Cuentas con PUESTO acá (tarea 2026-08-31): tenant.users
+                          contaría solo las estacionadas en este momento. %>
+                      <span class="text-xs text-steel-3"><%= tenant.puestos.size %> usuarios</span>
                     </div>
                   </td>
                   <td class="hidden text-sm font-mono text-steel-5 md:table-cell"><%= tenant.slug %>.ynt.codes</td>
@@ -46,7 +48,7 @@
                       <span class="badge badge-error badge-sm">inactivo</span>
                     <% end %>
                   </td>
-                  <td class="hidden text-right text-sm md:table-cell"><%= tenant.users.size %></td>
+                  <td class="hidden text-right text-sm md:table-cell"><%= tenant.puestos.size %></td>
                   <td class="text-right">
                     <%= link_to "Editar", edit_superadmin_tenant_path(tenant), class: "btn btn-ghost btn-xs" %>
                   </td>

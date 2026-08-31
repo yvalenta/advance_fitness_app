@@ -43,4 +43,25 @@ RSpec.describe DetalleEntrenamientoPolicy do
       expect(described_class.new(otro, detalle)).not_to be_destroy
     end
   end
+
+  describe "#analizar?" do
+    let(:entrenador) { users(:entrenador) }
+
+    it "staff sí, sobre un registro de su gimnasio; el miembro no" do
+      expect(described_class.new(entrenador, registro).analizar?).to be true
+      expect(described_class.new(dueno, registro).analizar?).to be false
+    end
+
+    # Defensa en profundidad (tarea 2026-08-31): el rol ya no basta — el
+    # DUEÑO del registro debe tener puesto en el gimnasio del staff. Este es
+    # el check que frena a un controller descuidado con un find crudo.
+    it "el staff de A no analiza el registro de un miembro de B, aunque sea staff" do
+      miembro_mp = User.create!(email_address: "miembro-mp-registro@x.com", password: "clave1234",
+                                rol: "miembro", tenant: tenants(:megaplex), nombre: "Miembro MP")
+      registro_mp = RegistroEntrenamiento.create!(user: miembro_mp, fecha: Date.current)
+
+      expect(described_class.new(entrenador, registro_mp).analizar?).to be false
+      expect(described_class.new(users(:admin), registro_mp).analizar?).to be false
+    end
+  end
 end

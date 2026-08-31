@@ -24,8 +24,15 @@
           </legend>
           <label class="form-control">
             <span class="label-text mb-1 text-xs font-semibold">¿Para quién es la membresía?</span>
+            <%# Rol por PUESTO acá (tarea 2026-08-31) Y estacionado acá
+                (users.tenant_id): la membresía hereda el tenant de la cache
+                del dueño (TenantDesnormalizado) — mismo criterio y misma
+                razón que miembros_del_tenant en Admin::SuscripcionesController. %>
             <%= form.collection_select :user_id,
-                  User.where(tenant: Current.user.tenant, rol: %w[miembro entrenador]).where.missing(:membresia).order(:nombre),
+                  User.joins(:puestos)
+                      .where(puestos: { tenant_id: Current.user.tenant_id, rol: %w[miembro entrenador] })
+                      .where(tenant_id: Current.user.tenant_id)
+                      .where.missing(:membresia).order(:nombre),
                   :id, :nombre,
                   { prompt: "Selecciona un miembro" }, { class: "select select-bordered w-full", required: true } %>
           </label>

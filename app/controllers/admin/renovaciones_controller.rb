@@ -1,7 +1,9 @@
 class Admin::RenovacionesController < ApplicationController
   before_action { exigir_feature("membresias") }  # Fase 18d
   def create
-    membresia = Membresia.find(params[:membresia_id])
+    # policy_scope (tarea 2026-08-31): renovar COBRA un pago — una membresía
+    # de otro gimnasio no existe para este mostrador (404).
+    membresia = policy_scope(Membresia).find(params[:membresia_id])
     authorize membresia, :renovar?
 
     membresia.renovar!(

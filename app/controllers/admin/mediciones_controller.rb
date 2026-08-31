@@ -48,7 +48,13 @@ class Admin::MedicionesController < ApplicationController
   end
 
   private
-    def cargar_miembro = @miembro = User.find(params[:user_id])
+    # Vía policy_scope, jamás User.find crudo (tarea 2026-08-31): el scope
+    # enumera por PUESTOS del tenant del staff, así que el user_id de un
+    # miembro de otro gimnasio simplemente no existe acá — RecordNotFound y
+    # 404 indistinguible, sin filtrar ni que el ID es real. Antes este find
+    # crudo dejaba a un staff de A leer Y escribir mediciones (dato de
+    # salud) de un miembro de B: MedicionPolicy solo miraba el rol.
+    def cargar_miembro = @miembro = policy_scope(User).find(params[:user_id])
 
     def cargar_medicion
       @medicion = @miembro.mediciones.find(params[:id])

@@ -27,10 +27,13 @@ module Comunidad
 
     private
       # Solo miembros (el staff no compite) y solo con opt-in vigente.
+      # Enumerados por PUESTO de miembro en este tenant (tarea 2026-08-31),
+      # no por la cache users.tenant_id/rol: quien tiene puesto de miembro
+      # acá celebra acá, esté estacionado donde esté.
       def participantes
         @participantes ||= Consentimiento.usuarios_vigentes(
           "logros_comunidad",
-          User.where(tenant_id: @tenant.id, rol: "miembro").pluck(:id))
+          Puesto.where(tenant_id: @tenant.id, rol: "miembro").pluck(:user_id))
       end
 
       # "Nueva marca" y no "rompió su récord": el vigente puede ser el

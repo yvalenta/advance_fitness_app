@@ -17,6 +17,10 @@ Rails.application.routes.draw do
   end
 
   resource :session
+  # Cambio de organización sin re-login (tarea 2026-08-31): POST emite el
+  # pase firmado en el subdominio ORIGEN; GET lo canjea en el DESTINO. El
+  # flujo completo está documentado en CambiosOrganizacionController.
+  resource :cambio_organizacion, only: %i[ show create ], controller: "cambios_organizacion"
   resource :registro, controller: "registrations", only: %i[ new create ]
   resources :passwords, param: :token
 

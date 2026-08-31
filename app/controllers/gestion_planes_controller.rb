@@ -3,8 +3,9 @@
 # publicar están desacoplados: las comidas se guardan por autosave
 # (GestionComidasController) y publicar solo da visibilidad al miembro.
 class GestionPlanesController < ApplicationController
+  before_action :cargar_plan
+
   def show
-    @plan = PlanPersonalizado.find(params[:id])
     authorize @plan, :editar?
     @plantillas = PlantillaComida.ordenadas
     @plantillas_ejercicio = PlantillaEjercicio.ordenadas
@@ -12,7 +13,6 @@ class GestionPlanesController < ApplicationController
   end
 
   def publicar
-    @plan = PlanPersonalizado.find(params[:id])
     authorize @plan, :publicar?
     @plan.publicar!(Current.user)
     redirect_to plan_personalizado_path(@plan),
@@ -21,7 +21,6 @@ class GestionPlanesController < ApplicationController
 
   # Reintento manual de la generación con IA tras un fallo (SDD Fase 5.7).
   def regenerar
-    @plan = PlanPersonalizado.find(params[:id])
     authorize @plan, :publicar?
     @plan.marcar_generando!
     GenerarPlanJob.perform_later(@plan.id)
@@ -32,7 +31,6 @@ class GestionPlanesController < ApplicationController
   # Modo avanzado: pega/ajusta el JSON crudo (rutina o plan nutricional).
   # Las comidas normalmente se editan por autosave (GestionComidasController).
   def update
-    @plan = PlanPersonalizado.find(params[:id])
     authorize @plan, :editar_json?
     @plan.update!(
       rutina: parsear_json(params[:rutina]) || @plan.rutina,
@@ -44,6 +42,15 @@ class GestionPlanesController < ApplicationController
   end
 
   private
+
+    # policy_scope + find (tarea 2026-08-31): el find crudo dejaba al staff
+    # de A abrir, pisar (JSON crudo), publicar o regenerar el plan de un
+    # miembro de B — la policy solo miraba el rol del viewer. Con el Scope,
+    # un id ajeno da 404 indistinguible; el permiso fino (editar?/publicar?/
+    # editar_json?) lo sigue decidiendo el authorize de cada acción.
+    def cargar_plan
+      @plan = policy_scope(PlanPersonalizado).find(params[:id])
+    end
 
     def parsear_json(texto)
       texto.present? ? JSON.parse(texto) : nil

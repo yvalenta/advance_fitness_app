@@ -240,6 +240,84 @@ RSpec.describe "Aislamiento cross-tenant en policies", type: :model do
     expect_aislado(LogroObtenidoPolicy, record_af: obt_af, record_mp: obt_mp)
   end
 
+  # La pieza N:M (tarea 2026-08-31): la pertenencia sale del PUESTO, no de la
+  # cache users.tenant_id — estos ejemplos cubren los dos filos del cambio:
+  # que tener puestos en A y B no abre NADA de C, y que el miembro con puesto
+  # acá pero estacionado allá no se vuelve invisible (el bug de nomicheck).
+  describe "puestos en varios tenants (N:M)" do
+    let(:tenant_c) do
+      Tenant.create!(nombre: "Gimnasio C", slug: "gimnasio-c", tipo_entidad: "gimnasio",
+                     email_contacto: "c@gimnasio.local", activo: true)
+    end
+    let(:miembro_c) do
+      User.create!(email_address: "socio-c@x.com", password: "clave1234",
+                   rol: "miembro", tenant: tenant_c, nombre: "Socio C")
+    end
+    # Dueño de dos gimnasios con UNA cuenta: admin en AF (estacionado ahí) y
+    # también admin en MP. El segundo puesto se otorga directo — el
+    # after_save de User solo materializa el del par de la cache.
+    let(:duenio) do
+      User.create!(email_address: "duenio@x.com", password: "clave1234",
+                   rol: "admin", tenant: tenant_af, nombre: "Dueño Doble").tap do |u|
+        u.puestos.create!(tenant: tenant_mp, rol: "admin")
+      end
+    end
+
+    it "con puestos en A y B no ve NADA de C — ni users ni datos vía del_tenant" do
+      medicion_c = Medicion.create!(user: miembro_c, fecha: Date.current, peso_kg: 90)
+
+      expect(UserPolicy::Scope.new(duenio, User).resolve).not_to include(miembro_c)
+      expect(MedicionPolicy::Scope.new(duenio, Medicion).resolve).not_to include(medicion_c)
+    end
+
+    it "la enumeración sigue al tenant ESTACIONADO: lo de B aparece recién tras estacionar_en!(B)" do
+      medicion_mp = Medicion.create!(user: miembro_mp, fecha: Date.current, peso_kg: 72)
+
+      expect(MedicionPolicy::Scope.new(duenio, Medicion).resolve).not_to include(medicion_mp)
+
+      duenio.estacionar_en!(tenant_mp)
+
+      expect(MedicionPolicy::Scope.new(duenio, Medicion).resolve).to include(medicion_mp)
+      expect(UserPolicy::Scope.new(duenio, User).resolve).to include(miembro_mp)
+    end
+
+    it "el miembro con puesto acá pero ESTACIONADO en otro gimnasio sigue visible (ni invisible ni inextirpable)" do
+      # miembro_mp gana un puesto en AF y se estaciona en MP: con la cache
+      # (tenant_id = MP) desaparecería de TODAS las listas de AF.
+      miembro_mp.puestos.create!(tenant: tenant_af, rol: "miembro")
+      miembro_mp.estacionar_en!(tenant_mp)
+      medicion = Medicion.create!(user: miembro_mp, fecha: Date.current, peso_kg: 72)
+
+      expect(miembro_mp.tenant_id).to eq(tenant_mp.id) # estacionado allá…
+      expect(UserPolicy::Scope.new(admin_af, User).resolve).to include(miembro_mp)
+      expect(MedicionPolicy::Scope.new(admin_af, Medicion).resolve).to include(medicion)
+      # …y editable acá (extirpable): el hueco de show?/update? sin chequeo
+      # de tenant quedó cerrado con el mismo puesto.
+      expect(UserPolicy.new(admin_af, miembro_mp).update?).to be_truthy
+      expect(UserPolicy.new(admin_af, miembro_c).update?).to be_falsey
+    end
+
+    it "rol distinto por tenant: cada enumeración muestra el rol DEL PUESTO, no la cache" do
+      # entrenador en AF, miembro en MP, estacionado en MP (cache rol =
+      # miembro). El select es el mismo que usa Admin::UsersController#index.
+      versatil = User.create!(email_address: "versatil@x.com", password: "clave1234",
+                              rol: "entrenador", tenant: tenant_af, nombre: "Versátil")
+      versatil.puestos.create!(tenant: tenant_mp, rol: "miembro")
+      versatil.estacionar_en!(tenant_mp)
+
+      fila_af = UserPolicy::Scope.new(admin_af, User).resolve
+                                 .select("users.*, puestos.rol AS rol_del_puesto")
+                                 .find(versatil.id)
+      fila_mp = UserPolicy::Scope.new(admin_mp, User).resolve
+                                 .select("users.*, puestos.rol AS rol_del_puesto")
+                                 .find(versatil.id)
+
+      expect(fila_af[:rol_del_puesto]).to eq("entrenador")
+      expect(fila_mp[:rol_del_puesto]).to eq("miembro")
+      expect(versatil.reload.rol).to eq("miembro") # la cache es la de MP
+    end
+  end
+
   it "RecordPersonalPolicy — vía user (el ejercicio del catálogo es global; el récord no)" do
     ejercicio = Ejercicio.create!(dataset_id: "test-aisl-pr-01", nombre: "Remo con barra",
                                   nombre_en: "Barbell row", nombre_normalizado: "remo con barra",

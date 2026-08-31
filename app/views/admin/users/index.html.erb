@@ -48,9 +48,12 @@
                         <p class="truncate text-xs text-steel-3"><%= usuario.email_address %></p>
                       </div>
                     <% end %>
+                    <%# El rol mostrado es el del PUESTO en este gimnasio (alias
+                        rol_del_puesto del select del controller); usuario.rol es
+                        la cache del tenant donde la cuenta está estacionada. %>
                     <div class="mt-1.5 flex flex-wrap items-center gap-1 md:hidden">
-                      <% unless usuario.rol == "miembro" %>
-                        <span class="badge badge-sm badge-ghost"><%= usuario.rol %></span>
+                      <% unless usuario[:rol_del_puesto] == "miembro" %>
+                        <span class="badge badge-sm badge-ghost"><%= usuario[:rol_del_puesto] %></span>
                       <% end %>
                       <% if usuario.membresia %>
                         <%= badge_estado(usuario.membresia.estado) %>
@@ -59,7 +62,7 @@
                       <% end %>
                     </div>
                   </td>
-                  <td class="hidden md:table-cell"><span class="badge badge-sm badge-ghost"><%= usuario.rol %></span></td>
+                  <td class="hidden md:table-cell"><span class="badge badge-sm badge-ghost"><%= usuario[:rol_del_puesto] %></span></td>
                   <td class="hidden md:table-cell">
                     <% if usuario.membresia %>
                       <%= badge_estado(usuario.membresia.estado) %>

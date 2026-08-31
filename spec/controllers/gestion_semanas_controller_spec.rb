@@ -50,7 +50,9 @@ RSpec.describe "GestionSemanas", type: :request do
 
     get plan_personalizado_semana_path(@plan, 2)
 
-    expect(response).to have_http_status(:redirect)
+    # 404 y no redirect (tarea 2026-08-31): el plan ajeno ni siquiera aparece
+    # en el policy_scope del miembro — indistinguible de inexistente.
+    expect(response).to have_http_status(:not_found)
   end
 
   it "el dueño tampoco ve semanas de su plan aún sin publicar" do
@@ -60,7 +62,8 @@ RSpec.describe "GestionSemanas", type: :request do
 
     get plan_personalizado_semana_path(borrador, 1)
 
-    expect(response).to have_http_status(:redirect)
+    # 404 (tarea 2026-08-31): mismo criterio — el borrador no está en su scope.
+    expect(response).to have_http_status(:not_found)
   end
 
   it "el staff carga cualquier semana de cualquier plan" do

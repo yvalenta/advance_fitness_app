@@ -47,6 +47,18 @@ RSpec.describe UserPolicy, type: :model do
     expect(UserPolicy.new(@recepcion, @otro).destroy?).to be_falsey
   end
 
+  # La pertenencia del record sale del PUESTO (tarea 2026-08-31): antes
+  # show?/update? no miraban el tenant y un admin podía ver/editar cuentas de
+  # otro gimnasio por ID.
+  it "staff NO ve ni edita a alguien sin puesto en su gimnasio" do
+    ajeno = User.create!(email_address: "ajeno@megaplex.local", password: "clave1234",
+                         rol: "miembro", tenant: tenants(:megaplex), nombre: "Ajeno MP")
+
+    expect(UserPolicy.new(@admin, ajeno).show?).to be_falsey
+    expect(UserPolicy.new(@admin, ajeno).update?).to be_falsey
+    expect(UserPolicy.new(@recepcion, ajeno).show?).to be_falsey
+  end
+
   it "el scope de un miembro solo lo incluye a él" do
     expect(UserPolicy::Scope.new(@miembro, User).resolve.to_a).to eq([ @miembro ])
     expect(UserPolicy::Scope.new(@admin, User).resolve.count).to eq(User.count)

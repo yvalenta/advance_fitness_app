@@ -37,7 +37,9 @@ RSpec.describe "GestionPlanes", type: :request do
   it "un miembro no puede abrir el editor de un plan" do
     sign_in_as users(:one)
     get plan_personalizado_path(@plan)
-    expect(response).to redirect_to(root_path)
+    # 404 y no redirect (tarea 2026-08-31): el borrador ni siquiera aparece
+    # en el policy_scope del miembro — indistinguible de inexistente.
+    expect(response).to have_http_status(:not_found)
   end
 
   it "el staff reintenta la generación: pone generando y reencola" do
@@ -54,7 +56,8 @@ RSpec.describe "GestionPlanes", type: :request do
   it "un miembro no puede reintentar la generación" do
     sign_in_as users(:one)
     post regenerar_plan_personalizado_path(@plan)
-    expect(response).to redirect_to(root_path)
+    # 404 y no redirect (tarea 2026-08-31): mismo criterio que el editor.
+    expect(response).to have_http_status(:not_found)
   end
 
   # Criterio de aceptación F5 (SDD §11): el miembro ve el plan SOLO tras publicar.
