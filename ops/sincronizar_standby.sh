@@ -41,14 +41,40 @@ trap 'rm -f "$ENVFILE"' EXIT
 # al final, y con `set -e` la ultima comparacion fallida del lazo mataba el
 # script entero antes de crear nada.
 PATRON="^($(echo $CLAVES | tr -s ' ' '|'))="
-docker inspect "$VIEJO" --format '{{range .Config.Env}}{{println .}}{{end}}' \
-  | grep -E "$PATRON" > "$ENVFILE" || true
+
+# CAMINO DIRECTO (2026-08-31): el contenedor viejo murio con el disco de la
+# caja y no habia de donde clonar. Si VIEJO viene como usuario@host:contenedor,
+# el env sale del contenedor de PRODUCCION por ssh caja->prod (agente
+# reenviado con `ssh -A` al invocar): los secretos viajan directo entre los
+# dos hosts y jamas pasan por la Mac ni por una sesion — el mismo patron que
+# resolvio el standby de NomiCheck. Requiere el host key de prod ya conocido
+# en la caja (BatchMode no pregunta; un keyscan previo lo siembra).
+if [[ "$VIEJO" == *"@"*":"* ]]; then
+  ORIGEN_SSH="${VIEJO%%:*}"
+  ORIGEN_CONT="${VIEJO#*:}"
+  ssh -o BatchMode=yes "$ORIGEN_SSH" \
+    docker inspect "$ORIGEN_CONT" --format "'{{range .Config.Env}}{{println .}}{{end}}'" \
+    | grep -E "$PATRON" > "$ENVFILE" || true
+else
+  docker inspect "$VIEJO" --format '{{range .Config.Env}}{{println .}}{{end}}' \
+    | grep -E "$PATRON" > "$ENVFILE" || true
+fi
 
 faltan=""
 for c in $CLAVES; do
   grep -q "^${c}=" "$ENVFILE" || faltan="$faltan $c"
 done
-[ -n "$faltan" ] && echo "aviso: sin valor en el viejo:$faltan"
+# GUARDA (2026-08-31, pagada el mismo dia): la version warn-only creo un
+# contenedor con CERO variables cuando el ssh al origen fallo — un standby
+# que arrancaria roto es peor que ninguno, porque tranquiliza. Sin master
+# key o sin base no hay standby: se aborta ANTES de crear.
+case "$faltan" in
+  *RAILS_MASTER_KEY*|*DATABASE_URL*)
+    echo "ERROR: el origen no entrego las llaves criticas:$faltan" >&2
+    echo "       (¿fallo el ssh al origen? ¿agente sin identidades?)" >&2
+    exit 1;;
+esac
+[ -n "$faltan" ] && echo "aviso: sin valor en el origen:$faltan"
 
 echo "creando $NUEVO (DETENIDO) con $(wc -l < "$ENVFILE") variables"
 
