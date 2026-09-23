@@ -13,10 +13,10 @@ RSpec.describe "Tabla de posiciones", type: :request do
   let(:otro) { users(:two) }
   let(:admin) { users(:admin) }
 
-  def perfil_visible!(user, puntos:, apodo: nil, racha: 0)
+  def perfil_visible!(user, puntos:, apodo: nil, racha: 0, ultima_actividad: Date.current)
     PerfilJuego.create!(user: user, visible_en_tabla: true, puntos_total: puntos,
                         nivel: PerfilJuego.nivel_para(puntos), apodo: apodo,
-                        racha_actual: racha)
+                        racha_actual: racha, ultima_fecha_racha: (ultima_actividad if racha.positive?))
   end
 
   # 50 rivales por encima de `puntos` sin pagar bcrypt 50 veces: se reutiliza
@@ -55,6 +55,20 @@ RSpec.describe "Tabla de posiciones", type: :request do
       get ranking_path
 
       expect(response.body).not_to include("two@example.com")
+    end
+  end
+
+  describe "racha en las filas" do
+    it "muestra el fuego de una racha viva y apaga el de una racha cortada" do
+      sembrar_rivales!(3, desde_puntos: 1_000) # el podio no pinta racha: se ve en la lista plana
+      perfil_visible!(miembro, puntos: 120, apodo: "Rayo", racha: 4)
+      perfil_visible!(otro, puntos: 480, apodo: "Tornado", racha: 6, ultima_actividad: 3.weeks.ago.to_date)
+      sign_in_as miembro
+
+      get ranking_path
+
+      expect(response.body).to match(/4 días/)
+      expect(response.body).not_to match(/6 días/)
     end
   end
 

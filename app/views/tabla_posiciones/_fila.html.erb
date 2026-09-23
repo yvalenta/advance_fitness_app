@@ -8,9 +8,10 @@
     <p class="truncate text-sm font-semibold"><%= nombre_en_ranking(perfil) %><%= " (tú)" if propia %></p>
     <div class="mt-0.5 flex items-center gap-2">
       <span class="badge badge-ghost badge-xs whitespace-nowrap">Nv. <%= perfil.nivel %></span>
-      <% if perfil.racha_actual.positive? %>
+      <% racha = perfil.racha_vigente %>
+      <% if racha.positive? %>
         <span class="flex items-center gap-0.5 whitespace-nowrap text-xs text-orange-400">
-          <%= render "shared/icono", nombre: :fuego, clase: "size-3.5" %><%= perfil.racha_actual %> días
+          <%= render "shared/icono", nombre: :fuego, clase: "size-3.5" %><%= racha %> días
         </span>
       <% end %>
     </div>

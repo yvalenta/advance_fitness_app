@@ -56,12 +56,23 @@ RSpec.describe "Dashboard", type: :request do
   end
 
   it "muestra la racha del PerfilJuego cuando existe" do
-    PerfilJuego.create!(user: miembro, racha_actual: 5, racha_mejor: 12)
+    PerfilJuego.create!(user: miembro, racha_actual: 5, racha_mejor: 12, ultima_fecha_racha: Date.current)
     sign_in_as miembro
 
     get root_url
 
     expect(response.body).to match(/5\s*<[^>]+>días/)
+    expect(response.body).to include("Mejor racha: 12 días")
+  end
+
+  it "una racha cortada se muestra apagada en 0, sin perder la mejor racha" do
+    PerfilJuego.create!(user: miembro, racha_actual: 5, racha_mejor: 12, ultima_fecha_racha: 3.weeks.ago.to_date)
+    sign_in_as miembro
+
+    get root_url
+
+    expect(response.body).to match(/0\s*<[^>]+>días/)
+    expect(response.body).not_to match(/5\s*<[^>]+>días/)
     expect(response.body).to include("Mejor racha: 12 días")
   end
 
@@ -150,7 +161,7 @@ RSpec.describe "Dashboard", type: :request do
       fecha: Date.current,
       ejercicios: { "version" => 2, "items" => { "aaaaaaaaaa" => { "hecho" => true } } }
     )
-    PerfilJuego.create!(user: miembro, racha_actual: 3, racha_mejor: 9)
+    PerfilJuego.create!(user: miembro, racha_actual: 3, racha_mejor: 9, ultima_fecha_racha: Date.current)
     con_datos = contar_queries { get root_url }
 
     expect(con_datos).to eq(sin_datos)

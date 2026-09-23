@@ -38,6 +38,34 @@ RSpec.describe PerfilJuego, type: :model do
     expect(PerfilJuego.nivel_para(-50)).to eq 1 # ajustes manuales en rojo no rompen
   end
 
+  describe "#racha_vigente" do
+    let(:hoy) { Date.new(2026, 9, 23) }
+
+    def perfil_con(ultima)
+      PerfilJuego.new(user: user, racha_actual: 12, racha_mejor: 12, ultima_fecha_racha: ultima)
+    end
+
+    it "sigue viva si la última actividad fue hoy o ayer (hoy aún se puede mantener)" do
+      expect(perfil_con(hoy).racha_vigente(hoy)).to eq 12
+      expect(perfil_con(hoy - 1).racha_vigente(hoy)).to eq 12
+    end
+
+    it "se apaga si pasó un día entero sin actividad, aunque la columna guarde el tramo" do
+      perfil = perfil_con(hoy - 2)
+      expect(perfil.racha_vigente(hoy)).to eq 0
+      expect(perfil.racha_actual).to eq 12
+    end
+
+    it "una fecha futura no la sostiene encendida (el servidor acepta marcar otro día)" do
+      expect(perfil_con(hoy + 1).racha_vigente(hoy)).to eq 0
+      expect(perfil_con(hoy + 14).racha_vigente(hoy)).to eq 0
+    end
+
+    it "sin actividad nunca registrada es 0" do
+      expect(perfil_con(nil).racha_vigente(hoy)).to eq 0
+    end
+  end
+
   it "PerfilJuego.para es find-or-create idempotente" do
     a = PerfilJuego.para(user)
     b = PerfilJuego.para(user)

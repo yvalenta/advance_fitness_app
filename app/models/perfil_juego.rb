@@ -20,6 +20,20 @@ class PerfilJuego < ApplicationRecord
     Integer.sqrt([ puntos_total, 0 ].max / 100) + 1
   end
 
+  # La racha que se MUESTRA (dashboard, ranking). `racha_actual` es el último
+  # tramo consecutivo y solo cambia con actividad nueva (Juego::Racha), así
+  # que quien dejaba de entrenar seguía viendo su racha vieja encendida.
+  # Viva = la última actividad fue hoy o ayer (hoy todavía se puede
+  # mantener), mismo criterio que RecordatorioRachaJob. Con cota superior: una
+  # fecha futura (el servidor hoy acepta marcar sesiones de otro día) no
+  # sostiene la racha encendida. La columna no se toca: es la proyección del
+  # ledger y Juego::Racha la continúa desde ahí.
+  def racha_vigente(hoy = Date.current)
+    return 0 unless ultima_fecha_racha && (hoy - 1..hoy).cover?(ultima_fecha_racha)
+
+    racha_actual.to_i
+  end
+
   # find_or_create tolerante a la carrera de dos jobs simultáneos: el índice
   # único sobre user_id convierte al perdedor en un retry que ya encuentra.
   def self.para(user)
