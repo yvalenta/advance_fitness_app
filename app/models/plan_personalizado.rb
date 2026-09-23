@@ -266,6 +266,32 @@ class PlanPersonalizado < ApplicationRecord
     reprogramaciones_dia.find_by(fecha_destino: fecha)
   end
 
+  # Lo que toca en una fecha, con los números EFECTIVOS (Nota 27g): lo que el
+  # modo sesión muestra y registra, y contra lo que Progresion::Regla compara
+  # — una sola resolución para los dos, que ya divergieron una vez.
+  Prescripcion = Data.define(:dia, :semana, :ajuste_ciclo, :movido_hacia, :movido_desde) do
+    def ejercicio(uid) = Array(dia && dia["ejercicios"]).find { |ej| ej["uid"] == uid }
+    def descarga? = semana.present? && semana["descarga"] == true
+  end
+
+  # Reprogramación (19e) primero — nunca toca rutina/ciclo: una fecha movida
+  # no tiene contenido (dia nil) y una que lo recibió muestra el de
+  # `fecha_original`, con la semana del mesociclo de ESA fecha (lo que se
+  # movió). La fase del ciclo es la de `fecha` (el cuerpo no se movió) y se
+  # compone con la semana vía Rutina::Resolutor (clamp 0.7..1.25; la fase
+  # solo baja carga). Sin consentimiento la fase es :desconocida → identidad.
+  def prescripcion_de(fecha)
+    hacia = movido_hacia(fecha)
+    desde = movido_desde(fecha)
+    fecha_contenido = desde&.fecha_original || fecha
+    numero = numero_semana_de(fecha_contenido)
+    ajuste_ciclo = Ciclo::Ajuste.para(Ciclo::Fase.para(user, fecha))
+    dia = dia_de(fecha_contenido, Rutina::Resolutor.dias(rutina, numero, extra: ajuste_ciclo)) unless hacia
+
+    Prescripcion.new(dia: dia, semana: semana(numero), ajuste_ciclo: ajuste_ciclo,
+                     movido_hacia: hacia, movido_desde: desde)
+  end
+
   private
 
     # En cola del entrenador = necesita atención (generando/borrador/fallido)
@@ -364,6 +390,26 @@ class PlanPersonalizado < ApplicationRecord
         yield dia
         update!(rutina: rutina.merge("dias" => lista_dias))
       end
+    end
+
+    # Semana del mesociclo a la que pertenece la fecha (API 14.7: enteros sin
+    # clamp); fuera de rango cae a la semana en curso — para un plan v1 eso
+    # es siempre la 1.
+    def numero_semana_de(fecha)
+      numero = Rutina::Calendario.semana_de(self, fecha)
+      numero.between?(1, semanas.size) ? numero : semana_actual
+    end
+
+    # La rutina trae los días por nombre ("lunes"…"domingo", con o sin
+    # tilde); la fecha se ubica por su offset desde el lunes. Devuelve nil si
+    # la fecha no tiene día programado (descanso).
+    def dia_de(fecha, dias)
+      offset = (fecha - fecha.beginning_of_week).to_i
+      dias.find { |dia| DIAS_OFFSET[sin_acentos(dia["dia"])] == offset }
+    end
+
+    def sin_acentos(nombre)
+      nombre.to_s.unicode_normalize(:nfd).gsub(/\p{Mn}/, "").downcase.strip
     end
 
     # Lectura tolerante (Fase 14.7): un plan v1 se ve EN MEMORIA como un

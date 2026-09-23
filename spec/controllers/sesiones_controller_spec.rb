@@ -115,7 +115,7 @@ RSpec.describe "Sesiones", type: :request do
       Suscripcion.create!(user: user, plan: planes(:personalizado), estado: "activa", fecha_inicio: Date.current)
     end
 
-    it "premium recibe la URL de detalles, el kg de la vez pasada y las series ya registradas" do
+    it "premium recibe la URL de detalles, el kg sugerido y las series ya registradas" do
       crear_plan!(users(:one), rutina: rutina_con_id)
       premium!(users(:one))
       pasado = users(:one).registros_entrenamiento.create!(fecha: lunes - 7)
@@ -127,8 +127,79 @@ RSpec.describe "Sesiones", type: :request do
       get sesion_path(lunes.iso8601)
 
       expect(response.body).to include("data-sesion-detalles-url-value=\"#{detalles_entrenamiento_path}\"")
-      expect(response.body).to include('"peso_registro_kg":62.5') # la vez pasada, no el sugerido
+      # El sugerido que muestra la pantalla, no la vez pasada: la sesión no
+      # tiene input de peso (ver el bug de la regla más abajo).
+      expect(response.body).to include('"peso_registro_kg":60.0')
       expect(response.body).to include('"series_registradas":1')  # re-visita: el chip amanece marcado
+    end
+
+    # Lo que sesion_controller.js lee del <script type="application/json">.
+    def datos_de_la_sesion
+      JSON.parse(Nokogiri::HTML(response.body).at_css("script[data-sesion-target='datos']").text)
+    end
+
+    # Replica registrarSerie() del Stimulus: un POST por chip con las reps
+    # del piso del rango y el kg que la sesión le entregó.
+    def completar_series!(fecha, ejercicio)
+      ejercicio["series"].times do |i|
+        post detalles_entrenamiento_path, params: {
+          fecha: fecha.iso8601, ejercicio_id: ejercicio["ejercicio_id"], nombre: ejercicio["nombre"],
+          serie: i + 1, repeticiones: ejercicio["repeticiones"].to_i,
+          peso_kg: ejercicio["peso_registro_kg"], uid: ejercicio["uid"]
+        }
+      end
+    end
+
+    # Bug (septiembre 2026): la sesión prefería el kg de la vez pasada al
+    # sugerido, y Progresion::Regla solo sube si se levantó EXACTO el
+    # sugerido — tras el primer +2.5 la sesión 2 volvía a registrar el peso
+    # viejo y la progresión quedaba congelada para siempre.
+    it "tras el incremento de la regla, la sesión siguiente registra el sugerido nuevo y vuelve a progresar" do
+      plan = crear_plan!(users(:one), rutina: rutina_con_id)
+      premium!(users(:one))
+      sign_in_as users(:one)
+
+      get sesion_path((lunes - 7).iso8601)
+      completar_series!(lunes - 7, datos_de_la_sesion["ejercicios"].first)
+      expect(plan.reload.ejercicios_de(0).first["peso_sugerido_kg"]).to eq(62.5)
+
+      get sesion_path(lunes.iso8601)
+      ejercicio = datos_de_la_sesion["ejercicios"].first
+      expect(ejercicio["peso_registro_kg"]).to eq(62.5) # lo que muestra "≈62.5 kg"
+      completar_series!(lunes, ejercicio)
+
+      hoy = users(:one).registros_entrenamiento.find_by!(fecha: lunes)
+      expect(hoy.detalles.pluck(:peso_kg).uniq).to eq([ 62.5 ])
+      expect(plan.reload.ejercicios_de(0).first["peso_sugerido_kg"]).to eq(65)
+    end
+
+    # Un deload lo decide el staff bajando el sugerido (la regla nunca baja
+    # sola): la sesión registra el peso de la descarga, no el de la vez
+    # pasada — con max(anterior, sugerido) el deload sería invisible.
+    it "si el staff baja el sugerido, registra la descarga y no el peso de la vez pasada" do
+      rutina_con_id["dias"].first["ejercicios"].first["peso_sugerido_kg"] = 50
+      crear_plan!(users(:one), rutina: rutina_con_id)
+      premium!(users(:one))
+      pasado = users(:one).registros_entrenamiento.create!(fecha: lunes - 7)
+      pasado.detalles.create!(ejercicio: ejercicio_catalogo, serie: 1, repeticiones: 8, peso_kg: 60)
+      sign_in_as users(:one)
+
+      get sesion_path(lunes.iso8601)
+
+      expect(datos_de_la_sesion["ejercicios"].first["peso_registro_kg"]).to eq(50)
+    end
+
+    it "sin peso sugerido en el plan cae al kg de la vez pasada" do
+      rutina_con_id["dias"].first["ejercicios"].first.delete("peso_sugerido_kg")
+      crear_plan!(users(:one), rutina: rutina_con_id)
+      premium!(users(:one))
+      pasado = users(:one).registros_entrenamiento.create!(fecha: lunes - 7)
+      pasado.detalles.create!(ejercicio: ejercicio_catalogo, serie: 1, repeticiones: 8, peso_kg: 20)
+      sign_in_as users(:one)
+
+      get sesion_path(lunes.iso8601)
+
+      expect(datos_de_la_sesion["ejercicios"].first["peso_registro_kg"]).to eq(20)
     end
 
     it "free no recibe la URL de detalles (chips solo visuales) y de estreno va el sugerido" do
@@ -139,6 +210,128 @@ RSpec.describe "Sesiones", type: :request do
 
       expect(response.body).to include('data-sesion-detalles-url-value=""')
       expect(response.body).to include('"series_registradas":0')
+    end
+
+    # Bug (septiembre 2026, Nota 27g): la regla comparaba contra el sugerido
+    # de la BASE mientras la sesión registraba el EFECTIVO (semana × fase) —
+    # con el mesociclo por defecto solo progresaba en la semana 1. Ahora
+    # ambos leen PlanPersonalizado#prescripcion_de.
+    describe "progresión a través del mesociclo" do
+      # Semana 1 = tres lunes atrás … semana 4 (descarga) = el lunes en curso.
+      let(:inicio) { lunes - 21 }
+
+      before do
+        premium!(users(:one))
+        sign_in_as users(:one)
+      end
+
+      # rutina_con_id sobre el mesociclo por defecto (1.0/1.05/1.1/0.85) o
+      # sobre las semanas que pida el caso.
+      def rutina_mesociclo(semanas: Ejercicios::ValidadorRutina.progresion_defecto["semanas"])
+        rutina_con_id.merge(
+          "version" => 2, "semanas" => semanas,
+          "mesociclo" => { "nombre" => "Meso", "semanas_total" => semanas.size,
+                           "inicio" => inicio.iso8601, "progresion" => "lineal" }
+        )
+      end
+
+      def semana_de_una(etiqueta, series_delta: 0, peso_factor: 1.0, descarga: false)
+        [ { "numero" => 1, "etiqueta" => etiqueta, "descarga" => descarga, "dias" => nil,
+            "ajuste" => { "series_delta" => series_delta, "peso_factor" => peso_factor, "reps_delta" => 0 } } ]
+      end
+
+      def fecha_semana(numero) = inicio + ((numero - 1) * 7)
+
+      def sugerido_base(plan) = plan.reload.ejercicios_de(0).first["peso_sugerido_kg"]
+
+      # GET de la sesión de esa semana + un POST por chip; devuelve lo que la
+      # sesión le entregó al Stimulus para ese ejercicio.
+      def entrenar_semana!(numero)
+        get sesion_path(fecha_semana(numero).iso8601)
+        ejercicio = datos_de_la_sesion["ejercicios"].first
+        completar_series!(fecha_semana(numero), ejercicio)
+        ejercicio
+      end
+
+      it "progresa en cada semana de carga sobre lo que la sesión registró, y no en la descarga" do
+        plan = crear_plan!(users(:one), rutina: rutina_mesociclo)
+
+        expect(entrenar_semana!(1)["peso_registro_kg"]).to eq(60)   # 60 × 1.0
+        expect(sugerido_base(plan)).to eq(62.5)
+
+        semana2 = entrenar_semana!(2)
+        expect(semana2["peso_registro_kg"]).to eq(65.5)             # 62.5 × 1.05 = 65.6 → medios kilos
+        registro = users(:one).registros_entrenamiento.find_by!(fecha: fecha_semana(2))
+        expect(registro.detalles.pluck(:peso_kg).uniq).to eq([ 65.5 ])
+        expect(sugerido_base(plan)).to eq(65)
+
+        # Reintento por red de todas las series de la semana 2: el efectivo
+        # ya es 65 × 1.05 → 68.5 ≠ 65.5 registrado, no sube dos veces.
+        completar_series!(fecha_semana(2), semana2)
+        expect(sugerido_base(plan)).to eq(65)
+
+        expect(entrenar_semana!(3)["peso_registro_kg"]).to eq(71.5) # 65 × 1.1
+        expect(sugerido_base(plan)).to eq(67.5)
+
+        expect(entrenar_semana!(4)["peso_registro_kg"]).to eq(57.5) # 67.5 × 0.85 = 57.4 → descarga
+        expect(sugerido_base(plan)).to eq(67.5) # completar una descarga no es progreso
+      end
+
+      it "en una semana materializada compara contra su copia horneada y sube todas las apariciones" do
+        plan = crear_plan!(users(:one), rutina: rutina_mesociclo)
+        plan.materializar_semana!(2) # 60 × 1.05 = 63 queda horneado en la copia
+
+        expect(entrenar_semana!(2)["peso_registro_kg"]).to eq(63)
+        expect(sugerido_base(plan)).to eq(62.5)
+        expect(plan.semana(2)["dias"].first["ejercicios"].first["peso_sugerido_kg"]).to eq(65.5)
+      end
+
+      it "una fase del ciclo que recorta carga no cuenta como progreso" do
+        plan = crear_plan!(users(:one), rutina: rutina_mesociclo)
+        users(:one).consentimientos.create!(tipo: "ciclo_menstrual", accion: "otorgado", version_texto: "ciclo-v1")
+        CicloMenstrual.create!(user: users(:one), creado_por: users(:one), fecha_inicio: fecha_semana(2))
+
+        semana2 = entrenar_semana!(2) # día 1 del ciclo: menstrual
+        expect(semana2["peso_registro_kg"]).to eq(53.5) # 60 × 1.05 × 0.85 = 53.55
+        expect(semana2["series"]).to eq(2)               # 3 − 1
+        expect(sugerido_base(plan)).to eq(60)
+      end
+
+      it "una semana más liviana que la base sin marca de descarga tampoco progresa" do
+        plan = crear_plan!(users(:one), rutina: rutina_mesociclo(semanas: semana_de_una("Adaptación", peso_factor: 0.9)))
+
+        expect(entrenar_semana!(1)["peso_registro_kg"]).to eq(54) # 60 × 0.9
+        expect(sugerido_base(plan)).to eq(60)
+      end
+
+      it "exige las series EFECTIVAS de la semana: con series_delta +1 no sube tras la 3ª de 4" do
+        plan = crear_plan!(users(:one), rutina: rutina_mesociclo(semanas: semana_de_una("Volumen", series_delta: 1)))
+
+        get sesion_path(fecha_semana(1).iso8601)
+        ejercicio = datos_de_la_sesion["ejercicios"].first
+        expect(ejercicio["series"]).to eq(4)
+
+        completar_series!(fecha_semana(1), ejercicio.merge("series" => 3))
+        expect(sugerido_base(plan)).to eq(60) # falta la 4ª
+
+        completar_series!(fecha_semana(1), ejercicio) # 1-3 idempotentes, la 4ª es nueva
+        expect(sugerido_base(plan)).to eq(62.5)
+      end
+
+      # Reprogramar (19e) mueve el contenido con SU semana: el día de la
+      # semana 1 movido a la 2 se registra y se evalúa a 60, no a 63.
+      it "un día de la semana 1 reprogramado a la 2 se evalúa con los números de la semana 1" do
+        plan = crear_plan!(users(:one), rutina: rutina_mesociclo)
+        destino = fecha_semana(2) + 2 # miércoles de la semana 2
+        plan.reprogramaciones_dia.create!(fecha_original: fecha_semana(1), fecha_destino: destino)
+
+        get sesion_path(destino.iso8601)
+        ejercicio = datos_de_la_sesion["ejercicios"].first
+        expect(ejercicio["peso_registro_kg"]).to eq(60)
+        completar_series!(destino, ejercicio)
+
+        expect(sugerido_base(plan)).to eq(62.5)
+      end
     end
   end
 

@@ -62,7 +62,9 @@ class DetalleEntrenamiento < ApplicationRecord
   def self.registrar_cumplido!(registro:, ejercicio:, series:, repeticiones:, peso_kg:)
     # Idempotente (Fase 18k, bug reportado con captura: 18 filas de un plan
     # de 3): cada reenvío "cumplido" apilaba otras N series. Con series ya
-    # registradas no crea nada — corregir es quitar/añadir series a mano.
+    # registradas no crea nada. Corregirlas no tiene UI hoy: el quitar serie
+    # murió en la Fase 18n y la corrección llegará como pantalla propia
+    # cuando alguien la pida (Nota 23l).
     return [] if registro.detalles.where(ejercicio: ejercicio).exists?
 
     reps = repeticiones.to_s[/\d+/].to_i

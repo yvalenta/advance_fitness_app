@@ -7,6 +7,14 @@ module Progresion
   # incremento fijo para la próxima vez. Nunca baja sola: un deload es
   # decisión del staff, no de la regla.
   #
+  # "Prescritas" y "sugerido" son los EFECTIVOS de esa fecha (Nota 27g):
+  # PlanPersonalizado#prescripcion_de, lo mismo que el modo sesión mostró y
+  # registró — semana del mesociclo × fase del ciclo, reprogramación
+  # resuelta. Comparar contra la base dejaba la regla viva solo en la
+  # semana 1 del mesociclo. Un día liviano no es evidencia de progreso: ni
+  # la semana de descarga, ni una fase del ciclo que recorte, ni una
+  # prescripción por debajo de la base (ver mas_liviana?).
+  #
   # El gate es "completó la sesión", no "tocó el tope del rango de reps":
   # el modo sesión registra SIEMPRE el piso del rango sin pedir que el
   # miembro escriba nada (Fase 18l, fricción cero) — comparar contra el
@@ -29,9 +37,13 @@ module Progresion
       plan = user.plan_aprobado
       return unless plan
 
-      entrada = buscar_entrada(plan.rutina, uid)
+      prescripcion = plan.prescripcion_de(fecha)
+      return if prescripcion.descarga? || Ciclo::Ajuste.baja_carga?(prescripcion.ajuste_ciclo)
+
+      entrada = prescripcion.ejercicio(uid)
       return unless entrada
       return if entrada["tipo"] == "tiempo" || entrada["grupo_superserie"].present?
+      return if mas_liviana?(entrada, buscar_entrada(plan.rutina, uid))
 
       series_prescritas = entrada["series"].to_i
       return unless series_prescritas.positive?
@@ -60,6 +72,21 @@ module Progresion
       texto.to_i if texto.match?(/\A\d+\z/)
     end
 
+    # Una prescripción efectiva por debajo de la base en peso, series o piso
+    # de reps (una semana de 0.9 sin marca de descarga, un recorte manual del
+    # staff en una semana materializada): completarla no prueba que el
+    # miembro pueda con la base + el incremento.
+    def self.mas_liviana?(efectiva, base)
+      return false unless base
+
+      efectiva["peso_sugerido_kg"].to_f < base["peso_sugerido_kg"].to_f ||
+        efectiva["series"].to_i < base["series"].to_i ||
+        piso_reps(efectiva["repeticiones"]).to_i < piso_reps(base["repeticiones"]).to_i
+    end
+    private_class_method :mas_liviana?
+
+    # La entrada de referencia del uid: la de la plantilla base o, si el
+    # staff la quitó de la base, la de la primera semana materializada.
     def self.buscar_entrada(rutina, uid)
       Ejercicios::ValidadorRutina.colecciones_de_dias(rutina).each do |dias|
         dias.each do |dia|
