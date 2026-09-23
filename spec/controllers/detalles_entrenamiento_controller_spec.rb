@@ -171,6 +171,10 @@ RSpec.describe "DetallesEntrenamiento", type: :request do
   end
 
   describe "progresión por reglas en el create (Fase 20d)" do
+    # La regla evalúa la prescripción de ESA fecha (Nota 27g): el plan solo
+    # trae lunes, así que las series van al lunes en curso.
+    let(:lunes) { Date.current.beginning_of_week }
+
     before do
       sign_in_as users(:one)
       premium!(users(:one))
@@ -188,13 +192,13 @@ RSpec.describe "DetallesEntrenamiento", type: :request do
       plan = crear_plan_con_uid!
 
       post detalles_entrenamiento_path, params: {
-        fecha: Date.current.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre,
+        fecha: lunes.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre,
         serie: 1, repeticiones: 10, peso_kg: 40, uid: "u1"
       }
       expect(plan.reload.ejercicios_de(0).first["peso_sugerido_kg"]).to eq(40) # falta la 2ª serie
 
       post detalles_entrenamiento_path, params: {
-        fecha: Date.current.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre,
+        fecha: lunes.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre,
         serie: 2, repeticiones: 10, peso_kg: 40, uid: "u1"
       }
       expect(plan.reload.ejercicios_de(0).first["peso_sugerido_kg"]).to eq(42.5)
@@ -204,11 +208,11 @@ RSpec.describe "DetallesEntrenamiento", type: :request do
       plan = crear_plan_con_uid!
 
       post detalles_entrenamiento_path, params: {
-        fecha: Date.current.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre,
+        fecha: lunes.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre,
         serie: 1, repeticiones: 10, peso_kg: 40
       }
       post detalles_entrenamiento_path, params: {
-        fecha: Date.current.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre,
+        fecha: lunes.iso8601, ejercicio_id: ejercicio.id, nombre: ejercicio.nombre,
         serie: 2, repeticiones: 10, peso_kg: 40
       }
 

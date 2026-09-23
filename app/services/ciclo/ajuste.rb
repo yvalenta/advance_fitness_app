@@ -46,5 +46,12 @@ module Ciclo
     def self.para(fase)
       POR_FASE.fetch(fase.to_s.to_sym, NULO)
     end
+
+    # ¿El ajuste recorta la prescripción en algún eje? Por la regla dura,
+    # "distinto de identidad" es "baja". Progresion::Regla no cuenta como
+    # progreso un día recortado (Nota 27g).
+    def self.baja_carga?(ajuste)
+      ajuste["peso_factor"].to_f < 1.0 || ajuste["series_delta"].to_i.negative? || ajuste["reps_delta"].to_i.negative?
+    end
   end
 end

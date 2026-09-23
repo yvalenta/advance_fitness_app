@@ -59,4 +59,10 @@ RSpec.describe Ciclo::Ajuste do
       expect(ajuste["mensaje"]).to match(/energía/i)
     end
   end
+
+  # Progresion::Regla no cuenta un día recortado como progreso (Nota 27g).
+  it "baja_carga? es cierto justo en las fases que recortan algún eje" do
+    recortan = Ciclo::Fase::FASES.select { |fase| described_class.baja_carga?(described_class.para(fase)) }
+    expect(recortan).to contain_exactly(:menstrual, :lutea)
+  end
 end
