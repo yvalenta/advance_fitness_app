@@ -42,7 +42,7 @@ class ObjetivosController < ApplicationController
       PlanPersonalizado.asegurar_sugerido!(Current.user)
       redirect_to objetivo_path, notice: "Objetivo fijado: #{@objetivo.objetivo_kcal} kcal diarias."
     else
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 

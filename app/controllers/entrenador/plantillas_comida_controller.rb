@@ -11,7 +11,7 @@ class Entrenador::PlantillasComidaController < ApplicationController
                                               proteinas_g carbohidratos_g grasas_g]),
              status: :created
     else
-      render json: { errores: plantilla.errors.full_messages }, status: :unprocessable_entity
+      render json: { errores: plantilla.errors.full_messages }, status: :unprocessable_content
     end
   end
 

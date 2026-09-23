@@ -10,7 +10,7 @@ class Entrenador::PlantillasEjercicioController < ApplicationController
       render json: plantilla.as_json(only: %i[id musculo nombre series repeticiones descanso_seg]),
              status: :created
     else
-      render json: { errores: plantilla.errors.full_messages }, status: :unprocessable_entity
+      render json: { errores: plantilla.errors.full_messages }, status: :unprocessable_content
     end
   end
 

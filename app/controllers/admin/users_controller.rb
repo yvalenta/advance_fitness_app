@@ -50,7 +50,7 @@ class Admin::UsersController < ApplicationController
       redirect_to admin_users_path,
                   notice: "#{@user.nombre.presence || @user.email_address} agregado. Se envió el enlace para fijar su contraseña."
     else
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -87,7 +87,7 @@ class Admin::UsersController < ApplicationController
       redirect_to admin_user_path(@user), notice: "Perfil actualizado."
     else
       cargar_ficha
-      render :show, status: :unprocessable_entity
+      render :show, status: :unprocessable_content
     end
   end
 

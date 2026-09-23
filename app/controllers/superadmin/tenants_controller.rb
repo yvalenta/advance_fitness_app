@@ -30,7 +30,7 @@ class Superadmin::TenantsController < ApplicationController
       redirect_to superadmin_tenant_path(@tenant),
                   notice: admin ? "Tenant creado. Enviamos a #{admin.email_address} el enlace para fijar su contraseña." : "Tenant creado."
     else
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -43,7 +43,7 @@ class Superadmin::TenantsController < ApplicationController
     if @tenant.update(tenant_params_normalizados)
       redirect_to superadmin_tenant_path(@tenant), notice: "Tenant actualizado."
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

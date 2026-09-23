@@ -28,7 +28,7 @@ RSpec.describe "Entrenador::PlantillasComida", type: :request do
            "tipo", "nombre", "descripcion", "kcal", "proteinas_g", "carbohidratos_g", "grasas_g"
          ) }
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.parsed_body["errores"].any?).to be_truthy
   end
 

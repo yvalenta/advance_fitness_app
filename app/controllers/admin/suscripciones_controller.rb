@@ -33,7 +33,7 @@ class Admin::SuscripcionesController < ApplicationController
       @suscripcion = Suscripcion.new(datos)
       @medicion = Medicion.new(medicion_datos)
       @suscripcion.errors.add(:user_id, "no es un miembro válido de este gimnasio")
-      return render :new, status: :unprocessable_entity
+      return render :new, status: :unprocessable_content
     end
 
     @suscripcion = Suscripcion.new(datos.merge(plan: Plan.personalizado, estado: "activa"))
@@ -54,7 +54,7 @@ class Admin::SuscripcionesController < ApplicationController
     redirect_to admin_suscripciones_path,
                 notice: "Suscripción creada con su medición y membresía incluida. El plan con IA se está generando y quedará en revisión del entrenador."
   rescue ActiveRecord::RecordInvalid
-    render :new, status: :unprocessable_entity
+    render :new, status: :unprocessable_content
   end
 
   # Dos transiciones desde el panel: cancelar (desde el listado), o cambiar

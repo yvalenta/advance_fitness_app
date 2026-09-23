@@ -9,7 +9,7 @@ class DetallesEntrenamientoController < ApplicationController
 
   def create
     authorize @registro, policy_class: DetalleEntrenamientoPolicy
-    return head :unprocessable_entity unless @ejercicio
+    return head :unprocessable_content unless @ejercicio
 
     if ActiveModel::Type::Boolean.new.cast(params[:cumplido])
       # Series idénticas entre sí: para el detector de PRs basta evaluar una

@@ -28,7 +28,7 @@ RSpec.describe "Landing::Autoservicios", type: :request do
         }
       }.not_to change(SolicitudAutoservicio, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     it "ignora un segmento enviado por el cliente — siempre gana el subdominio" do

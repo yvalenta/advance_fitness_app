@@ -28,7 +28,7 @@ class Admin::MedicionesController < ApplicationController
       # al check-in y el morph actualiza en sitio — sin teletransporte.
       redirect_back_or_to admin_user_mediciones_path(@miembro), notice: guardar_y_notificar
     else
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -43,7 +43,7 @@ class Admin::MedicionesController < ApplicationController
     if @medicion.save
       redirect_to admin_user_mediciones_path(@miembro), notice: guardar_y_notificar
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

@@ -69,7 +69,7 @@ RSpec.describe "Perfiles", type: :request do
       expect(response.body).to match(/<body[^>]*data-theme="advance"/)
 
       patch perfil_path, params: { user: { tema: "fucsia" } }
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(users(:one).reload.tema).to eq("oscuro")
     end
   end

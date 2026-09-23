@@ -22,7 +22,7 @@ class PerfilesController < ApplicationController
       redirect_to destino, notice: "Perfil actualizado."
     else
       cargar_stats # el render :edit también pinta la cabecera de stats
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

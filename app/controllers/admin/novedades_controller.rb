@@ -22,7 +22,7 @@ class Admin::NovedadesController < ApplicationController
     if @novedad.save
       redirect_to admin_novedades_path, notice: "Novedad creada."
     else
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -33,7 +33,7 @@ class Admin::NovedadesController < ApplicationController
     if @novedad.update(novedad_params)
       redirect_to admin_novedades_path, notice: "Novedad actualizada."
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

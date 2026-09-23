@@ -42,7 +42,7 @@ class Admin::MembresiasController < ApplicationController
     redirect_to admin_membresias_path, notice: "Membresía creada para #{@membresia.user.nombre}."
   rescue ActiveRecord::RecordInvalid => error
     @membresia.errors.add(:base, error.message) if @membresia.errors.empty?
-    render :new, status: :unprocessable_entity
+    render :new, status: :unprocessable_content
   end
 
   # policy_scope + find (tarea 2026-08-31): el Membresia.find crudo dejaba al
@@ -61,7 +61,7 @@ class Admin::MembresiasController < ApplicationController
     if @membresia.save
       redirect_to admin_membresias_path, notice: "Membresía actualizada."
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

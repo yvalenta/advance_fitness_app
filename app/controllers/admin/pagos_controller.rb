@@ -24,7 +24,7 @@ class Admin::PagosController < ApplicationController
     if @pago.update(params.expect(pago: %i[monto metodo]))
       redirect_to admin_pagos_path, notice: "Pago corregido."
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

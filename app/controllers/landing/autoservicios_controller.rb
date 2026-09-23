@@ -25,7 +25,7 @@ module Landing
       if @solicitud.save
         redirect_to landing_autoservicio_gracias_path
       else
-        render :new, status: :unprocessable_entity
+        render :new, status: :unprocessable_content
       end
     end
 

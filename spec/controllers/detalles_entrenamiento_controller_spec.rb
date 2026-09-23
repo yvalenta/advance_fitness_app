@@ -78,7 +78,7 @@ RSpec.describe "DetallesEntrenamiento", type: :request do
         repeticiones: 5, peso_kg: 10
       }
     }.not_to change(DetalleEntrenamiento, :count)
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
   end
 
   describe "récords personales en el create (Fase 14.13)" do

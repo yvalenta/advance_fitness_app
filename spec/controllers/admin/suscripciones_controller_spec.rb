@@ -103,7 +103,7 @@ RSpec.describe "Admin::Suscripciones", type: :request do
         }
       }.not_to have_enqueued_job(GenerarPlanJob)
     }.not_to change { [ Suscripcion.count, Medicion.count, PlanPersonalizado.count ] }
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
   end
 
   # Fase 6.13: buscador en vivo por nombre/correo del miembro
