@@ -60,6 +60,22 @@ RSpec.describe RecordatorioRachaJob, type: :job do
     expect(perfil.reload.racha_recordada_en).to be_nil
   end
 
+  it "con gamificación apagada en su gimnasio no se avisa ni se marca (Nota 23g)" do
+    users(:two).update_columns(tenant_id: tenants(:megaplex).id)      # parado en otro gimnasio
+    perfil = perfil_con_racha(miembro, ultima: Date.current - 1)
+    otro = perfil_con_racha(users(:two), ultima: Date.current - 1)
+    suscribir(miembro, "a")
+    telefono_otro = suscribir(users(:two), "b")
+    tenants(:advance_fitness).update!(features_habilitadas: { "gamificacion" => false })
+
+    described_class.perform_now
+
+    expect(Notificaciones::EnviadorPush).to have_received(:enviar).once
+    expect(Notificaciones::EnviadorPush).to have_received(:enviar).with(telefono_otro, anything)
+    expect(perfil.reload.racha_recordada_en).to be_nil
+    expect(otro.reload.racha_recordada_en).to eq(Date.current)
+  end
+
   it "sin llaves VAPID el job es un no-op" do
     perfil_con_racha(miembro, ultima: Date.current - 1)
     suscribir(miembro)

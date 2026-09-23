@@ -11,6 +11,8 @@ class RecordatorioRachaJob < ApplicationJob
     return if ENV["VAPID_PRIVATE_KEY"].blank?
 
     elegibles.find_each do |perfil|
+      next unless gamificacion_activa?(perfil.user)
+
       perfil.update!(racha_recordada_en: Date.current)
       dias = perfil.racha_actual
       perfil.user.suscripciones_push.each do |suscripcion|
@@ -34,7 +36,16 @@ class RecordatorioRachaJob < ApplicationJob
                .where(ultima_fecha_racha: Date.current - 1)
                .where(racha_actual: 1..)
                .where("racha_recordada_en IS NULL OR racha_recordada_en < ?", Date.current)
-               .includes(user: :suscripciones_push)
+               .includes(user: [ :suscripciones_push, :tenant ])
                .distinct
+  end
+
+  # Nota 23g: con `gamificacion` apagada el gimnasio no muestra la racha, así
+  # que avisar por ella sería hablarle de algo que no ve. Manda el tenant
+  # donde la cuenta está parada (users.tenant_id, cache del puesto vigente),
+  # con el mismo criterio de ApplicationHelper#feature_habilitada?: sin
+  # tenant, encendida. Saltar no marca racha_recordada_en: no hubo aviso.
+  def gamificacion_activa?(user)
+    user.tenant.nil? || user.tenant.feature?("gamificacion")
   end
 end
