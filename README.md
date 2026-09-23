@@ -15,13 +15,13 @@ Aplicación web integral de gestión de gimnasio: membresías y control de acces
 | **PostgreSQL** | 17 | Base de datos única (también para jobs, cache y cable) |
 | **Hotwire** (Turbo + Stimulus) + importmap | — | Interactividad sin build de JS (sin Node) |
 | **Propshaft** | — | Asset pipeline moderno (reemplaza Sprockets) |
-| **Tailwind CSS** | v4.3.1 (gem tailwindcss-rails 4.6.0) | Estilos — binario standalone, tokens en `@theme` |
+| **Tailwind CSS** | v4.3.3 (gem tailwindcss-rails 4.6.0) | Estilos — binario standalone, tokens en `@theme` |
 | **DaisyUI** | 5 | Componentes UI CSS-only (vendored, sin Node) — tema `advance` |
 | **Auth nativa Rails 8** + Pundit 2.5.2 | — | Autenticación (bcrypt + sessions) y autorización por rol |
 | **OmniAuth Google OAuth2** | ~1.2 | Login con Google (`/auth/google_oauth2`) |
-| **Solid Queue / Cache / Cable** | 1.4.0 / 1.0.10 / 4.0.0 | Jobs, cache y websockets sobre Postgres (sin Redis) |
+| **Solid Queue / Cache / Cable** | 1.7.0 / 1.0.10 / 4.0.2 | Jobs, cache y websockets sobre Postgres (sin Redis) |
 | **IA multi-proveedor** (Gemini · Claude) | — | `GenerarPlanJob` — gemini-2.5-flash-lite por defecto, fallback gemini-2.5-flash |
-| **Faraday** | 2.14.3 | Cliente HTTP para los adaptadores de IA (`app/services/ia/`) |
+| **Faraday** | 2.14.4 | Cliente HTTP para los adaptadores de IA (`app/services/ia/`) |
 | **Kamal** | 2.12.0 | Despliegue (Docker) |
 | **Thruster** | — | Proxy HTTP con caché de assets + X-Sendfile |
 | **Puma** | 8.0.2 | Servidor web |

@@ -14,29 +14,35 @@ production:
     command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
     schedule: every hour at minute 12
 
+  # La escalera de las 4am va con zona explícita (2026-09-23, visto de
+  # Yonatan). Hasta solid_queue 1.4 un schedule sin zona corría en la hora
+  # del contenedor (UTC): las 4am UTC son las 11pm de Bogotá del día
+  # anterior, así que una membresía vencida ayer se marcaba recién esa noche
+  # y una suscripción programada se activaba al final de su primer día.
+  # Desde 1.5 el default es config.time_zone; la zona escrita acá no depende
+  # de ese default. spec/config/recurring_spec.rb lo fija.
   vencer_membresias:
     class: VencerMembresiasJob
     queue: default
-    schedule: at 4am every day
+    schedule: every day at 4am America/Bogota
 
   vencer_suscripciones:
     class: VencerSuscripcionesJob
     queue: default
-    schedule: at 4:02am every day
+    schedule: every day at 4:02am America/Bogota
 
   activar_suscripciones_programadas:
     class: ActivarSuscripcionesProgramadasJob
     queue: default
-    schedule: at 4:05am every day
+    schedule: every day at 4:05am America/Bogota
 
   recalcular_perfiles_juego:
     class: RecalcularPerfilesJuegoJob
     queue: background
-    schedule: at 4:10am every day
+    schedule: every day at 4:10am America/Bogota
 
-  # Fase 15: el recordatorio va con timezone explícito — el resto de la
-  # escalera de las 4am corre en la hora del contenedor y ahí no importa,
-  # pero un push a deshora sí molesta.
+  # Fase 15: el recordatorio nació con zona explícita — un push a deshora
+  # molesta.
   recordatorio_racha:
     class: RecordatorioRachaJob
     queue: background
