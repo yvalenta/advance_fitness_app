@@ -77,9 +77,10 @@ class SesionesController < ApplicationController
     # rutinas viejas sin uid) y series/descanso saneados para que la máquina
     # de estados nunca reciba 0 series ni descanso 0.
     # Fase 18l (premium): cada ejercicio lleva además el kg con el que la
-    # sesión registra sus series (la vez pasada o, de estreno, el sugerido
-    # del plan) y cuántas series ya quedaron registradas hoy — para que una
-    # re-visita pinte los chips hechos y no duplique.
+    # sesión registra sus series (el sugerido del plan o, si no trae, la vez
+    # pasada — ver peso_para_registrar) y cuántas series ya quedaron
+    # registradas hoy — para que una re-visita pinte los chips hechos y no
+    # duplique.
     def datos_sesion
       premium = Current.user.premium?
       ids = @catalogo.keys
@@ -119,8 +120,17 @@ class SesionesController < ApplicationController
              &.detalles&.group(:ejercicio_id)&.count || {}
     end
 
+    # El kg que se registra es el que la pantalla MUESTRA ("≈ X kg"): el
+    # sugerido EFECTIVO del día (semana del mesociclo × fase del ciclo). La
+    # sesión no tiene input de peso, así que la vez pasada solo rellena
+    # cuando el plan no trae número. Preferirla congelaba Progresion::Regla
+    # tras su primer +2.5 (la sesión siguiente volvía a registrar el peso
+    # viejo y la regla exige el sugerido exacto); tomar el máximo borraría
+    # los deloads del staff y del ciclo (Nota 27f).
     def peso_para_registrar(anterior, ej)
-      peso = anterior&.peso_kg || (ej["peso_sugerido_kg"].to_f if ej["peso_sugerido_kg"].to_f.positive?)
-      peso&.to_f
+      sugerido = ej["peso_sugerido_kg"].to_f
+      return sugerido if sugerido.positive?
+
+      anterior&.peso_kg&.to_f
     end
 end

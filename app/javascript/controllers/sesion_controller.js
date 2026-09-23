@@ -163,9 +163,10 @@ export default class extends Controller {
   }
 
   // Registro cuantitativo por serie (Fase 18l, solo premium — sin URL no
-  // envía): reps del plan (límite inferior del rango) y kg de la vez pasada
-  // o el sugerido de estreno. Best-effort: un fallo de red jamás interrumpe
-  // el entrenamiento — el índice único por serie evita duplicados.
+  // envía): reps del plan (límite inferior del rango) y el kg que el server
+  // decidió en peso_registro_kg (el sugerido que se muestra; la vez pasada
+  // solo si el plan no trae peso). Best-effort: un fallo de red jamás
+  // interrumpe el entrenamiento — el índice único por serie evita duplicados.
   // Fase 20: un ejercicio por tiempo registra los SEGUNDOS reales sostenidos
   // (this.segundosTrabajoReales), no el objetivo si se cortó antes/después.
   registrarSerie(numeroSerie) {
@@ -391,7 +392,7 @@ export default class extends Controller {
   }
 
   // Volumen = series hechas × reps (límite inferior del rango) × kg — el
-  // mismo kg que se registra (vez pasada o sugerido, Fase 18l). Un ejercicio
+  // mismo kg que se registra (peso_registro_kg, Fase 18l). Un ejercicio
   // por tiempo no aporta volumen de carga (no hay reps que multiplicar).
   volumenKg() {
     return Math.round(this.ejercicios.reduce((suma, ejercicio, i) => {

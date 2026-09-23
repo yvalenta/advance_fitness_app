@@ -11,8 +11,9 @@ class RecordPersonal < ApplicationRecord
 
   belongs_to :user
   belongs_to :ejercicio
-  # La serie que produjo la marca; optional porque el dueño puede quitar la
-  # serie después (FK on_delete: :nullify) sin perder el récord.
+  # La serie que produjo la marca; optional por la FK on_delete: :nullify —
+  # red de seguridad si la serie llega a borrarse. Hoy ninguna UI la quita
+  # (el DELETE de series murió en la Fase 18n, Nota 23l).
   belongs_to :detalle_entrenamiento, optional: true
 
   validates :tipo, inclusion: { in: TIPOS }
