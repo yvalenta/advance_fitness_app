@@ -7,12 +7,14 @@ require "rails_helper"
 # Esta guarda pone rojo un regreso a esos defaults — por ejemplo, al
 # regenerar la config con un `solid_queue:install`.
 RSpec.describe "Sondeo de Solid Queue y Solid Cable contra Supabase" do
-  it "los workers de Solid Queue en producción sondean cada 2 s o más" do
-    produccion = ActiveSupport::ConfigurationFile.parse(Rails.root.join("config/queue.yml")).fetch("production")
-    intervalos = produccion.fetch("workers").map { |worker| worker.fetch("polling_interval") }
+  %w[workers dispatchers].each do |tipo|
+    it "los #{tipo} de Solid Queue en producción sondean cada 2 s o más" do
+      produccion = ActiveSupport::ConfigurationFile.parse(Rails.root.join("config/queue.yml")).fetch("production")
+      intervalos = produccion.fetch(tipo).map { |proceso| proceso.fetch("polling_interval") }
 
-    expect(intervalos).to be_present
-    expect(intervalos).to all(be >= 2)
+      expect(intervalos).to be_present
+      expect(intervalos).to all(be >= 2)
+    end
   end
 
   it "Solid Cable en producción sondea cada 1 s o más, leído como lo lee la gema" do

@@ -1,6 +1,12 @@
 default: &default
   dispatchers:
-    - polling_interval: 1
+    # 2 s, no 1: mismo motivo que el worker (egress del pooler de Supabase).
+    # Cada vuelta son 3 viajes (BEGIN, solid_queue_scheduled_executions,
+    # COMMIT). Solo mueve los jobs con `wait:` — los recurrentes los encola el
+    # scheduler directo —, así que el costo es que el push del rest-timer
+    # (NotificarDescansoJob) puede llegar hasta ~4 s tarde: 2 s de dispatcher
+    # más 2 s de worker. Decisión de Yonatan, 2026-09-30.
+    - polling_interval: 2
       batch_size: 500
   workers:
     - queues: "*"
