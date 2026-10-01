@@ -6,7 +6,13 @@ default: &default
     - queues: "*"
       threads: 3
       processes: <%= ENV.fetch("JOB_CONCURRENCY", 1) %>
-      polling_interval: 0.1
+      # 2 s, no el 0.1 del generador: cada vuelta del worker son 4 viajes
+      # (BEGIN, solid_queue_pauses, solid_queue_ready_executions, COMMIT) al
+      # pooler de Supabase, y ese egress se cobra contra la cuota Free de 5 GB
+      # de la organización. A 0.1 s eran ~8,9 vueltas/s día y noche, casi toda
+      # la cuota (medido 2026-09-30); a 2 s, ~0,5/s. Un job encolado arranca
+      # hasta 2 s después — ninguno de esta app es interactivo a ese grano.
+      polling_interval: 2
 
 development:
   <<: *default
