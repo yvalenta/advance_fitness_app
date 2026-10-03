@@ -45,6 +45,60 @@ RSpec.describe PerfilJuego, type: :model do
     expect(PerfilJuego.where(user: user).count).to eq 1
   end
 
+  # H2 (refutación ronda 1): el perfil NACÍA con el tenant viejo si se creaba
+  # con una cuenta cargada antes de que commiteara el canje del pase (lo que
+  # hacen OtorgarPuntosJob y TablaPosiciones#participar en vuelo): el callback
+  # de User ya había corrido sin ver perfil, la validación comparaba contra la
+  # cuenta VIEJA en memoria, y nada lo reparaba — todo update! posterior
+  # reventaba. Ahora la creación lee el tenant fresco de la cuenta (con
+  # `FOR SHARE`, que serializa contra la mudanza) y se niega: fail-closed, igual
+  # que la validación de siempre cuando el perfil ya existe.
+  describe "con la cuenta cargada ANTES de que se mudara (carrera con el canje del pase)" do
+    let(:megaplex) { tenants(:megaplex) }
+
+    before { user.puestos.create!(tenant: megaplex, rol: "miembro") }
+
+    # El canje commitea por otra vía (otra request/conexión): la cuenta que
+    # tiene en memoria el job o el controller sigue con el tenant viejo.
+    def cuenta_cargada_antes_de_la_mudanza
+      cargada = User.find(user.id)
+      User.find(user.id).estacionar_en!(megaplex)
+      cargada
+    end
+
+    it "no nace un perfil con el tenant viejo: RecordInvalid y ninguna fila" do
+      cargada = cuenta_cargada_antes_de_la_mudanza
+
+      expect { PerfilJuego.para(cargada) }
+        .to raise_error(ActiveRecord::RecordInvalid, /Tenant debe coincidir/)
+      expect(PerfilJuego.where(user_id: user.id)).to be_empty
+    end
+
+    it "no deja el motor bloqueado: con la cuenta fresca el perfil nace en el tenant nuevo" do
+      cuenta_cargada_antes_de_la_mudanza
+
+      expect { Juego::Racha.actualizar!(User.find(user.id), fecha: Date.current) }.not_to raise_error
+      expect(PerfilJuego.find_by(user_id: user.id).tenant_id).to eq(megaplex.id)
+    end
+
+    it "tampoco se cuela con un tenant_id explícito: ni el viejo ni el nuevo con la cuenta cargada vieja" do
+      cargada = cuenta_cargada_antes_de_la_mudanza
+
+      expect { PerfilJuego.create!(user: cargada, tenant_id: megaplex.id) }
+        .to raise_error(ActiveRecord::RecordInvalid, /Tenant debe coincidir/)
+      expect(PerfilJuego.where(user_id: user.id)).to be_empty
+    end
+
+    it "control: con el perfil YA existente, la validación de siempre corta al update! de la cuenta vieja" do
+      PerfilJuego.para(user)
+      perfil = PerfilJuego.para(User.find(user.id)) # participar lo carga: la cuenta aún en AF
+      User.find(user.id).estacionar_en!(megaplex)
+
+      expect { perfil.update!(visible_en_tabla: true) }
+        .to raise_error(ActiveRecord::RecordInvalid, /Tenant debe coincidir/)
+    end
+  end
+
   # El motor entero escribe el perfil con `update!` (Racha, Otorgador,
   # Recalculador): tras un cambio de gimnasio ninguno puede reventar. Cada uno
   # arranca de un perfil creado ANTES del cambio — el orden real, y el que

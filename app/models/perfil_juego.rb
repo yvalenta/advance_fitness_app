@@ -11,6 +11,7 @@ class PerfilJuego < ApplicationRecord
   hereda_tenant_de :user
 
   validates :user_id, uniqueness: true
+  validate :cuenta_no_se_mudo_antes_de_crear, on: :create
 
   # Nivel determinista en función de los puntos: raíz entera de (puntos/100)
   # + 1 → 0-99 pts nivel 1, 100-399 nivel 2, 400-899 nivel 3, 900-1599
@@ -28,9 +29,14 @@ class PerfilJuego < ApplicationRecord
   # del ranking del gimnasio viejo) vuelve a false — fail-closed, nadie
   # aparece en una tabla donde no consintió. El apodo es preferencia, se queda.
   # Lo llama el callback de User (`el_juego_sigue_a_la_cuenta`).
+  #
+  # SIN early-return cuando el tenant del perfil ya coincide con el destino
+  # (un perfil desfasado de antes que la cuenta alcanza al volver): el
+  # callback revoca el consentimiento en toda mudanza, y la tabla lee el flag,
+  # no el consentimiento — saltarse el flag dejaba a la persona listada sin
+  # consentimiento. Fail-closed: la visibilidad se apaga siempre; si nada
+  # cambia, Rails no escribe.
   def seguir_a_la_cuenta!
-    return if tenant_id == user.tenant_id
-
     update!(tenant_id: user.tenant_id, visible_en_tabla: false)
   end
 
@@ -41,4 +47,24 @@ class PerfilJuego < ApplicationRecord
   rescue ActiveRecord::RecordNotUnique
     retry
   end
+
+  private
+    # La validación de TenantDesnormalizado compara contra la cuenta EN
+    # MEMORIA: si quien llama la cargó antes de que commiteara el canje del
+    # pase (OtorgarPuntosJob, `participar` en vuelo), el perfil nacía con el
+    # tenant viejo y coincidiendo con esa cuenta vieja — y el callback de User
+    # ya había corrido sin ver perfil, así que nada lo reparaba. Al CREAR se
+    # lee el tenant fresco de la fila con `FOR SHARE`: la validación corre
+    # dentro de la transacción del save, así que el candado dura hasta el
+    # INSERT y la mudanza (un UPDATE de users) espera — o ya commiteó y se ve,
+    # o commitea después y su callback encuentra el perfil y lo sigue. Si la
+    # cuenta cargada ya es vieja, se niega (fail-closed, igual que el
+    # `update!` de un perfil existente: RecordInvalid); reintentar con la
+    # cuenta fresca nace bien.
+    def cuenta_no_se_mudo_antes_de_crear
+      return if user_id.nil?
+
+      fresco = User.lock("FOR SHARE").where(id: user_id).pick(:tenant_id)
+      errors.add(:tenant_id, "debe coincidir con el de user") if fresco != tenant_id
+    end
 end

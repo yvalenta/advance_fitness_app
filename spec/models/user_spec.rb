@@ -139,6 +139,27 @@ RSpec.describe User, type: :model do
           expect(Consentimiento.vigente?(user, "logros_comunidad")).to be(false)
         end
 
+        # H2 (refutación ronda 1), agravante: si el tenant del perfil YA coincide
+        # con el destino (un perfil desfasado de antes, o nacido en la carrera
+        # de la mudanza), el early-return no apagaba `visible_en_tabla` pero el
+        # callback SÍ revocaba el consentimiento: aparecía en la tabla sin
+        # consentimiento. Fail-closed: la visibilidad se apaga en TODA mudanza.
+        it "aunque el tenant del perfil ya coincida con el destino, apaga visible_en_tabla (no queda en la tabla sin consentimiento)" do
+          perfil = PerfilJuego.para(user)
+          perfil.update!(visible_en_tabla: true)
+          otorgar!("tabla_posiciones")
+          # se mudó con el código anterior (perfil desfasado) y ahora vuelve al
+          # gimnasio del perfil: el tenant del perfil ya coincide con el destino.
+          user.update_columns(tenant_id: megaplex.id)
+
+          user.reload.estacionar_en!(tenants(:advance_fitness))
+
+          expect(Consentimiento.vigente?(user, "tabla_posiciones")).to be(false)
+          expect(perfil.reload.visible_en_tabla).to be(false)
+          expect(PerfilJuego.where(tenant_id: tenants(:advance_fitness).id, visible_en_tabla: true).pluck(:user_id))
+            .not_to include(user.id)
+        end
+
         it "no ensucia el rastro si no había nada vigente que revocar" do
           PerfilJuego.para(user)
           otorgar!("logros_comunidad")
