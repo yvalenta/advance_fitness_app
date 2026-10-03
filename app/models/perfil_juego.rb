@@ -11,7 +11,7 @@ class PerfilJuego < ApplicationRecord
   hereda_tenant_de :user
 
   validates :user_id, uniqueness: true
-  validate :cuenta_no_se_mudo_antes_de_crear, on: :create
+  validate :cuenta_no_se_mudo_antes_de_guardar, if: :nace_o_enciende_visibilidad?
 
   # Nivel determinista en función de los puntos: raíz entera de (puntos/100)
   # + 1 → 0-99 pts nivel 1, 100-399 nivel 2, 400-899 nivel 3, 900-1599
@@ -49,6 +49,14 @@ class PerfilJuego < ApplicationRecord
   end
 
   private
+    # Los dos saves que dejan a la persona expuesta en el tenant de la fila:
+    # nacer (el perfil entra al leaderboard del tenant que se le escriba) y
+    # encender `visible_en_tabla`. Apagar nunca se bloquea: es la dirección
+    # segura, y la única que puede pedir quien tenga la cuenta vieja en memoria.
+    def nace_o_enciende_visibilidad?
+      new_record? || (will_save_change_to_visible_en_tabla? && visible_en_tabla?)
+    end
+
     # La validación de TenantDesnormalizado compara contra la cuenta EN
     # MEMORIA: si quien llama la cargó antes de que commiteara el canje del
     # pase (OtorgarPuntosJob, `participar` en vuelo), el perfil nacía con el
@@ -61,7 +69,15 @@ class PerfilJuego < ApplicationRecord
     # cuenta cargada ya es vieja, se niega (fail-closed, igual que el
     # `update!` de un perfil existente: RecordInvalid); reintentar con la
     # cuenta fresca nace bien.
-    def cuenta_no_se_mudo_antes_de_crear
+    #
+    # Lo mismo al ENCENDER `visible_en_tabla` (F1, ronda 2): un perfil recién
+    # creado con la cuenta vieja en memoria nace bien, la mudanza lo muda y lo
+    # apaga, y el `update!` siguiente comparaba esa cuenta vieja contra el
+    # tenant viejo del propio objeto — pasaba, y como Rails escribe solo las
+    # columnas que cambiaron la fila quedaba EN el tenant nuevo y VISIBLE. El
+    # tenant que vio quien enciende (`tenant_id` en memoria) debe seguir siendo
+    # el fresco de la cuenta.
+    def cuenta_no_se_mudo_antes_de_guardar
       return if user_id.nil?
 
       fresco = User.lock("FOR SHARE").where(id: user_id).pick(:tenant_id)

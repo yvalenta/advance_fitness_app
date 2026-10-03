@@ -232,4 +232,49 @@ RSpec.describe "Tabla de posiciones", type: :request do
                                                               tenant_id: tenants(:megaplex).id)
     end
   end
+
+  # F1 (refutación ronda 2): el canje del pase commitea en OTRA pestaña mientras
+  # `participar` está en vuelo — la pantalla donde consintió es la del gimnasio
+  # viejo, y la persona no puede quedar visible en el nuevo por ese consentimiento.
+  # El `Current.user` de la request se carga antes de la mudanza (AF); el hook
+  # sobre `PerfilJuego.para` hace commitear el canje en el punto de la carrera.
+  describe "participar con el canje del pase en vuelo" do
+    let(:megaplex) { tenants(:megaplex) }
+
+    before do
+      miembro.puestos.create!(tenant: megaplex, rol: "miembro")
+      sign_in_as miembro
+    end
+
+    def mudanza_en_vuelo(antes_o_despues_de_para)
+      allow(PerfilJuego).to receive(:para).and_wrap_original do |original, *args|
+        mudar = -> { User.find(miembro.id).estacionar_en!(megaplex) }
+        mudar.call if antes_o_despues_de_para == :antes
+        original.call(*args).tap { mudar.call if antes_o_despues_de_para == :despues }
+      end
+    end
+
+    it "primer opt-in: la mudanza commitea entre crear el perfil y encenderlo — ni visible ni consentimiento" do
+      mudanza_en_vuelo(:despues)
+
+      post ranking_participacion_path, params: { perfil_juego: { apodo: "Rayo" } }
+
+      expect(response).to have_http_status(:unprocessable_content) # RecordInvalid: fail-closed
+      expect(PerfilJuego.where(user_id: miembro.id))
+        .to all(have_attributes(tenant_id: megaplex.id, visible_en_tabla: false))
+      expect(PerfilJuego.where(tenant_id: megaplex.id, visible_en_tabla: true)).to be_empty
+      expect(Consentimiento.vigente?(miembro, "tabla_posiciones")).to be false
+    end
+
+    it "con el perfil ya existente: la mudanza commitea antes de cargarlo — tampoco queda visible en el nuevo" do
+      PerfilJuego.para(miembro)
+      mudanza_en_vuelo(:antes)
+
+      post ranking_participacion_path, params: { perfil_juego: { apodo: "Rayo" } }
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(PerfilJuego.where(tenant_id: megaplex.id, visible_en_tabla: true)).to be_empty
+      expect(Consentimiento.vigente?(miembro, "tabla_posiciones")).to be false
+    end
+  end
 end

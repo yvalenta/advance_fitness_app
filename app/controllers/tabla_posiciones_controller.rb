@@ -44,6 +44,11 @@ class TablaPosicionesController < ApplicationController
   # registro append-only con re-otorgamientos.
   def participar
     perfil = PerfilJuego.para(Current.user)
+    # El dueño en memoria es la cuenta que consintió en ESTA pantalla, no la
+    # que cargue la asociación perezosa: si el canje del pase commiteó antes de
+    # `para`, el perfil ya está en el tenant nuevo y la validación de tenant lo
+    # niega (RecordInvalid) en vez de encenderlo ahí con un opt-in del viejo.
+    perfil.user = Current.user
     authorize perfil, :update?
 
     ya_participaba = perfil.visible_en_tabla?

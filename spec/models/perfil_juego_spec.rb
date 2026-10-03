@@ -97,6 +97,42 @@ RSpec.describe PerfilJuego, type: :model do
       expect { perfil.update!(visible_en_tabla: true) }
         .to raise_error(ActiveRecord::RecordInvalid, /Tenant debe coincidir/)
     end
+
+    # F1 (refutación ronda 2): el candado de arriba cubría solo la CREACIÓN. Un
+    # perfil recién creado con la cuenta cargada en memoria (participar lo
+    # hace en :46) nace bien en el tenant viejo, el canje commitea, el callback
+    # de User lo muda y apaga el flag — y el `update!(visible_en_tabla: true)`
+    # siguiente comparaba la cuenta vieja con el tenant viejo, pasaba, y como
+    # Rails escribe solo las columnas cambiadas la fila quedaba EN el tenant
+    # nuevo y VISIBLE, con un consentimiento dado en la pantalla del viejo.
+    # Encender el flag relee el tenant fresco de la cuenta, igual que crear.
+    it "F1: el perfil recién creado con la cuenta vieja no se enciende en el tenant nuevo" do
+      perfil = PerfilJuego.para(User.find(user.id)) # nace en AF, con la cuenta cargada en memoria
+      expect(perfil.tenant_id).to eq(user.tenant_id)
+      User.find(user.id).estacionar_en!(megaplex)   # el canje commitea; el callback lo muda y apaga
+
+      expect { perfil.update!(visible_en_tabla: true, apodo: nil) }
+        .to raise_error(ActiveRecord::RecordInvalid, /Tenant debe coincidir/)
+      expect(PerfilJuego.find(perfil.id))
+        .to have_attributes(tenant_id: megaplex.id, visible_en_tabla: false)
+      expect(PerfilJuego.where(tenant_id: megaplex.id, visible_en_tabla: true)).to be_empty
+    end
+
+    it "F1: con la cuenta al día, encender el flag sigue funcionando (el candado no estorba)" do
+      perfil = PerfilJuego.para(User.find(user.id))
+
+      expect { perfil.update!(visible_en_tabla: true) }.not_to raise_error
+      expect(perfil.reload.visible_en_tabla).to be true
+    end
+
+    it "F1: apagar nunca se bloquea — retirarse con la cuenta vieja deja la fila apagada" do
+      perfil = PerfilJuego.para(User.find(user.id))
+      perfil.update!(visible_en_tabla: true)
+      User.find(user.id).estacionar_en!(megaplex)
+
+      expect { perfil.update!(visible_en_tabla: false) }.not_to raise_error
+      expect(PerfilJuego.find(perfil.id).visible_en_tabla).to be false
+    end
   end
 
   # El motor entero escribe el perfil con `update!` (Racha, Otorgador,
