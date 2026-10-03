@@ -10,6 +10,15 @@ class Consentimiento < ApplicationRecord
   TIPOS = %w[tabla_posiciones ciclo_menstrual ciclo_menstrual_ia logros_comunidad].freeze
   ACCIONES = %w[otorgado revocado].freeze
 
+  # El consentimiento NO distingue gimnasio (es por usuario y tipo) y los dos
+  # que exponen a la persona ENTRE miembros — el ranking y el muro — se dieron
+  # en el gimnasio donde estaba parada. Al cambiar de gimnasio (Nota 29) esos
+  # dos no viajan: se revocan con esta versión de texto y el miembro vuelve a
+  # optar en el nuevo si quiere. Los de ciclo son dato de salud propio, no
+  # visibilidad hacia otros miembros: no dependen del gimnasio y no se tocan.
+  VERSION_CAMBIO_DE_GIMNASIO = "cambio-de-gimnasio"
+  TIPOS_DE_VISIBILIDAD_POR_GIMNASIO = %w[tabla_posiciones logros_comunidad].freeze
+
   belongs_to :user
 
   validates :tipo, inclusion: { in: TIPOS }
@@ -24,6 +33,19 @@ class Consentimiento < ApplicationRecord
   # `id` desempata filas creadas en el mismo instante (tests, doble clic).
   def self.vigente?(user, tipo)
     where(user: user, tipo: tipo).order(:created_at, :id).last&.accion == "otorgado"
+  end
+
+  # Revoca, dejando rastro append-only, los consentimientos de visibilidad
+  # vigentes de la cuenta que acaba de cambiar de gimnasio. Solo escribe donde
+  # había algo vigente: no ensucia el registro con revocaciones de nada.
+  # Sin ip/user-agent: lo dispara el modelo, no una petición del miembro.
+  def self.revocar_al_cambiar_de_gimnasio!(user)
+    TIPOS_DE_VISIBILIDAD_POR_GIMNASIO.each do |tipo|
+      next unless vigente?(user, tipo)
+
+      create!(user: user, tipo: tipo, accion: "revocado",
+              version_texto: VERSION_CAMBIO_DE_GIMNASIO)
+    end
   end
 
   # Versión en lote de `vigente?` (Fase 18e): de `user_ids`, los que tienen el

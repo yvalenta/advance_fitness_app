@@ -44,4 +44,34 @@ RSpec.describe PerfilJuego, type: :model do
     expect(a.id).to eq b.id
     expect(PerfilJuego.where(user: user).count).to eq 1
   end
+
+  # El motor entero escribe el perfil con `update!` (Racha, Otorgador,
+  # Recalculador): tras un cambio de gimnasio ninguno puede reventar. Cada uno
+  # arranca de un perfil creado ANTES del cambio — el orden real, y el que
+  # dejaba el tenant viejo pegado.
+  describe "tras cambiar de gimnasio (el juego es de la persona)" do
+    before do
+      PerfilJuego.para(user)
+      user.puestos.create!(tenant: tenants(:megaplex), rol: "miembro")
+      user.estacionar_en!(tenants(:megaplex))
+      user.reload
+    end
+
+    it "Juego::Racha registra el día sin RecordInvalid" do
+      perfil = Juego::Racha.actualizar!(user, fecha: Date.current)
+
+      expect(perfil.racha_actual).to eq 1
+      expect(perfil.tenant_id).to eq tenants(:megaplex).id
+    end
+
+    it "Juego::Otorgador suma los puntos sin RecordInvalid" do
+      Juego::Otorgador.otorgar!(user, tipo: "checkin", fecha: Date.current)
+
+      expect(user.reload.perfil_juego.puntos_total).to eq Juego::Otorgador::PUNTOS["checkin"]
+    end
+
+    it "Juego::Recalculador reconstruye la proyección sin RecordInvalid" do
+      expect { Juego::Recalculador.para(user) }.not_to raise_error
+    end
+  end
 end

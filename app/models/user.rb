@@ -80,6 +80,18 @@ class User < ApplicationRecord
   after_save :sincronizar_puesto_con_la_cache,
              if: -> { saved_change_to_tenant_id? || saved_change_to_rol? }
 
+  # El juego es de la persona (Nota 29, D1): si la cache `tenant_id` cambia, el
+  # perfil de juego (tenant desnormalizado, `hereda_tenant_de :user`) la sigue
+  # en la MISMA transacción del update — sin esto, todo `perfil.update!`
+  # posterior reventaba con "Tenant debe coincidir con el de user" (Racha,
+  # Otorgador, Recalculador, RecordatorioRachaJob). Vive en el modelo y no solo
+  # en `estacionar_en!` por la misma razón que el espejo de arriba: que no se
+  # pueda dejar una fila incoherente aunque el call-site no lo sepa. Y la
+  # privacidad no viaja: ver PerfilJuego#seguir_a_la_cuenta! y
+  # Consentimiento.revocar_al_cambiar_de_gimnasio!.
+  after_save :el_juego_sigue_a_la_cuenta,
+             if: -> { saved_change_to_tenant_id? && !previously_new_record? }
+
   validates :email_address, presence: true, uniqueness: { scope: :tenant_id, message: "ya está registrado en este gimnasio" }
   validates :rol, inclusion: { in: ROLES }
   # superadmin/comercializador no pertenecen a ningún tenant; los demás sí.
@@ -217,5 +229,13 @@ class User < ApplicationRecord
 
       puesto = puestos.find_or_initialize_by(tenant_id: tenant_id)
       puesto.update!(rol: rol) if puesto.new_record? || puesto.rol != rol
+    end
+
+    # Dos efectos, ambos en la transacción del save: el perfil (si ya existe)
+    # sigue a la cuenta, y el opt-in de visibilidad del gimnasio viejo se
+    # revoca aunque la cuenta todavía no tenga perfil (el muro no lo necesita).
+    def el_juego_sigue_a_la_cuenta
+      perfil_juego&.seguir_a_la_cuenta!
+      Consentimiento.revocar_al_cambiar_de_gimnasio!(self)
     end
 end

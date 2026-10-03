@@ -76,6 +76,30 @@ RSpec.describe RecordatorioRachaJob, type: :job do
     expect(otro.reload.racha_recordada_en).to eq(Date.current)
   end
 
+  # Hallado el 23-sep-2026: tras un cambio de gimnasio el perfil quedaba con el
+  # tenant viejo y `perfil.update!` levantaba RecordInvalid — el `find_each` se
+  # cortaba ahí y NADIE de los que venían detrás recibía el aviso ese día. El
+  # orden importa: el perfil se crea ANTES del cambio (el caso real) y con id
+  # menor, para que el find_each lo toque primero.
+  it "tras un cambio de gimnasio el job no se corta: el perfil sigue a la cuenta y los demás reciben su aviso" do
+    movido = users(:two)
+    movido.puestos.create!(tenant: tenants(:megaplex), rol: "miembro")
+    perfil_movido = perfil_con_racha(movido, ultima: Date.current - 1)
+    perfil = perfil_con_racha(miembro, ultima: Date.current - 1)
+    telefono_movido = suscribir(movido, "movido")
+    telefono = suscribir(miembro, "otro")
+
+    movido.estacionar_en!(tenants(:megaplex))
+    expect(perfil_movido.id).to be < perfil.id
+
+    expect { described_class.perform_now }.not_to raise_error
+
+    expect(Notificaciones::EnviadorPush).to have_received(:enviar).with(telefono_movido, anything)
+    expect(Notificaciones::EnviadorPush).to have_received(:enviar).with(telefono, anything)
+    expect(perfil_movido.reload.racha_recordada_en).to eq(Date.current)
+    expect(perfil.reload.racha_recordada_en).to eq(Date.current)
+  end
+
   it "sin llaves VAPID el job es un no-op" do
     perfil_con_racha(miembro, ultima: Date.current - 1)
     suscribir(miembro)

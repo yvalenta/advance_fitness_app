@@ -185,4 +185,51 @@ RSpec.describe "Tabla de posiciones", type: :request do
       expect(response).to redirect_to(ranking_path)
     end
   end
+
+  # El juego es de la persona (Nota 29): al cambiar de gimnasio el perfil se
+  # va con la cuenta, pero el opt-in del ranking se dio en el gimnasio viejo y
+  # NO viaja — ni aparece en la tabla nueva ni sigue contando en la vieja.
+  describe "cambio de gimnasio" do
+    before do
+      miembro.puestos.create!(tenant: tenants(:megaplex), rol: "miembro")
+      perfil_visible!(miembro, puntos: 900, apodo: "Rayo")
+      Consentimiento.create!(user: miembro, tipo: "tabla_posiciones", accion: "otorgado",
+                             version_texto: "ranking-v1")
+      perfil_visible!(otro, puntos: 100, apodo: "Tornado")
+    end
+
+    it "quien se muda sale de la tabla del gimnasio viejo" do
+      miembro.estacionar_en!(tenants(:megaplex))
+      sign_in_as otro
+
+      get ranking_path
+
+      expect(response.body).to include("Tornado")
+      expect(response.body).not_to include("Rayo")
+    end
+
+    it "y llega al nuevo sin aparecer: debe volver a optar ahí (reciprocidad incluida)" do
+      miembro.estacionar_en!(tenants(:megaplex))
+      host! "megaplex.example.com"
+      sign_in_as miembro
+
+      get ranking_path
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include("Quiero aparecer en la tabla")
+      expect(PerfilJuego.where(tenant_id: tenants(:megaplex).id, visible_en_tabla: true)).to be_empty
+    end
+
+    it "volver a optar en el gimnasio nuevo funciona (antes el perfil viejo reventaba el POST)" do
+      miembro.estacionar_en!(tenants(:megaplex))
+      host! "megaplex.example.com"
+      sign_in_as miembro
+
+      post ranking_participacion_path, params: { perfil_juego: { apodo: "Rayo" } }
+
+      expect(response).to redirect_to(ranking_path)
+      expect(miembro.reload.perfil_juego).to have_attributes(visible_en_tabla: true,
+                                                              tenant_id: tenants(:megaplex).id)
+    end
+  end
 end
