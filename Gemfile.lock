@@ -497,7 +497,7 @@ DEPENDENCIES
   capybara
   debug
   dotenv-rails (~> 3.2)
-  image_processing (~> 2.0)
+  image_processing (~> 2.1)
   importmap-rails
   jbuilder
   kamal
