@@ -1,0 +1,41 @@
+# Destino "homelab" de Kamal: `bin/kamal deploy -d homelab`.
+#
+# Se mezcla sobre config/deploy.yml y solo cambia a DÓNDE va la app. Existe para
+# poder desplegar y probar en el homelab (ynt-ubuntu) MIENTRAS Lightsail sigue
+# sirviendo producción: `bin/kamal deploy` sin destino sigue apuntando a
+# Lightsail, así que nada de esto puede mover tráfico por accidente.
+#
+# El hostname público no se mueve acá: lo mueve el DNS (los CNAME de los hosts
+# de la app pasan al túnel nuevo del homelab). Ver tareas/2026-10-12-salir-de-lightsail.md
+# en nomicheck_ops.
+#
+# Secretos: para este destino Kamal lee .kamal/secrets.homelab (NO .kamal/secrets),
+# y ese archivo NO existe a propósito: sin él `-d homelab` falla cerrado.
+# Un symlink a .kamal/secrets daría el DATABASE_URL de PRODUCCIÓN al homelab, y
+# la revisión adversarial del 2026-10-12 (13 hallazgos, todos en pie) lo marcó
+# crítico: con Lightsail sirviendo habría DOS instancias contra el mismo pooler de
+# Supabase (límite de 15 clientes, ya se agotó el 2026-08-06), `db:prepare`
+# correría migraciones sobre la base real con código que Lightsail aún no tiene,
+# y un segundo Solid Queue (SOLID_QUEUE_IN_PUMA) tomaría jobs reales.
+# Para desplegar acá, Yonatan decide UNA de estas dos y crea el archivo a mano:
+#   (a) una base de prueba (rama/copia de Supabase) en DATABASE_URL, o
+#   (b) una ventana con la app de Lightsail detenida (DEPLOY.md:9) y el archivo
+#       apuntando a la base real: el deploy del homelab es entonces el corte.
+# Antes de (b), comparar `git diff --stat <sha vivo>..HEAD -- db/`: si hay
+# migraciones pendientes, van primero a Lightsail.
+# Además, en cualquier caso: `bundle install` (bin/kamal no arranca en este
+# checkout) y, antes del corte, copiar el volumen advance_fitness_app_storage
+# (6,6 MB: logos y portadas) de Lightsail al homelab.
+#
+# Cuando Lightsail se apague, este archivo se promueve: estas dos líneas pasan a
+# config/deploy.yml y este archivo se borra.
+
+servers:
+  web:
+    hosts:
+      - 100.89.216.61   # ynt-ubuntu (IP de Tailscale, estable); LAN: 192.168.40.185
+
+builder:
+  # Build en el propio homelab (x86_64), igual que hoy en Lightsail: evita QEMU
+  # desde la Mac arm64. El disco es un HDD, el primer build será lento.
+  remote: ssh://ynt@100.89.216.61

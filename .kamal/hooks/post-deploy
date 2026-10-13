@@ -17,7 +17,9 @@ ROLE="web"
 NETWORK="docker-lab_proxy-network"
 ALIAS="rails-app"
 SSH_USER="ynt"
-CONTAINER="${SERVICE}-${ROLE}-${KAMAL_VERSION}"
+# Kamal nombra el contenedor service-role[-destino]-version (kamal 2.12,
+# configuration/role.rb container_prefix). Sin destino queda idéntico al de siempre.
+CONTAINER="${SERVICE}-${ROLE}${KAMAL_DESTINATION:+-${KAMAL_DESTINATION}}-${KAMAL_VERSION}"
 
 for HOST in $KAMAL_HOSTS; do
   echo "post-deploy: verificando alias de red '$ALIAS' en $NETWORK para $CONTAINER en $HOST..."
@@ -94,6 +96,32 @@ done
 # ve la gente, con margen de ~60s para el arranque en frío (db:prepare), y
 # marca el deploy como fallido si nunca llega a 200.
 URL_PUBLICA="https://advance-fitness-app.ynt.codes/up"
+
+# Destino homelab (`bin/kamal deploy -d homelab`): mientras el DNS siga apuntando
+# al túnel de Lightsail, la URL pública responde 200 desde la app VIEJA y daría
+# por bueno un deploy que nadie ha probado. Se verifica el contenedor nuevo con
+# el Host que usaría el túnel, y la prueba pública es la del corte de DNS.
+if [ "${KAMAL_DESTINATION:-}" = "homelab" ]; then
+  echo "post-deploy: destino homelab — se omite la URL pública (aún apunta a Lightsail)."
+  for HOST in $KAMAL_HOSTS; do
+    # "/" y no "/up": /up está excluido de host_authorization (production.rb), así
+    # que con /up cualquier Host da 200. "/" sí pasa por la protección: 403 es
+    # "Blocked hosts" (APP_HOST mal puesto); 200 o 30x es sano.
+    CODIGO=$(ssh "${SSH_USER}@${HOST}" \
+      "docker exec ${CONTAINER} curl -s -o /dev/null -w '%{http_code}' -H 'Host: advance-fitness-app.ynt.codes' http://localhost:80/" 2>/dev/null || true)
+    CODIGO=${CODIGO:-000}
+    case "$CODIGO" in
+      200|301|302|303) ;;
+      *)
+        echo "post-deploy: ERROR: ${CONTAINER} en $HOST respondió $CODIGO en / con Host de producción."
+        exit 1
+        ;;
+    esac
+  done
+  echo "post-deploy: homelab OK con Host de producción. Falta la prueba pública tras mover el DNS."
+  exit 0
+fi
+
 echo "post-deploy: verificando $URL_PUBLICA desde afuera..."
 PUBLICO_OK=""
 CODIGO="000"
